@@ -11,6 +11,12 @@ $csrf        = \App\Libraries\Csrf::token();
         <h1 class="h3 mb-1">Wallets Management</h1>
         <p class="text-secondary mb-0">Manage user wallets, balances, freeze/unfreeze, and view ledger entries.</p>
     </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="/admin/wallets/deposits"   class="btn btn-outline-success btn-sm"><i class="fas fa-arrow-down me-1"></i>Deposits</a>
+        <a href="/admin/wallets/withdrawals" class="btn btn-outline-warning btn-sm"><i class="fas fa-arrow-up me-1"></i>Withdrawals</a>
+        <a href="/admin/wallets/adjustment" class="btn btn-outline-info btn-sm"><i class="fas fa-sliders-h me-1"></i>Adjustment</a>
+        <a href="/admin/wallets/monitoring" class="btn btn-outline-danger btn-sm"><i class="fas fa-shield-virus me-1"></i>Monitoring</a>
+    </div>
 </div>
 <?php require app_path('app/views/admin/_nav.php'); ?>
 

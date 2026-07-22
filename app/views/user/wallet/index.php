@@ -77,8 +77,9 @@ require app_path('app/views/user/_nav.php');
                             <td class="font-monospace small text-warning"><?= number_format($locked, 8) ?></td>
                             <td class="font-monospace small fw-semibold"><?= number_format($total, 8) ?></td>
                             <td>
-                                <a href="/user/wallet/deposit" class="btn btn-xs btn-outline-success me-1" title="Deposit"><i class="fas fa-arrow-down"></i></a>
-                                <a href="/user/wallet/withdraw" class="btn btn-xs btn-outline-warning" title="Withdraw"><i class="fas fa-arrow-up"></i></a>
+                                <a href="/user/wallet/deposit"                    class="btn btn-xs btn-outline-success me-1" title="Deposit"><i class="fas fa-arrow-down"></i></a>
+                                <a href="/user/wallet/withdraw"                   class="btn btn-xs btn-outline-warning me-1" title="Withdraw"><i class="fas fa-arrow-up"></i></a>
+                                <a href="/user/wallet/ledger?wallet_id=<?= (int)$wallet['id'] ?>" class="btn btn-xs btn-outline-info" title="Ledger"><i class="fas fa-book"></i></a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

@@ -204,10 +204,12 @@ $csrfToken    = \App\Libraries\Csrf::token();
                     'trades'     => ['/user/trades',       'fa-receipt',       'Trade History'],
                 ],
                 'Wallet' => [
-                    'wallet'     => ['/user/wallet',       'fa-wallet',        'Overview'],
-                    'deposit'    => ['/user/wallet/deposit','fa-arrow-down-to-bracket','Deposit'],
-                    'withdraw'   => ['/user/wallet/withdraw','fa-arrow-up-from-bracket','Withdraw'],
-                    'wallet-history' => ['/user/wallet/history','fa-clock-rotate-left','History'],
+                    'wallet'          => ['/user/wallet',           'fa-wallet',                  'Overview'],
+                    'deposit'         => ['/user/wallet/deposit',   'fa-arrow-down-to-bracket',   'Deposit'],
+                    'withdraw'        => ['/user/wallet/withdraw',  'fa-arrow-up-from-bracket',   'Withdraw'],
+                    'transfer'        => ['/user/wallet/transfer',  'fa-exchange-alt',            'Transfer'],
+                    'wallet-history'  => ['/user/wallet/history',   'fa-clock-rotate-left',       'History'],
+                    'wallet-addresses'=> ['/user/wallet/addresses', 'fa-shield-alt',              'Addresses'],
                 ],
                 'Account' => [
                     'profile'    => ['/user/profile',      'fa-user-circle',   'Profile'],

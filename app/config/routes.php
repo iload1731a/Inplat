@@ -120,6 +120,20 @@ $router->get('/admin/wallets', [AdminWalletsController::class, 'index']);
 $router->get('/admin/wallet/ledger', [AdminWalletsController::class, 'ledger']);
 $router->post('/admin/wallets/freeze', [AdminWalletsController::class, 'freeze']);
 $router->post('/admin/wallets/unfreeze', [AdminWalletsController::class, 'unfreeze']);
+// Deposits
+$router->get('/admin/wallets/deposits', [AdminWalletsController::class, 'deposits']);
+$router->post('/admin/wallets/deposits/review', [AdminWalletsController::class, 'reviewDeposit']);
+// Withdrawals
+$router->get('/admin/wallets/withdrawals', [AdminWalletsController::class, 'withdrawals']);
+$router->post('/admin/wallets/withdrawals/review', [AdminWalletsController::class, 'reviewWithdrawal']);
+// Manual adjustment
+$router->get('/admin/wallets/adjustment', [AdminWalletsController::class, 'adjustment']);
+$router->post('/admin/wallets/adjustment', [AdminWalletsController::class, 'doAdjustment']);
+// Monitoring rules
+$router->get('/admin/wallets/monitoring', [AdminWalletsController::class, 'monitoring']);
+$router->post('/admin/wallets/monitoring/create', [AdminWalletsController::class, 'createRule']);
+$router->post('/admin/wallets/monitoring/toggle', [AdminWalletsController::class, 'toggleRule']);
+$router->post('/admin/wallets/monitoring/delete', [AdminWalletsController::class, 'deleteRule']);
 
 // =====================================================================
 // ADMIN – KYC Verification
@@ -245,12 +259,20 @@ $router->post('/user/kyc/submit',[UserKycController::class, 'submit']);
 // =====================================================================
 // USER – Wallet
 // =====================================================================
-$router->get('/user/wallet',              [UserWalletController::class, 'index']);
-$router->get('/user/wallet/deposit',      [UserWalletController::class, 'deposit']);
-$router->post('/user/wallet/deposit',     [UserWalletController::class, 'submitDeposit']);
-$router->get('/user/wallet/withdraw',     [UserWalletController::class, 'withdraw']);
-$router->post('/user/wallet/withdraw',    [UserWalletController::class, 'submitWithdrawal']);
-$router->get('/user/wallet/history',      [UserWalletController::class, 'history']);
+$router->get('/user/wallet',                   [UserWalletController::class, 'index']);
+$router->get('/user/wallet/deposit',           [UserWalletController::class, 'deposit']);
+$router->post('/user/wallet/deposit',          [UserWalletController::class, 'submitDeposit']);
+$router->get('/user/wallet/withdraw',          [UserWalletController::class, 'withdraw']);
+$router->post('/user/wallet/withdraw',         [UserWalletController::class, 'submitWithdrawal']);
+$router->post('/user/wallet/withdraw/cancel',  [UserWalletController::class, 'cancelWithdrawal']);
+$router->get('/user/wallet/history',           [UserWalletController::class, 'history']);
+$router->get('/user/wallet/transfer',          [UserWalletController::class, 'transfer']);
+$router->post('/user/wallet/transfer',         [UserWalletController::class, 'submitTransfer']);
+$router->get('/user/wallet/ledger',            [UserWalletController::class, 'ledger']);
+$router->get('/user/wallet/addresses',         [UserWalletController::class, 'addresses']);
+$router->post('/user/wallet/addresses/add',    [UserWalletController::class, 'addAddress']);
+$router->post('/user/wallet/addresses/revoke', [UserWalletController::class, 'revokeAddress']);
+$router->get('/user/wallet/balance',           [UserWalletController::class, 'balance']);
 
 // =====================================================================
 // USER – Orders

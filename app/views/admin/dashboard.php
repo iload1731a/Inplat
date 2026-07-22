@@ -130,7 +130,7 @@ $userGrowthJson = json_encode($userGrowthSeries, JSON_UNESCAPED_UNICODE | JSON_U
             labels,
             datasets: [
                 { label: 'Trade Volume', data: volumeData, borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.2)', tension: 0.35, fill: true },
-                { label: 'New Users', data: growthData, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.15)', tension: 0.35, fill: false }
+                { label: 'Daily New Users', data: growthData, borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.15)', tension: 0.35, fill: false }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false }

@@ -105,6 +105,7 @@ final class LicenseGuard
     private static function decrypt(string $payload): string
     {
         $raw = base64_decode($payload, true);
+        // Minimum size: 12-byte IV + 16-byte GCM tag + at least 1-byte ciphertext.
         if ($raw === false || strlen($raw) < 29) {
             return '';
         }

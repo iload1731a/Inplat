@@ -31,7 +31,10 @@ final class DashboardController extends BaseController
             $data = array_merge($data, (new AdminDashboardService())->data());
         } catch (Throwable $e) {
             $logLine = '[' . date('c') . '] Dashboard metrics error: ' . $e->getMessage() . PHP_EOL;
-            @file_put_contents(app_path('storage/logs/app.log'), $logLine, FILE_APPEND | LOCK_EX);
+            $written = file_put_contents(app_path('storage/logs/app.log'), $logLine, FILE_APPEND | LOCK_EX);
+            if ($written === false) {
+                error_log($logLine);
+            }
             $data['dashboardError'] = 'Dashboard metrics are temporarily unavailable. Please check storage/logs/app.log for details.';
         }
 

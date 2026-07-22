@@ -193,6 +193,7 @@ $csrfToken    = \App\Libraries\Csrf::token();
                     'dashboard'  => ['/dashboard',         'fa-tachometer-alt', 'Dashboard'],
                 ],
                 'Trading' => [
+                    'trading-terminal' => ['/trade',              'fa-exchange-alt',  'Trading Terminal'],
                     'trading'    => ['/trading',           'fa-chart-candlestick', 'Spot Trading'],
                     'orders'     => ['/user/orders',       'fa-list-ol',       'Open Orders'],
                     'orders-history' => ['/user/orders/history', 'fa-history', 'Order History'],

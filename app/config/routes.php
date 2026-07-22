@@ -16,6 +16,7 @@ use App\Controllers\Admin\SystemController as AdminSystemController;
 use App\Controllers\Admin\WalletsController as AdminWalletsController;
 use App\Controllers\Admin\DepositsController as AdminDepositsController;
 use App\Controllers\Admin\WithdrawalsController as AdminWithdrawalsController;
+use App\Controllers\Admin\TradingEngineController as AdminTradingEngineController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallerController;
@@ -36,6 +37,7 @@ use App\Controllers\User\TradesController as UserTradesController;
 use App\Controllers\User\WalletController as UserWalletController;
 use App\Controllers\User\DepositController as UserDepositController;
 use App\Controllers\User\WithdrawalController as UserWithdrawalController;
+use App\Controllers\User\TradingController as UserTradingController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -251,9 +253,32 @@ $router->get('/admin/settings', [AdminManagementController::class, 'settings']);
 $router->post('/admin/settings/update', [AdminManagementController::class, 'updateSetting']);
 
 // =====================================================================
-// USER – Dashboard & Trading
+// ADMIN – Trading Engine
 // =====================================================================
-$router->get('/dashboard', [UserDashboardController::class, 'index']);
+$router->get('/admin/trading-engine',                        [AdminTradingEngineController::class, 'index']);
+$router->get('/admin/trading-engine/risk',                   [AdminTradingEngineController::class, 'risk']);
+$router->post('/admin/trading-engine/liquidate',             [AdminTradingEngineController::class, 'forceLiquidate']);
+$router->get('/admin/trading-engine/fee-tiers',              [AdminTradingEngineController::class, 'feeTiers']);
+$router->post('/admin/trading-engine/fee-tiers/create',      [AdminTradingEngineController::class, 'createFeeTier']);
+$router->post('/admin/trading-engine/fee-tiers/update',      [AdminTradingEngineController::class, 'updateFeeTier']);
+$router->get('/admin/trading-engine/positions',              [AdminTradingEngineController::class, 'positions']);
+
+// =====================================================================
+// USER – Trading Terminal (full trading engine)
+// =====================================================================
+$router->get('/trade',                        [UserTradingController::class, 'index']);
+$router->post('/trading/order/spot',          [UserTradingController::class, 'placeSpotOrder']);
+$router->post('/trading/order/futures',       [UserTradingController::class, 'placeFuturesOrder']);
+$router->post('/trading/order/margin',        [UserTradingController::class, 'placeMarginOrder']);
+$router->post('/trading/order/cancel',        [UserTradingController::class, 'cancelOrder']);
+$router->post('/trading/position/close',      [UserTradingController::class, 'closePosition']);
+$router->get('/trading/orderbook',            [UserTradingController::class, 'orderBook']);
+$router->get('/trading/candles',              [UserTradingController::class, 'candles']);
+$router->get('/trading/ticker',               [UserTradingController::class, 'ticker']);
+$router->get('/trading/tickers',              [UserTradingController::class, 'tickers']);
+$router->get('/trading/recent-trades',        [UserTradingController::class, 'recentTrades']);
+$router->get('/trading/my-orders',            [UserTradingController::class, 'myOrders']);
+$router->get('/trading/my-positions',         [UserTradingController::class, 'myPositions']);
 $router->get('/dashboard/metrics', [UserDashboardController::class, 'metrics']);
 $router->get('/trading', [UserPlatformController::class, 'index']);
 $router->get('/trading/snapshot', [UserPlatformController::class, 'snapshot']);

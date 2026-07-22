@@ -17,6 +17,7 @@ use App\Controllers\Admin\WalletsController as AdminWalletsController;
 use App\Controllers\Admin\DepositsController as AdminDepositsController;
 use App\Controllers\Admin\WithdrawalsController as AdminWithdrawalsController;
 use App\Controllers\Admin\TradingEngineController as AdminTradingEngineController;
+use App\Controllers\Admin\MarketsController as AdminMarketsController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallerController;
@@ -38,6 +39,7 @@ use App\Controllers\User\WalletController as UserWalletController;
 use App\Controllers\User\DepositController as UserDepositController;
 use App\Controllers\User\WithdrawalController as UserWithdrawalController;
 use App\Controllers\User\TradingController as UserTradingController;
+use App\Controllers\User\MarketsController as UserMarketsController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -110,6 +112,25 @@ $router->post('/admin/assets/currency/toggle', [AdminAssetsController::class, 't
 $router->post('/admin/assets/pair/create', [AdminAssetsController::class, 'createPair']);
 $router->post('/admin/assets/pair/update', [AdminAssetsController::class, 'updatePair']);
 $router->post('/admin/assets/pair/delete', [AdminAssetsController::class, 'deletePair']);
+
+// =====================================================================
+// ADMIN – Markets (Market Overview, Price Feed, Providers, Statistics)
+// =====================================================================
+$router->get('/admin/markets',                      [AdminMarketsController::class, 'index']);
+$router->get('/admin/markets/pairs',                [AdminMarketsController::class, 'pairs']);
+$router->get('/admin/markets/pair/detail',          [AdminMarketsController::class, 'pairDetail']);
+$router->get('/admin/markets/statistics',           [AdminMarketsController::class, 'statistics']);
+$router->get('/admin/markets/providers',            [AdminMarketsController::class, 'providers']);
+$router->post('/admin/markets/providers/create',    [AdminMarketsController::class, 'createProvider']);
+$router->post('/admin/markets/providers/update',    [AdminMarketsController::class, 'updateProvider']);
+$router->post('/admin/markets/providers/toggle',    [AdminMarketsController::class, 'toggleProvider']);
+$router->get('/admin/markets/feed',                 [AdminMarketsController::class, 'feed']);
+$router->post('/admin/markets/feed/save',           [AdminMarketsController::class, 'saveFeed']);
+$router->post('/admin/markets/feed/toggle',         [AdminMarketsController::class, 'toggleFeed']);
+$router->get('/admin/markets/sync-logs',            [AdminMarketsController::class, 'syncLogs']);
+$router->get('/admin/markets/mappings',             [AdminMarketsController::class, 'mappings']);
+$router->post('/admin/markets/mappings/save',       [AdminMarketsController::class, 'saveMapping']);
+$router->post('/admin/markets/mappings/delete',     [AdminMarketsController::class, 'deleteMapping']);
 
 // =====================================================================
 // ADMIN – Orders Management
@@ -398,6 +419,16 @@ $router->get('/user/referral', [UserReferralController::class, 'index']);
 $router->get('/user/api-keys',          [UserApiKeysController::class, 'index']);
 $router->post('/user/api-keys/create',  [UserApiKeysController::class, 'create']);
 $router->post('/user/api-keys/revoke',  [UserApiKeysController::class, 'revoke']);
+
+// =====================================================================
+// USER – Markets & Watchlist
+// =====================================================================
+$router->get('/markets',                    [UserMarketsController::class, 'index']);
+$router->get('/markets/watchlist',          [UserMarketsController::class, 'watchlist']);
+$router->post('/markets/watchlist/toggle',  [UserMarketsController::class, 'toggleWatchlist']);
+$router->get('/markets/detail',             [UserMarketsController::class, 'detail']);
+$router->get('/markets/tickers',            [UserMarketsController::class, 'tickers']);
+$router->get('/markets/ticker',             [UserMarketsController::class, 'ticker']);
 
 // =====================================================================
 // INSTALLER

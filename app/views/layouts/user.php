@@ -191,10 +191,12 @@ $csrfToken    = \App\Libraries\Csrf::token();
             $nav = [
                 'Main' => [
                     'dashboard'  => ['/dashboard',         'fa-tachometer-alt', 'Dashboard'],
+                    'markets'    => ['/markets',            'fa-chart-area',     'Markets'],
                 ],
                 'Trading' => [
                     'trading-terminal' => ['/trade',              'fa-exchange-alt',  'Trading Terminal'],
                     'trading'    => ['/trading',           'fa-chart-candlestick', 'Spot Trading'],
+                    'markets-watchlist' => ['/markets/watchlist', 'fa-star',          'Watchlist'],
                     'orders'     => ['/user/orders',       'fa-list-ol',       'Open Orders'],
                     'orders-history' => ['/user/orders/history', 'fa-history', 'Order History'],
                     'staking'    => ['/staking',           'fa-lock',          'Staking'],

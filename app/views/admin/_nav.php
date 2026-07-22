@@ -24,6 +24,7 @@
                 'roles'          => ['/admin/roles',       '<i class="fas fa-user-shield me-1"></i>Roles'],
             ],
             'Markets' => [
+                'markets'         => ['/admin/markets',         '<i class="fas fa-chart-area me-1"></i>Markets'],
                 'assets'          => ['/admin/assets',          '<i class="fas fa-coins me-1"></i>Assets'],
                 'orders'          => ['/admin/orders',          '<i class="fas fa-list-ol me-1"></i>Orders'],
                 'trading'         => ['/admin/trading',         '<i class="fas fa-chart-line me-1"></i>Trading'],

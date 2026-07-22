@@ -30,6 +30,7 @@
                 'orders'          => ['/admin/orders',          '<i class="fas fa-list-ol me-1"></i>Orders'],
                 'trading'         => ['/admin/trading',         '<i class="fas fa-chart-line me-1"></i>Trading'],
                 'trading-engine'  => ['/admin/trading-engine',  '<i class="fas fa-exchange-alt me-1"></i>Engine'],
+                'signals'         => ['/admin/signals',         '<i class="fas fa-broadcast-tower me-1"></i>Signals'],
                 'wallets'         => ['/admin/wallets',         '<i class="fas fa-wallet me-1"></i>Wallets'],
                 'withdrawals'     => ['/admin/withdrawals',     '<i class="fas fa-arrow-circle-up me-1"></i>Withdrawals'],
                 'finance'         => ['/admin/finance',         '<i class="fas fa-dollar-sign me-1"></i>Finance'],

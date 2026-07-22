@@ -17,4 +17,13 @@ abstract class BaseController
     {
         View::render($view, $data, 'layouts/user');
     }
+
+    /**
+     * Smart render: picks user layout for user/* views, main layout otherwise.
+     */
+    protected function render(string $view, array $data = []): void
+    {
+        $layout = str_starts_with($view, 'user/') ? 'layouts/user' : 'layouts/main';
+        View::render($view, $data, $layout);
+    }
 }

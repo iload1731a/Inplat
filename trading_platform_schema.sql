@@ -1519,3 +1519,209 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================================
 -- END OF SCHEMA
 -- ============================================================================
+
+-- ============================================================================
+-- SECTION 19: TRADING SIGNALS, PRICE ALERTS AND AUTOMATION
+-- ============================================================================
+
+-- Signal providers (admin-managed sources: internal analysts, bots, 3rd-party)
+CREATE TABLE signal_providers (
+    id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name                    VARCHAR(100) NOT NULL,
+    slug                    VARCHAR(100) NOT NULL UNIQUE,
+    description             TEXT NULL,
+    provider_type           ENUM('internal','bot','third_party') NOT NULL DEFAULT 'internal',
+    logo_url                VARCHAR(255) NULL,
+    website_url             VARCHAR(255) NULL,
+    is_active               TINYINT(1) NOT NULL DEFAULT 1,
+    is_public               TINYINT(1) NOT NULL DEFAULT 1,   -- visible to users
+    subscription_price      DECIMAL(18,8) NOT NULL DEFAULT 0.00000000, -- 0 = free
+    subscription_currency   VARCHAR(20) NULL,
+    win_rate                DECIMAL(5,2) NULL,               -- % cached from signal_performance
+    total_signals           INT UNSIGNED NOT NULL DEFAULT 0,
+    created_by              BIGINT UNSIGNED NULL,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES admin_users(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='Sources that publish trading signals';
+
+-- Trading signals published by providers or admins
+CREATE TABLE trading_signals (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    provider_id             INT UNSIGNED NOT NULL,
+    trading_pair_id         INT UNSIGNED NULL,
+    pair_symbol             VARCHAR(30) NULL,                -- denormalised snapshot
+    signal_type             ENUM('buy','sell','hold','close_long','close_short','watch') NOT NULL,
+    market_type             ENUM('spot','futures','margin') NOT NULL DEFAULT 'spot',
+    timeframe               ENUM('1m','5m','15m','30m','1h','4h','1d','1w') NOT NULL DEFAULT '1h',
+    entry_price             DECIMAL(36,18) NULL,
+    entry_price_high        DECIMAL(36,18) NULL,             -- entry zone high
+    entry_price_low         DECIMAL(36,18) NULL,             -- entry zone low
+    take_profit_1           DECIMAL(36,18) NULL,
+    take_profit_2           DECIMAL(36,18) NULL,
+    take_profit_3           DECIMAL(36,18) NULL,
+    stop_loss               DECIMAL(36,18) NULL,
+    leverage                TINYINT UNSIGNED NULL,           -- for futures signals
+    risk_reward_ratio       DECIMAL(8,4) NULL,
+    confidence_score        TINYINT UNSIGNED NULL,           -- 0-100
+    analysis_text           TEXT NULL,
+    chart_url               VARCHAR(255) NULL,
+    tags                    JSON NULL,                       -- ["breakout","ema_cross","rsi_oversold"]
+    status                  ENUM('active','hit_tp','hit_sl','cancelled','expired') NOT NULL DEFAULT 'active',
+    hit_at                  DATETIME NULL,
+    profit_pct              DECIMAL(10,4) NULL,              -- actual result when closed
+    views_count             INT UNSIGNED NOT NULL DEFAULT 0,
+    likes_count             INT UNSIGNED NOT NULL DEFAULT 0,
+    expires_at              DATETIME NULL,
+    published_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_signal_provider  (provider_id),
+    INDEX idx_signal_pair      (trading_pair_id),
+    INDEX idx_signal_status    (status),
+    INDEX idx_signal_published (published_at),
+    FOREIGN KEY (provider_id) REFERENCES signal_providers(id) ON DELETE CASCADE,
+    FOREIGN KEY (trading_pair_id) REFERENCES trading_pairs(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='Trading signals with entry/TP/SL targets';
+
+-- User subscriptions to signal providers
+CREATE TABLE signal_subscriptions (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    provider_id             INT UNSIGNED NOT NULL,
+    is_active               TINYINT(1) NOT NULL DEFAULT 1,
+    notify_email            TINYINT(1) NOT NULL DEFAULT 1,
+    notify_platform         TINYINT(1) NOT NULL DEFAULT 1,
+    subscribed_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at              DATETIME NULL,
+    UNIQUE KEY uq_user_provider (user_id, provider_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES signal_providers(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='User subscriptions to signal providers';
+
+-- User reactions/bookmarks on signals
+CREATE TABLE signal_interactions (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    signal_id               BIGINT UNSIGNED NOT NULL,
+    interaction_type        ENUM('like','bookmark','view') NOT NULL,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_user_signal_type (user_id, signal_id, interaction_type),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (signal_id) REFERENCES trading_signals(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Signal provider performance snapshots (updated by cron/background job)
+CREATE TABLE signal_performance (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    provider_id             INT UNSIGNED NOT NULL,
+    period                  ENUM('7d','30d','90d','all') NOT NULL DEFAULT '30d',
+    total_signals           INT UNSIGNED NOT NULL DEFAULT 0,
+    active_signals          INT UNSIGNED NOT NULL DEFAULT 0,
+    hit_tp_count            INT UNSIGNED NOT NULL DEFAULT 0,
+    hit_sl_count            INT UNSIGNED NOT NULL DEFAULT 0,
+    cancelled_count         INT UNSIGNED NOT NULL DEFAULT 0,
+    win_rate                DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    avg_profit_pct          DECIMAL(10,4) NULL,
+    avg_loss_pct            DECIMAL(10,4) NULL,
+    avg_rr_ratio            DECIMAL(8,4) NULL,
+    best_signal_id          BIGINT UNSIGNED NULL,
+    worst_signal_id         BIGINT UNSIGNED NULL,
+    total_return_pct        DECIMAL(10,4) NULL,
+    calculated_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_provider_period (provider_id, period),
+    FOREIGN KEY (provider_id) REFERENCES signal_providers(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Cached performance metrics per provider per period';
+
+-- User-defined price alerts
+CREATE TABLE price_alerts (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    trading_pair_id         INT UNSIGNED NOT NULL,
+    pair_symbol             VARCHAR(30) NOT NULL,
+    alert_type              ENUM('price_above','price_below','percent_change_up','percent_change_down',
+                                  'volume_spike','rsi_overbought','rsi_oversold',
+                                  'ema_cross_up','ema_cross_down','new_high','new_low') NOT NULL,
+    threshold_value         DECIMAL(36,18) NOT NULL,
+    timeframe               ENUM('1m','5m','15m','1h','4h','1d') NOT NULL DEFAULT '1h',
+    note                    VARCHAR(255) NULL,
+    notify_email            TINYINT(1) NOT NULL DEFAULT 1,
+    notify_platform         TINYINT(1) NOT NULL DEFAULT 1,
+    is_recurring            TINYINT(1) NOT NULL DEFAULT 0,   -- 0 = one-shot, 1 = keeps firing
+    status                  ENUM('active','triggered','paused','deleted') NOT NULL DEFAULT 'active',
+    last_triggered_at       DATETIME NULL,
+    trigger_count           INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_alert_user    (user_id),
+    INDEX idx_alert_pair    (trading_pair_id),
+    INDEX idx_alert_status  (status),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (trading_pair_id) REFERENCES trading_pairs(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='User-defined price and indicator alerts';
+
+-- Alert trigger history (one row per fire event)
+CREATE TABLE alert_history (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    alert_id                BIGINT UNSIGNED NOT NULL,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    trading_pair_id         INT UNSIGNED NOT NULL,
+    alert_type              VARCHAR(50) NOT NULL,
+    threshold_value         DECIMAL(36,18) NOT NULL,
+    triggered_value         DECIMAL(36,18) NOT NULL,         -- actual price/indicator at trigger
+    notification_sent       TINYINT(1) NOT NULL DEFAULT 0,
+    triggered_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (alert_id) REFERENCES price_alerts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Historical log of all alert trigger events';
+
+-- User-defined automation rules (if condition THEN action)
+CREATE TABLE automation_rules (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    name                    VARCHAR(100) NOT NULL,
+    description             VARCHAR(255) NULL,
+    trigger_type            ENUM('price_above','price_below','percent_change_up','percent_change_down',
+                                  'rsi_overbought','rsi_oversold','ema_cross_up','ema_cross_down',
+                                  'signal_received','order_filled','position_pnl_pct') NOT NULL,
+    trigger_pair_id         INT UNSIGNED NULL,
+    trigger_value           DECIMAL(36,18) NOT NULL,
+    trigger_timeframe       ENUM('1m','5m','15m','1h','4h','1d') NOT NULL DEFAULT '1h',
+    action_type             ENUM('place_market_order','place_limit_order','close_position',
+                                  'cancel_open_orders','send_notification','webhook_call') NOT NULL,
+    action_pair_id          INT UNSIGNED NULL,
+    action_side             ENUM('buy','sell') NULL,
+    action_quantity         DECIMAL(36,18) NULL,
+    action_quantity_type    ENUM('fixed','pct_balance') NOT NULL DEFAULT 'fixed',
+    action_price            DECIMAL(36,18) NULL,             -- for limit orders
+    action_params           JSON NULL,                       -- extra params (webhook URL, message, etc.)
+    cooldown_minutes        SMALLINT UNSIGNED NOT NULL DEFAULT 60,
+    max_executions          SMALLINT UNSIGNED NULL,          -- NULL = unlimited
+    execution_count         INT UNSIGNED NOT NULL DEFAULT 0,
+    is_active               TINYINT(1) NOT NULL DEFAULT 1,
+    last_executed_at        DATETIME NULL,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_automation_user   (user_id),
+    INDEX idx_automation_active (is_active),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (trigger_pair_id) REFERENCES trading_pairs(id) ON DELETE SET NULL,
+    FOREIGN KEY (action_pair_id) REFERENCES trading_pairs(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='User-defined if-this-then-that automation rules';
+
+-- Execution log for automation rules
+CREATE TABLE automation_rule_logs (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    rule_id                 BIGINT UNSIGNED NOT NULL,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    trigger_type            VARCHAR(50) NOT NULL,
+    trigger_value           DECIMAL(36,18) NOT NULL,
+    action_type             VARCHAR(50) NOT NULL,
+    action_result           ENUM('success','failed','skipped') NOT NULL DEFAULT 'success',
+    result_detail           TEXT NULL,
+    executed_at             DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (rule_id) REFERENCES automation_rules(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Execution log for automation rule firings';
+
+SET FOREIGN_KEY_CHECKS = 1;

@@ -488,6 +488,49 @@ $router->post('/charts/templates',             [UserChartsController::class, 'sa
 $router->post('/charts/templates/delete',      [UserChartsController::class, 'deleteTemplate']);
 
 // =====================================================================
+// USER – Signals, Alerts & Automation
+// =====================================================================
+$router->get('/user/signals',                        [\App\Controllers\User\SignalsController::class, 'index']);
+$router->get('/user/signals/feed',                   [\App\Controllers\User\SignalsController::class, 'feed']);
+$router->get('/user/signals/detail',                 [\App\Controllers\User\SignalsController::class, 'detail']);
+$router->post('/user/signals/like',                  [\App\Controllers\User\SignalsController::class, 'like']);
+$router->post('/user/signals/bookmark',              [\App\Controllers\User\SignalsController::class, 'bookmark']);
+$router->get('/user/signals/bookmarks',              [\App\Controllers\User\SignalsController::class, 'bookmarks']);
+$router->get('/user/signals/subscribe',              [\App\Controllers\User\SignalsController::class, 'subscriptions']);
+$router->post('/user/signals/subscribe',             [\App\Controllers\User\SignalsController::class, 'subscribe']);
+$router->post('/user/signals/unsubscribe',           [\App\Controllers\User\SignalsController::class, 'unsubscribe']);
+$router->post('/user/signals/subscription-prefs',    [\App\Controllers\User\SignalsController::class, 'subscriptionPrefs']);
+$router->get('/user/signals/alerts',                 [\App\Controllers\User\SignalsController::class, 'alerts']);
+$router->post('/user/signals/alerts/create',         [\App\Controllers\User\SignalsController::class, 'createAlert']);
+$router->post('/user/signals/alerts/update',         [\App\Controllers\User\SignalsController::class, 'updateAlert']);
+$router->post('/user/signals/alerts/delete',         [\App\Controllers\User\SignalsController::class, 'deleteAlert']);
+$router->post('/user/signals/alerts/pause',          [\App\Controllers\User\SignalsController::class, 'pauseAlert']);
+$router->post('/user/signals/alerts/resume',         [\App\Controllers\User\SignalsController::class, 'resumeAlert']);
+$router->get('/user/signals/automation',             [\App\Controllers\User\SignalsController::class, 'automation']);
+$router->post('/user/signals/automation/create',     [\App\Controllers\User\SignalsController::class, 'createRule']);
+$router->post('/user/signals/automation/update',     [\App\Controllers\User\SignalsController::class, 'updateRule']);
+$router->post('/user/signals/automation/delete',     [\App\Controllers\User\SignalsController::class, 'deleteRule']);
+$router->post('/user/signals/automation/toggle',     [\App\Controllers\User\SignalsController::class, 'toggleRule']);
+$router->get('/user/signals/automation/logs',        [\App\Controllers\User\SignalsController::class, 'ruleLogs']);
+$router->get('/user/signals/performance',            [\App\Controllers\User\SignalsController::class, 'performance']);
+
+// =====================================================================
+// ADMIN – Signals, Alerts & Automation
+// =====================================================================
+$router->get('/admin/signals',                       [\App\Controllers\Admin\SignalsController::class, 'index']);
+$router->get('/admin/signals/list',                  [\App\Controllers\Admin\SignalsController::class, 'list']);
+$router->post('/admin/signals/create',               [\App\Controllers\Admin\SignalsController::class, 'create']);
+$router->post('/admin/signals/status',               [\App\Controllers\Admin\SignalsController::class, 'updateStatus']);
+$router->post('/admin/signals/delete',               [\App\Controllers\Admin\SignalsController::class, 'deleteSignal']);
+$router->get('/admin/signals/providers',             [\App\Controllers\Admin\SignalsController::class, 'providers']);
+$router->post('/admin/signals/providers/create',     [\App\Controllers\Admin\SignalsController::class, 'createProvider']);
+$router->post('/admin/signals/providers/update',     [\App\Controllers\Admin\SignalsController::class, 'updateProvider']);
+$router->post('/admin/signals/providers/toggle',     [\App\Controllers\Admin\SignalsController::class, 'toggleProvider']);
+$router->post('/admin/signals/providers/recalc',     [\App\Controllers\Admin\SignalsController::class, 'recalcPerformance']);
+$router->get('/admin/signals/alerts',                [\App\Controllers\Admin\SignalsController::class, 'alerts']);
+$router->get('/admin/signals/performance',           [\App\Controllers\Admin\SignalsController::class, 'performance']);
+
+// =====================================================================
 // INSTALLER
 // =====================================================================
 $router->get('/install/step1', [InstallerController::class, 'step1']);

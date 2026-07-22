@@ -202,6 +202,13 @@ $csrfToken    = \App\Libraries\Csrf::token();
                     'staking'    => ['/staking',           'fa-lock',          'Staking'],
                     'convert'    => ['/convert',           'fa-exchange-alt',  'Convert'],
                 ],
+                'Signals & Alerts' => [
+                    'signals'       => ['/user/signals',           'fa-broadcast-tower','Signals'],
+                    'signals-feed'  => ['/user/signals/feed',      'fa-chart-bar',     'Signal Feed'],
+                    'signals-alerts'=> ['/user/signals/alerts',    'fa-bell',          'Price Alerts'],
+                    'signals-auto'  => ['/user/signals/automation','fa-robot',         'Automation'],
+                    'signals-perf'  => ['/user/signals/performance','fa-trophy',       'Performance'],
+                ],
                 'Portfolio' => [
                     'positions'  => ['/user/positions',    'fa-layer-group',   'Positions'],
                     'trades'     => ['/user/trades',       'fa-receipt',       'Trade History'],

@@ -37,7 +37,7 @@ final class RecaptchaVerifier
         $errorMessage = null;
         set_error_handler(static function (int $severity, string $message) use (&$errorMessage): bool {
             $errorMessage = $message;
-            return in_array($severity, [E_WARNING, E_NOTICE, E_USER_WARNING, E_USER_NOTICE, E_DEPRECATED, E_USER_DEPRECATED], true);
+            return true;
         });
         $raw = file_get_contents($verifyUrl, false, $context);
         restore_error_handler();
@@ -65,9 +65,14 @@ final class RecaptchaVerifier
     private function log(string $message): void
     {
         $line = '[' . date('c') . '] ' . $message . PHP_EOL;
-        $logFile = (string)config('app.log_file');
+        $logFile = trim((string)config('app.log_file', ''));
+        if ($logFile === '') {
+            error_log($line);
+            return;
+        }
+
         $logDir = dirname($logFile);
-        if (!is_dir($logDir) && !mkdir($logDir, 0775, true) && !is_dir($logDir)) {
+        if (!is_dir($logDir) && !@mkdir($logDir, 0775, true) && !is_dir($logDir)) {
             error_log($line);
             return;
         }

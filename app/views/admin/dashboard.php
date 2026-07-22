@@ -46,7 +46,7 @@ $orderStatusJson = json_encode($orderStatusSeries, JSON_UNESCAPED_UNICODE | JSON
 <div class="row g-3 mb-4">
     <div class="col-lg-9">
         <div class="glass rounded-4 p-3 h-100">
-            <h2 class="h6 mb-3">Live Growth & Profit Charts (Last 7 Days)</h2>
+            <h2 class="h6 mb-3">Growth & Revenue Trends (Last 7 Days)</h2>
             <canvas id="tradeVolumeChart" height="110"></canvas>
         </div>
     </div>
@@ -68,7 +68,7 @@ $orderStatusJson = json_encode($orderStatusSeries, JSON_UNESCAPED_UNICODE | JSON
 <div class="row g-3 mb-4">
     <div class="col-lg-8">
         <div class="glass rounded-4 p-3 h-100">
-            <h2 class="h6 mb-3">Candlestick Chart</h2>
+            <h2 class="h6 mb-3">Candlestick Data</h2>
             <div class="table-responsive">
                 <table class="table table-dark table-sm align-middle mb-0">
                     <thead><tr><th>Pair</th><th>Open Time</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr></thead>

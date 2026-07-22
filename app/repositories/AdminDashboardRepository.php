@@ -54,10 +54,7 @@ final class AdminDashboardRepository
 
     public function recentTrades(int $limit = 8): array
     {
-        $pairColumn = $this->columnExists('trades', 'trading_pair_id') ? 'trading_pair_id' : 'pair_id';
-        if (!in_array($pairColumn, ['trading_pair_id', 'pair_id'], true)) {
-            return [];
-        }
+        $pairColumn = $this->tradesHasTradingPairId() ? 'trading_pair_id' : 'pair_id';
 
         $sql = 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
                 FROM trades t
@@ -229,20 +226,15 @@ final class AdminDashboardRepository
         return self::$tableExistsCache[$table];
     }
 
-    private function columnExists(string $table, string $column): bool
+    private function tradesHasTradingPairId(): bool
     {
-        $allowedTables = ['trades'];
-        if (!in_array($table, $allowedTables, true)) {
-            return false;
-        }
-
-        $cacheKey = $table . ':' . $column;
+        $cacheKey = 'trades:trading_pair_id';
         if (array_key_exists($cacheKey, self::$columnExistsCache)) {
             return self::$columnExistsCache[$cacheKey];
         }
 
-        $stmt = Database::connection()->prepare('SHOW COLUMNS FROM `' . $table . '` LIKE :column');
-        $stmt->bindValue(':column', $column);
+        $stmt = Database::connection()->prepare('SHOW COLUMNS FROM `trades` LIKE :column');
+        $stmt->bindValue(':column', 'trading_pair_id');
         $stmt->execute();
         self::$columnExistsCache[$cacheKey] = $stmt->fetchColumn() !== false;
 

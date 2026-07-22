@@ -8,8 +8,10 @@ use App\Controllers\Admin\PlatformController as AdminPlatformController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallerController;
+use App\Controllers\User\ConvertController as UserConvertController;
 use App\Controllers\User\DashboardController as UserDashboardController;
 use App\Controllers\User\PlatformController as UserPlatformController;
+use App\Controllers\User\StakingController as UserStakingController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -54,10 +56,24 @@ $router->post('/admin/support/reply', [AdminManagementController::class, 'replyS
 $router->get('/admin/settings', [AdminManagementController::class, 'settings']);
 $router->post('/admin/settings/update', [AdminManagementController::class, 'updateSetting']);
 
+$router->get('/admin/trading', [AdminManagementController::class, 'trading']);
+$router->post('/admin/trading/pair/update', [AdminManagementController::class, 'updateTradingPair']);
+$router->post('/admin/trading/halt', [AdminManagementController::class, 'haltTrading']);
+$router->post('/admin/trading/halt/resolve', [AdminManagementController::class, 'resolveHalt']);
+
+$router->get('/admin/risk', [AdminManagementController::class, 'risk']);
+$router->post('/admin/risk/flag/update', [AdminManagementController::class, 'updateRiskFlag']);
+$router->post('/admin/risk/ip/block', [AdminManagementController::class, 'blockIP']);
+$router->post('/admin/risk/ip/unblock', [AdminManagementController::class, 'unblockIP']);
+
 $router->get('/dashboard', [UserDashboardController::class, 'index']);
 $router->get('/dashboard/metrics', [UserDashboardController::class, 'metrics']);
 $router->get('/trading', [UserPlatformController::class, 'index']);
 $router->get('/trading/snapshot', [UserPlatformController::class, 'snapshot']);
+$router->get('/staking', [UserStakingController::class, 'index']);
+$router->get('/staking/snapshot', [UserStakingController::class, 'snapshot']);
+$router->get('/convert', [UserConvertController::class, 'index']);
+$router->get('/convert/snapshot', [UserConvertController::class, 'snapshot']);
 
 $router->get('/install/step1', [InstallerController::class, 'step1']);
 $router->get('/install/step2', [InstallerController::class, 'step2']);

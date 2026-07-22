@@ -34,6 +34,8 @@ $isAuthenticated = $authUserId > 0 || $authAdminId > 0;
                 <?php else: ?>
                     <a href="/dashboard" class="btn btn-outline-light btn-sm">User Dashboard</a>
                     <a href="/trading" class="btn btn-outline-info btn-sm">Trading</a>
+                    <a href="/staking" class="btn btn-outline-success btn-sm">Staking</a>
+                    <a href="/convert" class="btn btn-outline-warning btn-sm">Convert</a>
                     <?php if ($isAdmin): ?><a href="/admin/platform" class="btn btn-outline-warning btn-sm">Admin Modules</a><?php endif; ?>
                 <?php endif; ?>
             <?php else: ?>

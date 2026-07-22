@@ -955,4 +955,370 @@ final class AdminManagementRepository
 
         return is_string($json) ? $json : null;
     }
+
+    // -------------------------------------------------------------------------
+    // Trading Management
+    // -------------------------------------------------------------------------
+
+    public function listTradingPairs(array $filters = []): array
+    {
+        $pdo = Database::connection();
+
+        $conditions = ['1=1'];
+        $params = [];
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $conditions[] = 'tp.symbol LIKE :search';
+            $params[':search'] = '%' . $search . '%';
+        }
+
+        $marketType = trim((string)($filters['market_type'] ?? ''));
+        if (in_array($marketType, ['spot', 'margin', 'futures'], true)) {
+            $conditions[] = 'tp.market_type = :market_type';
+            $params[':market_type'] = $marketType;
+        }
+
+        $activeFilter = $filters['is_active'] ?? '';
+        if ($activeFilter !== '') {
+            $conditions[] = 'tp.is_active = :is_active';
+            $params[':is_active'] = (int)$activeFilter;
+        }
+
+        $where = implode(' AND ', $conditions);
+        $sql = "SELECT tp.id, tp.symbol, tp.market_type,
+                       cb.code AS base_currency, cq.code AS quote_currency,
+                       tp.maker_fee_percent, tp.taker_fee_percent,
+                       tp.min_order_size, tp.max_order_size, tp.max_leverage,
+                       tp.is_active, tp.trading_enabled, tp.is_visible, tp.display_order,
+                       tp.price_precision, tp.quantity_precision, tp.updated_at
+                FROM trading_pairs tp
+                LEFT JOIN currencies cb ON cb.id = tp.base_currency_id
+                LEFT JOIN currencies cq ON cq.id = tp.quote_currency_id
+                WHERE {$where}
+                ORDER BY tp.display_order ASC, tp.id ASC
+                LIMIT 100";
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function getTradingPair(int $pairId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT tp.id, tp.symbol, tp.market_type,
+                    cb.code AS base_currency, cq.code AS quote_currency,
+                    tp.maker_fee_percent, tp.taker_fee_percent,
+                    tp.min_order_size, tp.max_order_size, tp.min_notional,
+                    tp.max_leverage, tp.price_precision, tp.quantity_precision,
+                    tp.is_active, tp.trading_enabled, tp.is_visible, tp.display_order
+             FROM trading_pairs tp
+             LEFT JOIN currencies cb ON cb.id = tp.base_currency_id
+             LEFT JOIN currencies cq ON cq.id = tp.quote_currency_id
+             WHERE tp.id = :id"
+        );
+        $stmt->bindValue(':id', $pairId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function updateTradingPair(int $pairId, int $adminId, array $payload): void
+    {
+        $pdo = Database::connection();
+
+        $stmt = $pdo->prepare(
+            "UPDATE trading_pairs
+             SET maker_fee_percent = :maker, taker_fee_percent = :taker,
+                 min_order_size = :min_order, max_order_size = :max_order,
+                 min_notional = :min_notional, max_leverage = :max_leverage,
+                 price_precision = :price_precision, quantity_precision = :qty_precision,
+                 is_active = :is_active, trading_enabled = :trading_enabled, is_visible = :is_visible,
+                 display_order = :display_order
+             WHERE id = :id"
+        );
+
+        $stmt->bindValue(':maker', $payload['maker_fee_percent']);
+        $stmt->bindValue(':taker', $payload['taker_fee_percent']);
+        $stmt->bindValue(':min_order', $payload['min_order_size']);
+        $stmt->bindValue(':max_order', $payload['max_order_size'] !== '' ? $payload['max_order_size'] : null);
+        $stmt->bindValue(':min_notional', $payload['min_notional']);
+        $stmt->bindValue(':max_leverage', $payload['max_leverage']);
+        $stmt->bindValue(':price_precision', (int)$payload['price_precision'], PDO::PARAM_INT);
+        $stmt->bindValue(':qty_precision', (int)$payload['quantity_precision'], PDO::PARAM_INT);
+        $stmt->bindValue(':is_active', (int)$payload['is_active'], PDO::PARAM_INT);
+        $stmt->bindValue(':trading_enabled', (int)$payload['trading_enabled'], PDO::PARAM_INT);
+        $stmt->bindValue(':is_visible', (int)$payload['is_visible'], PDO::PARAM_INT);
+        $stmt->bindValue(':display_order', (int)$payload['display_order'], PDO::PARAM_INT);
+        $stmt->bindValue(':id', $pairId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->logAdminAction($adminId, 'update_trading_pair', 'trading_pair', (string)$pairId, null, $payload, '');
+    }
+
+    public function listFeeTiers(): array
+    {
+        return Database::connection()
+            ->query('SELECT id, tier_name, min_30d_volume, min_token_holding, maker_fee_percent, taker_fee_percent, withdrawal_fee_discount_percent, is_active, created_at FROM fee_tiers ORDER BY min_30d_volume ASC')
+            ->fetchAll() ?: [];
+    }
+
+    public function listActiveTradingHalts(): array
+    {
+        return Database::connection()
+            ->query("SELECT th.id, tp.symbol, th.reason, th.triggered_by, th.status, th.started_at, th.ended_at
+                     FROM trading_halts th
+                     INNER JOIN trading_pairs tp ON tp.id = th.trading_pair_id
+                     WHERE th.status = 'active'
+                     ORDER BY th.id DESC
+                     LIMIT 50")
+            ->fetchAll() ?: [];
+    }
+
+    public function listRecentTradingHalts(int $limit = 20): array
+    {
+        $safeLimit = max(1, min(100, $limit));
+        $stmt = Database::connection()->prepare(
+            "SELECT th.id, tp.symbol, th.reason, th.triggered_by, th.status, th.started_at, th.ended_at
+             FROM trading_halts th
+             INNER JOIN trading_pairs tp ON tp.id = th.trading_pair_id
+             ORDER BY th.id DESC
+             LIMIT :limit"
+        );
+        $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function createTradingHalt(int $pairId, int $adminId, string $reason): int
+    {
+        $pdo = Database::connection();
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO trading_halts (trading_pair_id, reason, triggered_by, admin_id, status, started_at)
+             VALUES (:pair_id, :reason, 'admin', :admin_id, 'active', NOW())"
+        );
+        $stmt->bindValue(':pair_id', $pairId, PDO::PARAM_INT);
+        $stmt->bindValue(':reason', $reason);
+        $stmt->bindValue(':admin_id', $adminId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $haltId = (int)$pdo->lastInsertId();
+
+        $pdo->prepare("UPDATE trading_pairs SET trading_enabled = 0 WHERE id = :id")
+            ->execute([':id' => $pairId]);
+
+        $this->logAdminAction($adminId, 'create_trading_halt', 'trading_halt', (string)$haltId, null, ['reason' => $reason], '');
+
+        return $haltId;
+    }
+
+    public function resolveTradingHalt(int $haltId, int $adminId): void
+    {
+        $pdo = Database::connection();
+
+        $haltStmt = $pdo->prepare("SELECT trading_pair_id FROM trading_halts WHERE id = :id AND status = 'active'");
+        $haltStmt->bindValue(':id', $haltId, PDO::PARAM_INT);
+        $haltStmt->execute();
+        $halt = $haltStmt->fetch();
+
+        if ($halt === false) {
+            return;
+        }
+
+        $pdo->prepare("UPDATE trading_halts SET status = 'resolved', ended_at = NOW() WHERE id = :id")
+            ->execute([':id' => $haltId]);
+
+        $pdo->prepare("UPDATE trading_pairs SET trading_enabled = 1 WHERE id = :id")
+            ->execute([':id' => $halt['trading_pair_id']]);
+
+        $this->logAdminAction($adminId, 'resolve_trading_halt', 'trading_halt', (string)$haltId, null, null, '');
+    }
+
+    public function listAdminRecentOrders(array $filters = []): array
+    {
+        $conditions = ['1=1'];
+        $params = [];
+
+        $search = trim((string)($filters['search'] ?? ''));
+        if ($search !== '') {
+            $conditions[] = '(tp.symbol LIKE :search OR u.username LIKE :search2)';
+            $params[':search'] = '%' . $search . '%';
+            $params[':search2'] = '%' . $search . '%';
+        }
+
+        $statusFilter = trim((string)($filters['status'] ?? ''));
+        if (in_array($statusFilter, ['open', 'filled', 'partially_filled', 'cancelled', 'expired'], true)) {
+            $conditions[] = 'o.status = :status';
+            $params[':status'] = $statusFilter;
+        }
+
+        $where = implode(' AND ', $conditions);
+        $sql = "SELECT o.id, u.username, tp.symbol, o.side, o.price, o.quantity, o.filled_quantity, o.status, o.created_at
+                FROM orders o
+                INNER JOIN users u ON u.id = o.user_id
+                INNER JOIN trading_pairs tp ON tp.id = o.trading_pair_id
+                WHERE {$where}
+                ORDER BY o.id DESC
+                LIMIT 50";
+
+        $stmt = Database::connection()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    // -------------------------------------------------------------------------
+    // Risk & Compliance
+    // -------------------------------------------------------------------------
+
+    public function listRiskFlags(array $filters = []): array
+    {
+        $conditions = ['1=1'];
+        $params = [];
+
+        $statusFilter = trim((string)($filters['status'] ?? ''));
+        if (in_array($statusFilter, ['open', 'investigating', 'resolved', 'false_positive'], true)) {
+            $conditions[] = 'rf.status = :status';
+            $params[':status'] = $statusFilter;
+        }
+
+        $severityFilter = trim((string)($filters['severity'] ?? ''));
+        if (in_array($severityFilter, ['low', 'medium', 'high', 'critical'], true)) {
+            $conditions[] = 'rf.severity = :severity';
+            $params[':severity'] = $severityFilter;
+        }
+
+        $where = implode(' AND ', $conditions);
+        $sql = "SELECT rf.id, u.username, rf.flag_type, rf.severity, rf.description, rf.status, rf.created_at, rf.resolved_at
+                FROM risk_flags rf
+                INNER JOIN users u ON u.id = rf.user_id
+                WHERE {$where}
+                ORDER BY FIELD(rf.severity,'critical','high','medium','low'), rf.id DESC
+                LIMIT 100";
+
+        $stmt = Database::connection()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function updateRiskFlag(int $flagId, int $adminId, string $status, int $assignedTo): void
+    {
+        $pdo = Database::connection();
+
+        $resolvedAt = in_array($status, ['resolved', 'false_positive'], true) ? 'NOW()' : 'NULL';
+        $stmt = $pdo->prepare(
+            "UPDATE risk_flags
+             SET status = :status, assigned_to = :assigned_to, resolved_at = {$resolvedAt}
+             WHERE id = :id"
+        );
+        $stmt->bindValue(':status', $status);
+        $stmt->bindValue(':assigned_to', $assignedTo > 0 ? $assignedTo : null, $assignedTo > 0 ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        $stmt->bindValue(':id', $flagId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->logAdminAction($adminId, 'update_risk_flag', 'risk_flag', (string)$flagId, null, ['status' => $status], '');
+    }
+
+    public function listIPBlacklist(): array
+    {
+        return Database::connection()
+            ->query('SELECT ipb.id, ipb.ip_address, ipb.reason, ipb.created_at FROM ip_blacklist ipb ORDER BY ipb.id DESC LIMIT 200')
+            ->fetchAll() ?: [];
+    }
+
+    public function blockIP(string $ip, int $adminId, string $reason): void
+    {
+        $stmt = Database::connection()->prepare(
+            'INSERT INTO ip_blacklist (ip_address, reason, blocked_by) VALUES (:ip, :reason, :admin_id)
+             ON DUPLICATE KEY UPDATE reason = :reason2, blocked_by = :admin_id2'
+        );
+        $stmt->bindValue(':ip', $ip);
+        $stmt->bindValue(':reason', $reason);
+        $stmt->bindValue(':admin_id', $adminId, PDO::PARAM_INT);
+        $stmt->bindValue(':reason2', $reason);
+        $stmt->bindValue(':admin_id2', $adminId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->logAdminAction($adminId, 'block_ip', 'ip_blacklist', $ip, null, ['reason' => $reason], '');
+    }
+
+    public function unblockIP(int $entryId, int $adminId): void
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM ip_blacklist WHERE id = :id');
+        $stmt->bindValue(':id', $entryId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->logAdminAction($adminId, 'unblock_ip', 'ip_blacklist', (string)$entryId, null, null, '');
+    }
+
+    public function listSARCases(array $filters = []): array
+    {
+        $conditions = ['1=1'];
+        $params = [];
+
+        $statusFilter = trim((string)($filters['status'] ?? ''));
+        if (in_array($statusFilter, ['open', 'investigating', 'filed_with_authority', 'closed_no_action', 'closed_filed'], true)) {
+            $conditions[] = 'sc.status = :status';
+            $params[':status'] = $statusFilter;
+        }
+
+        $where = implode(' AND ', $conditions);
+        $sql = "SELECT sc.id, sc.case_number, u.username, sc.summary, sc.status,
+                       sc.filed_with_authority, sc.created_at, sc.closed_at
+                FROM sar_cases sc
+                INNER JOIN users u ON u.id = sc.user_id
+                WHERE {$where}
+                ORDER BY sc.id DESC
+                LIMIT 100";
+
+        $stmt = Database::connection()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function listSanctionedCountries(): array
+    {
+        return Database::connection()
+            ->query('SELECT id, country_code, reason, added_at FROM sanctioned_countries ORDER BY country_code ASC')
+            ->fetchAll() ?: [];
+    }
+
+    public function getRiskSummary(): array
+    {
+        $pdo = Database::connection();
+
+        $openFlags = $pdo->query("SELECT COUNT(*) FROM risk_flags WHERE status = 'open'")->fetchColumn();
+        $criticalFlags = $pdo->query("SELECT COUNT(*) FROM risk_flags WHERE status IN ('open','investigating') AND severity = 'critical'")->fetchColumn();
+        $openSAR = $pdo->query("SELECT COUNT(*) FROM sar_cases WHERE status IN ('open','investigating')")->fetchColumn();
+        $blockedIPs = $pdo->query('SELECT COUNT(*) FROM ip_blacklist')->fetchColumn();
+        $sanctionedCountries = $pdo->query('SELECT COUNT(*) FROM sanctioned_countries')->fetchColumn();
+
+        return [
+            'open_flags' => (int)$openFlags,
+            'critical_flags' => (int)$criticalFlags,
+            'open_sar_cases' => (int)$openSAR,
+            'blocked_ips' => (int)$blockedIPs,
+            'sanctioned_countries' => (int)$sanctionedCountries,
+        ];
+    }
 }

@@ -362,4 +362,159 @@ final class ManagementController extends AdminBaseController
         $redirect = '/admin/settings' . ($category !== '' ? '?category=' . urlencode($category) : '');
         Response::json(['ok' => true, 'message' => 'Setting updated.', 'redirect' => $redirect]);
     }
+
+    public function trading(Request $request): void
+    {
+        $this->bootAdmin();
+
+        $filters = [
+            'search' => trim((string)$request->input('search', '')),
+            'market_type' => trim((string)$request->input('market_type', '')),
+            'is_active' => $request->input('is_active', ''),
+            'status' => trim((string)$request->input('status', '')),
+        ];
+
+        $data = (new AdminManagementService())->tradingIndex($filters);
+
+        $this->view('admin/management/trading', [
+            'title' => 'Admin · Trading Management',
+            'username' => $this->adminUsername(),
+            'adminSection' => 'trading',
+            'filters' => $filters,
+            ...$data,
+        ]);
+    }
+
+    public function updateTradingPair(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $pairId = (int)$request->input('pair_id', 0);
+
+        try {
+            (new AdminManagementService())->updateTradingPair($this->adminId(), $pairId, [
+                'maker_fee_percent' => $request->input('maker_fee_percent', '0'),
+                'taker_fee_percent' => $request->input('taker_fee_percent', '0'),
+                'min_order_size' => $request->input('min_order_size', '0'),
+                'max_order_size' => trim((string)$request->input('max_order_size', '')),
+                'min_notional' => $request->input('min_notional', '0'),
+                'max_leverage' => $request->input('max_leverage', '1'),
+                'price_precision' => $request->input('price_precision', '2'),
+                'quantity_precision' => $request->input('quantity_precision', '6'),
+                'is_active' => $request->input('is_active', '0'),
+                'trading_enabled' => $request->input('trading_enabled', '0'),
+                'is_visible' => $request->input('is_visible', '0'),
+                'display_order' => $request->input('display_order', '0'),
+            ]);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'Trading pair updated.']);
+    }
+
+    public function haltTrading(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $pairId = (int)$request->input('pair_id', 0);
+        $reason = trim((string)$request->input('reason', ''));
+
+        try {
+            (new AdminManagementService())->haltTrading($this->adminId(), $pairId, $reason);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'Trading halt created.', 'redirect' => '/admin/trading']);
+    }
+
+    public function resolveHalt(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $haltId = (int)$request->input('halt_id', 0);
+
+        try {
+            (new AdminManagementService())->resolveHalt($this->adminId(), $haltId);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'Trading halt resolved.', 'redirect' => '/admin/trading']);
+    }
+
+    public function risk(Request $request): void
+    {
+        $this->bootAdmin();
+
+        $filters = [
+            'status' => trim((string)$request->input('status', '')),
+            'severity' => trim((string)$request->input('severity', '')),
+        ];
+
+        $data = (new AdminManagementService())->riskIndex($filters);
+
+        $this->view('admin/management/risk', [
+            'title' => 'Admin · Risk & Compliance',
+            'username' => $this->adminUsername(),
+            'adminSection' => 'risk',
+            'filters' => $filters,
+            ...$data,
+        ]);
+    }
+
+    public function updateRiskFlag(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $flagId = (int)$request->input('flag_id', 0);
+        $status = trim((string)$request->input('status', ''));
+        $assignedTo = (int)$request->input('assigned_to', 0);
+
+        try {
+            (new AdminManagementService())->updateRiskFlag($this->adminId(), $flagId, $status, $assignedTo);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'Risk flag updated.']);
+    }
+
+    public function blockIP(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $ip = trim((string)$request->input('ip_address', ''));
+        $reason = trim((string)$request->input('reason', ''));
+
+        try {
+            (new AdminManagementService())->blockIP($this->adminId(), $ip, $reason);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'IP address blocked.', 'redirect' => '/admin/risk']);
+    }
+
+    public function unblockIP(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $entryId = (int)$request->input('entry_id', 0);
+
+        try {
+            (new AdminManagementService())->unblockIP($this->adminId(), $entryId);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'IP unblocked.', 'redirect' => '/admin/risk']);
+    }
 }

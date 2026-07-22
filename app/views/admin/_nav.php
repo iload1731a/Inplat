@@ -14,6 +14,8 @@
                 'platform' => ['/admin/platform', 'Modules'],
                 'users' => ['/admin/users', 'Users'],
                 'finance' => ['/admin/finance', 'Finance'],
+                'trading' => ['/admin/trading', 'Trading'],
+                'risk' => ['/admin/risk', 'Risk'],
                 'communications' => ['/admin/communications', 'Comms'],
                 'support' => ['/admin/support', 'Support'],
                 'settings' => ['/admin/settings', 'Settings'],

@@ -431,4 +431,93 @@ final class AdminManagementService
 
         return $sent;
     }
+
+    // -------------------------------------------------------------------------
+    // Trading Management
+    // -------------------------------------------------------------------------
+
+    public function tradingIndex(array $filters): array
+    {
+        return [
+            'pairs' => $this->repository->listTradingPairs($filters),
+            'feeTiers' => $this->repository->listFeeTiers(),
+            'activeHalts' => $this->repository->listActiveTradingHalts(),
+            'recentHalts' => $this->repository->listRecentTradingHalts(20),
+            'recentOrders' => $this->repository->listAdminRecentOrders($filters),
+        ];
+    }
+
+    public function updateTradingPair(int $adminId, int $pairId, array $payload): void
+    {
+        if ($pairId <= 0) {
+            throw new \InvalidArgumentException('Invalid trading pair ID.');
+        }
+
+        $this->repository->updateTradingPair($pairId, $adminId, $payload);
+    }
+
+    public function haltTrading(int $adminId, int $pairId, string $reason): int
+    {
+        if ($pairId <= 0) {
+            throw new \InvalidArgumentException('Invalid trading pair ID.');
+        }
+        if (trim($reason) === '') {
+            throw new \InvalidArgumentException('Halt reason is required.');
+        }
+
+        return $this->repository->createTradingHalt($pairId, $adminId, trim($reason));
+    }
+
+    public function resolveHalt(int $adminId, int $haltId): void
+    {
+        if ($haltId <= 0) {
+            throw new \InvalidArgumentException('Invalid halt ID.');
+        }
+
+        $this->repository->resolveTradingHalt($haltId, $adminId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Risk & Compliance
+    // -------------------------------------------------------------------------
+
+    public function riskIndex(array $filters): array
+    {
+        return [
+            'summary' => $this->repository->getRiskSummary(),
+            'riskFlags' => $this->repository->listRiskFlags($filters),
+            'ipBlacklist' => $this->repository->listIPBlacklist(),
+            'sarCases' => $this->repository->listSARCases($filters),
+            'sanctionedCountries' => $this->repository->listSanctionedCountries(),
+        ];
+    }
+
+    public function updateRiskFlag(int $adminId, int $flagId, string $status, int $assignedTo): void
+    {
+        $allowed = ['open', 'investigating', 'resolved', 'false_positive'];
+        if (!in_array($status, $allowed, true)) {
+            throw new \InvalidArgumentException('Invalid risk flag status.');
+        }
+
+        $this->repository->updateRiskFlag($flagId, $adminId, $status, $assignedTo);
+    }
+
+    public function blockIP(int $adminId, string $ip, string $reason): void
+    {
+        $ip = trim($ip);
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            throw new \InvalidArgumentException('Invalid IP address format.');
+        }
+
+        $this->repository->blockIP($ip, $adminId, trim($reason));
+    }
+
+    public function unblockIP(int $adminId, int $entryId): void
+    {
+        if ($entryId <= 0) {
+            throw new \InvalidArgumentException('Invalid entry ID.');
+        }
+
+        $this->repository->unblockIP($entryId, $adminId);
+    }
 }

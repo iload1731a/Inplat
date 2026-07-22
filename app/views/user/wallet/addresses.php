@@ -20,7 +20,7 @@ require app_path('app/views/user/_nav.php');
     <i class="fas fa-exclamation-triangle fa-lg text-warning flex-shrink-0"></i>
     <div class="small">
         <strong>Security Notice:</strong> New addresses are subject to a 24-hour cooldown period before they can be used for withdrawals. 
-        Withdrawals can only be sent to whitelisted addresses if whitelist mode is enabled. Never share your withdrawal addresses.
+        Never share your withdrawal addresses with anyone.
     </div>
 </div>
 

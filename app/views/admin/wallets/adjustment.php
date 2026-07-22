@@ -129,8 +129,7 @@ document.getElementById('adjustmentForm').addEventListener('submit', async funct
 
     const data = Object.fromEntries(new FormData(this));
     const dirLabel = data.direction === 'credit' ? '+ Credit' : '- Debit';
-    const safeNotes = document.createTextNode(data.notes || '').textContent
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const safeNotes = document.createTextNode(data.notes || '').textContent;
 
     const confirmed = await Swal.fire({
         icon: 'warning',

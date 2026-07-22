@@ -64,7 +64,7 @@ final class UserWalletService
             'user_id'      => $userId,
             'wallet_id'    => (int)$wallet['id'],
             'currency_id'  => $currencyId,
-            'amount'       => number_format((float)$amount, 18, '.', ''),
+            'amount'       => rtrim(rtrim($amount, '0'), '.') ?: '0',
             'tx_hash'      => $txHash,
             'from_address' => $fromAddr,
         ]);
@@ -109,7 +109,7 @@ final class UserWalletService
             'user_id'             => $userId,
             'wallet_id'           => (int)$wallet['id'],
             'currency_id'         => $currencyId,
-            'amount'              => number_format((float)$amount, 18, '.', ''),
+            'amount'              => rtrim(rtrim($amount, '0'), '.') ?: '0',
             'fee'                 => '0',
             'destination_address' => $address,
             'destination_tag'     => trim((string)($input['destination_tag'] ?? '')) ?: null,

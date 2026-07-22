@@ -11,6 +11,8 @@ use Throwable;
 
 final class AdminManagementRepository
 {
+    private const BALANCE_EPSILON = 0.000000001;
+
     public function findAdminById(int $adminId): ?array
     {
         $stmt = Database::connection()->prepare(
@@ -342,7 +344,7 @@ final class AdminManagementRepository
             $delta = (float)$amount;
             $currentBalance = (float)$wallet['available_balance'];
             $newBalance = $direction === 'credit' ? $currentBalance + $delta : $currentBalance - $delta;
-            if ($newBalance < -0.000000001) {
+            if ($newBalance < -self::BALANCE_EPSILON) {
                 throw new RuntimeException('Insufficient wallet balance for this adjustment.');
             }
 
@@ -562,7 +564,7 @@ final class AdminManagementRepository
             if ($status === 'completed' && (string)$withdrawal['status'] !== 'completed') {
                 $totalDebit = (float)$withdrawal['amount'] + (float)$withdrawal['fee'];
                 $newBalance = (float)$withdrawal['available_balance'] - $totalDebit;
-                if ($newBalance < -0.000000001) {
+                if ($newBalance < -self::BALANCE_EPSILON) {
                     throw new RuntimeException('Wallet balance is too low to complete this withdrawal.');
                 }
 

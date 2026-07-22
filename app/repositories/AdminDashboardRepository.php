@@ -8,6 +8,8 @@ use App\Libraries\Database;
 
 final class AdminDashboardRepository
 {
+    private static array $tableExistsCache = [];
+
     public function overview(): array
     {
         $pdo = Database::connection();
@@ -51,10 +53,9 @@ final class AdminDashboardRepository
 
     public function recentTrades(int $limit = 8): array
     {
-        $pairReference = $this->columnExists('trades', 'trading_pair_id') ? 't.trading_pair_id' : 't.pair_id';
         $sql = 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
                 FROM trades t
-                LEFT JOIN trading_pairs tp ON tp.id = ' . $pairReference . '
+                LEFT JOIN trading_pairs tp ON tp.id = t.trading_pair_id
                 ORDER BY t.id DESC
                 LIMIT :limit';
 
@@ -210,21 +211,15 @@ final class AdminDashboardRepository
 
     private function tableExists(string $table): bool
     {
+        if (array_key_exists($table, self::$tableExistsCache)) {
+            return self::$tableExistsCache[$table];
+        }
+
         $stmt = Database::connection()->prepare('SHOW TABLES LIKE :table');
         $stmt->bindValue(':table', $table);
         $stmt->execute();
 
-        return $stmt->fetchColumn() !== false;
-    }
-
-    private function columnExists(string $table, string $column): bool
-    {
-        $sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column";
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->bindValue(':table', $table);
-        $stmt->bindValue(':column', $column);
-        $stmt->execute();
-
-        return ((int)$stmt->fetchColumn()) > 0;
+        self::$tableExistsCache[$table] = $stmt->fetchColumn() !== false;
+        return self::$tableExistsCache[$table];
     }
 }

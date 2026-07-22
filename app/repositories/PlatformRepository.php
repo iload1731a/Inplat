@@ -9,6 +9,8 @@ use PDO;
 
 final class PlatformRepository
 {
+    private static array $tableCountCache = [];
+
     public function adminOperationsSnapshot(): array
     {
         $pdo = Database::connection();
@@ -180,18 +182,24 @@ final class PlatformRepository
 
     private function tableCount(PDO $pdo, string $table): int
     {
+        if (array_key_exists($table, self::$tableCountCache)) {
+            return self::$tableCountCache[$table];
+        }
+
+        $allowedTables = ['faqs', 'sms_templates'];
+        if (!in_array($table, $allowedTables, true)) {
+            return 0;
+        }
+
         $existsStmt = $pdo->prepare('SHOW TABLES LIKE :table');
         $existsStmt->bindValue(':table', $table);
         $existsStmt->execute();
         if ($existsStmt->fetchColumn() === false) {
+            self::$tableCountCache[$table] = 0;
             return 0;
         }
 
-        $safeTable = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
-        if ($safeTable === '') {
-            return 0;
-        }
-
-        return (int)$pdo->query('SELECT COUNT(*) FROM `' . $safeTable . '`')->fetchColumn();
+        self::$tableCountCache[$table] = (int)$pdo->query('SELECT COUNT(*) FROM `' . $table . '`')->fetchColumn();
+        return self::$tableCountCache[$table];
     }
 }

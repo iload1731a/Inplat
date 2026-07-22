@@ -15,7 +15,6 @@ $tradeVolumeJson = json_encode($tradeVolumeSeries, JSON_UNESCAPED_UNICODE | JSON
 $userGrowthJson = json_encode($userGrowthSeries, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $revenueJson = json_encode($revenueSeries, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $orderStatusJson = json_encode($orderStatusSeries, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-$candlestickJson = json_encode($candlestickSeries, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -70,7 +69,24 @@ $candlestickJson = json_encode($candlestickSeries, JSON_UNESCAPED_UNICODE | JSON
     <div class="col-lg-8">
         <div class="glass rounded-4 p-3 h-100">
             <h2 class="h6 mb-3">Candlestick Chart</h2>
-            <div id="candlestickChart" style="height: 260px;"></div>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead><tr><th>Pair</th><th>Open Time</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($candlestickSeries as $candle): ?>
+                        <tr>
+                            <td><?= e((string)($candle['pair_symbol'] ?? '-')) ?></td>
+                            <td><?= e((string)($candle['open_time'] ?? '-')) ?></td>
+                            <td><?= number_format((float)($candle['open_price'] ?? 0), 6) ?></td>
+                            <td><?= number_format((float)($candle['high_price'] ?? 0), 6) ?></td>
+                            <td><?= number_format((float)($candle['low_price'] ?? 0), 6) ?></td>
+                            <td><?= number_format((float)($candle['close_price'] ?? 0), 6) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if ($candlestickSeries === []): ?><tr><td colspan="6" class="text-secondary text-center">No candlestick data available yet.</td></tr><?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     <div class="col-lg-4">
@@ -175,18 +191,13 @@ $candlestickJson = json_encode($candlestickSeries, JSON_UNESCAPED_UNICODE | JSON
     </div>
 </div>
 
-<link href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.53.0/dist/apexcharts.min.js"></script>
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 <script>
 (() => {
     const tradeSeries = <?= $tradeVolumeJson ?: '[]' ?>;
     const growthSeries = <?= $userGrowthJson ?: '[]' ?>;
     const revenueSeries = <?= $revenueJson ?: '[]' ?>;
     const orderStatus = <?= $orderStatusJson ?: '[]' ?>;
-    const candles = <?= $candlestickJson ?: '[]' ?>;
     const labels = tradeSeries.map(item => item.day);
     const volumeData = tradeSeries.map(item => Number(item.volume || 0));
     const growthData = growthSeries.map(item => Number(item.total || 0));
@@ -217,26 +228,5 @@ $candlestickJson = json_encode($candlestickSeries, JSON_UNESCAPED_UNICODE | JSON
         options: { responsive: true, maintainAspectRatio: false }
     });
 
-    if (candles.length > 0) {
-        const seriesData = candles.map(item => ({
-            x: new Date(item.open_time),
-            y: [Number(item.open_price || 0), Number(item.high_price || 0), Number(item.low_price || 0), Number(item.close_price || 0)]
-        }));
-        const chart = new ApexCharts(document.querySelector('#candlestickChart'), {
-            chart: { type: 'candlestick', height: 260, toolbar: { show: false }, animations: { enabled: true } },
-            series: [{ name: 'Price', data: seriesData }],
-            xaxis: { type: 'datetime' },
-            yaxis: { tooltip: { enabled: true } },
-            theme: { mode: 'dark' }
-        });
-        chart.render();
-    } else {
-        document.getElementById('candlestickChart').innerHTML = '<div class="text-secondary small">No candlestick data available yet.</div>';
-    }
-
-    if (window.DataTable) {
-        new DataTable('#latestTradesTable', { paging: false, searching: false, info: false, ordering: false });
-        new DataTable('#recentLoginsTable', { paging: false, searching: false, info: false, ordering: false });
-    }
 })();
 </script>

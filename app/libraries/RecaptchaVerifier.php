@@ -9,6 +9,7 @@ final class RecaptchaVerifier
     public function verify(string $token, string $ipAddress): array
     {
         if (!(bool)config('app.recaptcha_enabled', false)) {
+            $this->log('reCAPTCHA skipped because RECAPTCHA_ENABLED is false');
             return ['ok' => true];
         }
 
@@ -33,16 +34,40 @@ final class RecaptchaVerifier
         ]);
 
         $verifyUrl = (string)config('app.recaptcha_verify_url', 'https://www.google.com/recaptcha/api/siteverify');
-        $raw = @file_get_contents($verifyUrl, false, $context);
+        $errorMessage = null;
+        set_error_handler(static function (int $severity, string $message) use (&$errorMessage): bool {
+            $errorMessage = $message;
+            return true;
+        });
+        $raw = file_get_contents($verifyUrl, false, $context);
+        restore_error_handler();
+
         if (!is_string($raw) || $raw === '') {
+            if (is_string($errorMessage) && $errorMessage !== '') {
+                $this->log('reCAPTCHA HTTP verification error: ' . $errorMessage);
+            }
             return ['ok' => false, 'message' => 'reCAPTCHA verification failed'];
         }
 
         $decoded = json_decode($raw, true);
-        if (!is_array($decoded) || !($decoded['success'] ?? false)) {
+        if (!is_array($decoded)) {
+            $this->log('reCAPTCHA response parse error: ' . json_last_error_msg());
+            return ['ok' => false, 'message' => 'reCAPTCHA verification failed'];
+        }
+
+        if (!($decoded['success'] ?? false)) {
             return ['ok' => false, 'message' => 'Please complete reCAPTCHA verification'];
         }
 
         return ['ok' => true];
+    }
+
+    private function log(string $message): void
+    {
+        $line = '[' . date('c') . '] ' . $message . PHP_EOL;
+        $written = file_put_contents((string)config('app.log_file'), $line, FILE_APPEND | LOCK_EX);
+        if ($written === false) {
+            error_log($line);
+        }
     }
 }

@@ -212,8 +212,7 @@ final class ChartsController extends BaseController
         $pairId  = null;
 
         if ($pairStr !== '') {
-            $pair   = (new \App\Repositories\ChartDataRepository())->getPairBySymbol($pairStr);
-            $pairId = $pair ? (int)$pair['id'] : null;
+            $pairId = $this->service->getPairIdBySymbol($pairStr);
         }
 
         $indicators = $request->input('indicators');

@@ -202,6 +202,8 @@ final class ChartDataRepository
         if (empty($pairIds)) {
             return [];
         }
+        // Guard against excessively large IN clauses
+        $pairIds = array_slice(array_values($pairIds), 0, 100);
         $placeholders = implode(',', array_fill(0, count($pairIds), '?'));
         $stmt = Database::connection()->prepare(
             "SELECT id, symbol, market_type,
@@ -304,13 +306,16 @@ final class ChartDataRepository
         $pairIds = array_column($pairs, 'trading_pair_id');
         $symbolMap = array_column($pairs, 'symbol', 'trading_pair_id');
         $placeholders = implode(',', array_fill(0, count($pairIds), '?'));
+        // $days is already validated upstream (max(7, min(365, (int)$days))) so casting
+        // to int here is safe for direct interpolation in INTERVAL which PDO cannot parameterize.
+        $daysInt = (int)$days;
 
         $stmt = Database::connection()->prepare(
             "SELECT trading_pair_id, DATE(open_time) AS date, close_price
              FROM candlesticks
              WHERE trading_pair_id IN ({$placeholders})
                AND interval_code = '1d'
-               AND open_time >= DATE_SUB(NOW(), INTERVAL {$days} DAY)
+               AND open_time >= DATE_SUB(NOW(), INTERVAL {$daysInt} DAY)
              ORDER BY open_time ASC"
         );
         $stmt->execute($pairIds);

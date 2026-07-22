@@ -582,7 +582,7 @@ final class ChartService
             $sumY2 += $y[$i] ** 2;
         }
         $denom = sqrt(($n * $sumX2 - $sumX ** 2) * ($n * $sumY2 - $sumY ** 2));
-        if ($denom == 0) {
+        if (abs($denom) < 1e-10) {
             return 0.0;
         }
         return round(($n * $sumXY - $sumX * $sumY) / $denom, 4);
@@ -591,6 +591,16 @@ final class ChartService
     // =========================================================================
     // USER PREFERENCES
     // =========================================================================
+
+    /**
+     * Resolve a pair ID from a symbol string (delegate to repository).
+     * Allows controllers to avoid directly instantiating the repository.
+     */
+    public function getPairIdBySymbol(string $symbol): ?int
+    {
+        $pair = $this->repo->getPairBySymbol($symbol);
+        return $pair ? (int)$pair['id'] : null;
+    }
 
     /**
      * Save user chart preferences.

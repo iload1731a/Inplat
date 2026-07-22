@@ -213,7 +213,12 @@ let currentSymbol   = <?= json_encode($symbol) ?>;
 let currentInterval = <?= json_encode($interval) ?>;
 let currentType     = <?= json_encode($savedChartType) ?>;
 let showVolume      = <?= $showVolume ? 'true' : 'false' ?>;
-let activeIndicators = <?= json_encode(array_column($savedIndicators ?? [], 'key', 'key') ?: []) ?>;
+let activeIndicators = (function() {
+    const saved = <?= json_encode(array_column($savedIndicators ?? [], 'key')) ?>;
+    const obj = {};
+    saved.forEach(k => { if (k) obj[k] = true; });
+    return obj;
+})();
 const csrfToken     = <?= json_encode($csrfToken) ?>;
 
 // Indicator metadata
@@ -232,9 +237,8 @@ const indicatorMeta = {
 };
 
 // Charts instances
-let mainChart   = null;
-let subChart    = null;
-let chartInited = false;
+let mainChart = null;
+let subChart  = null;
 
 // ============================================================
 // Initialise on load
@@ -490,8 +494,6 @@ function toHeikinAshi(candles) {
 
 function buildYAxes(series, overlayKeys) {
     const axes = [];
-    const seriesWithOverlay = series.filter(s => s.name !== 'Volume' && !overlayKeys.some(k =>
-        (indicatorMeta[k]?.label ?? k) === s.name));
     // Main price axis
     axes.push({
         seriesName: series[0]?.name,

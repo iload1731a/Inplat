@@ -24,6 +24,9 @@ final class AdminDashboardRepository
         $feesStmt = $pdo->prepare('SELECT COALESCE(SUM(fee_amount), 0) FROM fee_revenue_ledger WHERE created_at >= :since');
         $feesStmt->bindValue(':since', $since24h);
         $feesStmt->execute();
+        $activeMaintenanceStmt = $pdo->prepare('SELECT COUNT(*) FROM maintenance_windows WHERE is_active = 1 AND :now BETWEEN starts_at AND ends_at');
+        $activeMaintenanceStmt->bindValue(':now', date('Y-m-d H:i:s'));
+        $activeMaintenanceStmt->execute();
 
         return [
             'users' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
@@ -38,7 +41,7 @@ final class AdminDashboardRepository
             'fee_revenue_24h' => (float)$feesStmt->fetchColumn(),
             'unread_notifications' => (int)$pdo->query('SELECT COUNT(*) FROM notifications WHERE is_read = 0')->fetchColumn(),
             'open_tickets' => (int)$pdo->query("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','pending_admin','awaiting_user')")->fetchColumn(),
-            'open_maintenance' => (int)$pdo->query('SELECT COUNT(*) FROM maintenance_windows WHERE is_active = 1 AND NOW() BETWEEN starts_at AND ends_at')->fetchColumn(),
+            'open_maintenance' => (int)$activeMaintenanceStmt->fetchColumn(),
         ];
     }
 

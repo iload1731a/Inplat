@@ -15,6 +15,8 @@ use App\Validators\AuthValidator;
 
 final class AuthController extends BaseController
 {
+    private const RECAPTCHA_RESPONSE_FIELD = 'g-recaptcha-response';
+
     public function loginForm(Request $request): void
     {
         $this->view('auth/login', ['title' => 'Login']);
@@ -225,7 +227,7 @@ final class AuthController extends BaseController
     private function validateRecaptcha(Request $request): void
     {
         $result = (new RecaptchaVerifier())->verify(
-            trim((string)$request->input('g-recaptcha-response', '')),
+            trim((string)$request->input(self::RECAPTCHA_RESPONSE_FIELD, '')),
             RequestContext::ipAddress()
         );
 

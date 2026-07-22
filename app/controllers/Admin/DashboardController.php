@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Libraries\Response;
 use App\Libraries\Request;
 use App\Middleware\AuthMiddleware;
+use App\Services\AdminDashboardService;
+use Throwable;
 
 final class DashboardController extends BaseController
 {
@@ -14,9 +17,38 @@ final class DashboardController extends BaseController
     {
         AuthMiddleware::ensureAuthenticated();
 
+        $data = [
+            'overview' => [],
+            'recentTrades' => [],
+            'recentDeposits' => [],
+            'recentWithdrawals' => [],
+            'tradeVolumeSeries' => [],
+            'userGrowthSeries' => [],
+            'dashboardError' => null,
+        ];
+
+        try {
+            $data = array_merge($data, (new AdminDashboardService())->data());
+        } catch (Throwable $e) {
+            $data['dashboardError'] = 'Dashboard metrics are unavailable until trading data is available.';
+        }
+
         $this->view('admin/dashboard', [
             'title' => 'Admin Dashboard',
             'username' => (string)(\App\Libraries\Session::get('auth.username') ?? 'Admin'),
+            ...$data,
         ]);
+    }
+
+    public function metrics(Request $request): void
+    {
+        AuthMiddleware::ensureAuthenticated();
+
+        try {
+            $payload = (new AdminDashboardService())->data();
+            Response::json(['ok' => true, 'data' => $payload]);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => 'Dashboard metrics unavailable'], 422);
+        }
     }
 }

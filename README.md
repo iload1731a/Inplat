@@ -10,7 +10,7 @@ Professional Trading Platform foundation (Phase 1) generated around the provided
 - jQuery + AJAX
 - PDO + CSRF + session auth
 
-## Phase 1 Included
+## Phase 1 + Phase 2 Included
 
 - MVC folder architecture
 - Clean routing bootstrap
@@ -26,6 +26,13 @@ Professional Trading Platform foundation (Phase 1) generated around the provided
   - Logout
   - Forgot password screen
 - Admin dashboard entrypoint with auth guard
+- Phase 2 admin dashboard foundation:
+  - KPI cards (users, orders, volume, fees)
+  - Live Chart.js visualizations for activity trends
+  - Recent trades/deposits/withdrawals tables
+- Installer license activation:
+  - CodeCanyon buyer details + purchase code capture
+  - Domain-bound encrypted local license validation
 
 ## Local run
 

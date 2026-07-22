@@ -13,6 +13,7 @@ date_default_timezone_set((string)config('app.timezone', 'UTC'));
 $installed = is_file((string)config('app.installed_lock'));
 $request = new \App\Libraries\Request();
 $requestPath = $request->path();
+\App\Libraries\LicenseGuard::assertValidForRequest($requestPath);
 
 if (!$installed && !str_starts_with($requestPath, '/install')) {
     header('Location: /install/step1');

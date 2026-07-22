@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Libraries\Csrf;
 use App\Libraries\Database;
+use App\Libraries\LicenseGuard;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Session;
@@ -32,7 +33,12 @@ final class InstallerController extends BaseController
 
     public function step2(Request $request): void
     {
-        $this->view('install/step2', ['title' => 'Installer - Database']);
+        $domain = LicenseGuard::normalizeDomain((string)($_SERVER['HTTP_HOST'] ?? ''));
+
+        $this->view('install/step2', [
+            'title' => 'Installer - Database & License',
+            'detectedDomain' => $domain,
+        ]);
     }
 
     public function saveDatabase(Request $request): void
@@ -48,6 +54,24 @@ final class InstallerController extends BaseController
             'username' => (string)$request->input('username', 'root'),
             'password' => (string)$request->input('password', ''),
         ];
+        $license = [
+            'buyer_name' => trim((string)$request->input('buyer_name', '')),
+            'buyer_email' => trim((string)$request->input('buyer_email', '')),
+            'purchase_code' => trim((string)$request->input('purchase_code', '')),
+            'domain' => LicenseGuard::normalizeDomain((string)$request->input('domain', (string)($_SERVER['HTTP_HOST'] ?? ''))),
+        ];
+
+        if ($license['buyer_name'] === '' || $license['buyer_email'] === '' || $license['purchase_code'] === '' || $license['domain'] === '') {
+            Response::json(['ok' => false, 'message' => 'License fields are required.'], 422);
+        }
+
+        if (filter_var($license['buyer_email'], FILTER_VALIDATE_EMAIL) === false) {
+            Response::json(['ok' => false, 'message' => 'License email is invalid.'], 422);
+        }
+
+        if (!LicenseGuard::isValidPurchaseCode($license['purchase_code'])) {
+            Response::json(['ok' => false, 'message' => 'Invalid CodeCanyon purchase code format.'], 422);
+        }
 
         $result = Database::testConnection($db);
 
@@ -70,6 +94,19 @@ final class InstallerController extends BaseController
         }
         if (!chmod($databaseConfigPath, 0600)) {
             Response::json(['ok' => false, 'message' => 'Unable to secure database configuration file permissions.'], 500);
+        }
+
+        $licensePayload = LicenseGuard::pack($license['purchase_code'], $license['domain']);
+        $licensePayload['buyer_name'] = $license['buyer_name'];
+        $licensePayload['buyer_email'] = $license['buyer_email'];
+        $licensePayload['purchase_code_hash'] = LicenseGuard::purchaseCodeHash($license['purchase_code']);
+        $licenseContent = "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($licensePayload, true) . ";\n";
+        $licenseConfigPath = (string)config('app.license_file');
+        if (file_put_contents($licenseConfigPath, $licenseContent, LOCK_EX) === false) {
+            Response::json(['ok' => false, 'message' => 'Unable to save license configuration file.'], 500);
+        }
+        if (!chmod($licenseConfigPath, 0600)) {
+            Response::json(['ok' => false, 'message' => 'Unable to secure license configuration file permissions.'], 500);
         }
 
         Response::json(['ok' => true, 'redirect' => '/install/step3']);
@@ -159,6 +196,8 @@ final class InstallerController extends BaseController
                 'status' => 'active',
             ]);
 
+            $this->persistLicenseSettings($pdo);
+
             $pdo->commit();
             Response::json(['ok' => true, 'redirect' => '/install/step5']);
         } catch (Throwable $e) {
@@ -238,6 +277,49 @@ final class InstallerController extends BaseController
 
         if (!in_array($prefix, $allowed, true) || preg_match($disallowedPattern, $normalized) === 1) {
             throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
+        }
+    }
+
+    private function persistLicenseSettings(PDO $pdo): void
+    {
+        $licensePath = (string)config('app.license_file');
+        if (!is_file($licensePath)) {
+            throw new \RuntimeException('License configuration file is missing.');
+        }
+
+        /** @var array<string, mixed> $license */
+        $license = require $licensePath;
+        if (!is_array($license)) {
+            throw new \RuntimeException('Invalid license configuration format.');
+        }
+
+        $required = ['buyer_name', 'buyer_email', 'purchase_code_hash', 'domain'];
+        foreach ($required as $field) {
+            if (!array_key_exists($field, $license) || trim((string)$license[$field]) === '') {
+                throw new \RuntimeException('License configuration is incomplete.');
+            }
+        }
+
+        $values = [
+            'license_buyer_name' => (string)$license['buyer_name'],
+            'license_buyer_email' => (string)$license['buyer_email'],
+            'license_purchase_code_hash' => (string)$license['purchase_code_hash'],
+            'license_domain' => (string)$license['domain'],
+            'license_verified_at' => date('Y-m-d H:i:s'),
+        ];
+
+        $stmt = $pdo->prepare('INSERT INTO system_settings (setting_key, setting_value, value_type, category, description, is_public, updated_at)
+            VALUES (:setting_key, :setting_value, :value_type, :category, :description, 0, NOW())
+            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), value_type = VALUES(value_type), category = VALUES(category), description = VALUES(description), updated_at = NOW()');
+
+        foreach ($values as $key => $value) {
+            $stmt->execute([
+                'setting_key' => $key,
+                'setting_value' => $value,
+                'value_type' => 'string',
+                'category' => 'license',
+                'description' => 'CodeCanyon license metadata',
+            ]);
         }
     }
 }

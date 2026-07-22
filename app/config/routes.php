@@ -21,6 +21,7 @@ $router->get('/forgot-password', [AuthController::class, 'forgotPasswordForm']);
 $router->post('/logout', [AuthController::class, 'logout']);
 
 $router->get('/admin/dashboard', [DashboardController::class, 'index']);
+$router->get('/admin/dashboard/metrics', [DashboardController::class, 'metrics']);
 
 $router->get('/install/step1', [InstallerController::class, 'step1']);
 $router->get('/install/step2', [InstallerController::class, 'step2']);

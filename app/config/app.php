@@ -14,4 +14,5 @@ return [
     'license_secret_file' => app_path('storage/config/license.key'),
     'log_file' => app_path('storage/logs/app.log'),
     'session_name' => 'inplat_session',
+    'trusted_proxies' => array_values(array_filter(array_map('trim', explode(',', (string)($_ENV['TRUSTED_PROXIES'] ?? ''))))),
 ];

@@ -8,18 +8,27 @@ final class RequestContext
 {
     public static function ipAddress(): string
     {
+        $remoteAddress = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        $remoteAddress = filter_var($remoteAddress, FILTER_VALIDATE_IP) ? $remoteAddress : '0.0.0.0';
+
+        $trustedProxies = (array)config('app.trusted_proxies', []);
+        if (!in_array($remoteAddress, $trustedProxies, true)) {
+            return $remoteAddress;
+        }
+
         $forwarded = (string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
-        if ($forwarded !== '') {
-            $parts = array_map('trim', explode(',', $forwarded));
-            foreach ($parts as $part) {
-                if (filter_var($part, FILTER_VALIDATE_IP)) {
-                    return $part;
-                }
+        if ($forwarded === '') {
+            return $remoteAddress;
+        }
+
+        $parts = array_map('trim', explode(',', $forwarded));
+        foreach ($parts as $part) {
+            if (filter_var($part, FILTER_VALIDATE_IP)) {
+                return $part;
             }
         }
 
-        $candidate = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
-        return filter_var($candidate, FILTER_VALIDATE_IP) ? $candidate : '0.0.0.0';
+        return $remoteAddress;
     }
 
     public static function userAgent(): string

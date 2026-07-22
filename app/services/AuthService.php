@@ -104,8 +104,13 @@ final class AuthService
             return ['ok' => true, 'message' => 'If this email exists, a reset link was generated.'];
         }
 
+        $userId = (int)$user['id'];
+        if ($this->users->hasRecentPasswordReset($userId, 60)) {
+            return ['ok' => true, 'message' => 'If this email exists, a reset link was generated.'];
+        }
+
         $token = bin2hex(random_bytes(32));
-        $this->users->createPasswordReset((int)$user['id'], hash('sha256', $token), new DateTimeImmutable('+1 hour'));
+        $this->users->createPasswordReset($userId, hash('sha256', $token), new DateTimeImmutable('+1 hour'));
 
         return [
             'ok' => true,
@@ -196,7 +201,7 @@ final class AuthService
             return;
         }
 
-        if (!hash_equals((string)$session['ip_address'], $ipAddress) || !hash_equals((string)$session['user_agent'], $userAgent)) {
+        if (!hash_equals((string)$session['user_agent'], $userAgent)) {
             $this->clearRememberCookie();
             return;
         }

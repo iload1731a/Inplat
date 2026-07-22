@@ -94,7 +94,10 @@ final class AuthController extends BaseController
 
         $response = ['ok' => true, 'message' => (string)$payload['message']];
         if (!empty($payload['token'])) {
-            $response['reset_link'] = '/reset-password?token=' . urlencode((string)$payload['token']);
+            $token = (string)$payload['token'];
+            if (preg_match('/^[a-f0-9]{64}$/', $token) === 1) {
+                $response['reset_link'] = '/reset-password?token=' . urlencode($token);
+            }
         }
 
         Response::json($response);

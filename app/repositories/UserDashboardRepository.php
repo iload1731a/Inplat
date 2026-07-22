@@ -9,6 +9,9 @@ use PDO;
 
 final class UserDashboardRepository
 {
+    private const SIDE_BUY = 'buy';
+    private const SIDE_SELL = 'sell';
+
     public function overview(int $userId): array
     {
         $pdo = Database::connection();
@@ -93,8 +96,8 @@ final class UserDashboardRepository
                        t.quantity,
                        t.executed_at,
                        CASE
-                           WHEN t.buyer_id = :buyer_id THEN 'buy'
-                           ELSE 'sell'
+                           WHEN t.buyer_id = :buyer_id THEN :side_buy
+                           ELSE :side_sell
                        END AS side
                 FROM trades t
                 INNER JOIN trading_pairs tp ON tp.id = t.trading_pair_id
@@ -106,6 +109,8 @@ final class UserDashboardRepository
         $stmt->bindValue(':buyer_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':buyer_id_filter', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':seller_id_filter', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':side_buy', self::SIDE_BUY);
+        $stmt->bindValue(':side_sell', self::SIDE_SELL);
         $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
         $stmt->execute();
 

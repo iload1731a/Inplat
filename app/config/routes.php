@@ -17,10 +17,21 @@ use App\Controllers\Admin\WalletsController as AdminWalletsController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallerController;
+use App\Controllers\User\ApiKeysController as UserApiKeysController;
 use App\Controllers\User\ConvertController as UserConvertController;
 use App\Controllers\User\DashboardController as UserDashboardController;
+use App\Controllers\User\KycController as UserKycController;
+use App\Controllers\User\NotificationsController as UserNotificationsController;
+use App\Controllers\User\OrdersController as UserOrdersController;
 use App\Controllers\User\PlatformController as UserPlatformController;
+use App\Controllers\User\PositionsController as UserPositionsController;
+use App\Controllers\User\ProfileController as UserProfileController;
+use App\Controllers\User\ReferralController as UserReferralController;
+use App\Controllers\User\SecurityController as UserSecurityController;
 use App\Controllers\User\StakingController as UserStakingController;
+use App\Controllers\User\TicketsController as UserTicketsController;
+use App\Controllers\User\TradesController as UserTradesController;
+use App\Controllers\User\WalletController as UserWalletController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -206,6 +217,87 @@ $router->get('/staking', [UserStakingController::class, 'index']);
 $router->get('/staking/snapshot', [UserStakingController::class, 'snapshot']);
 $router->get('/convert', [UserConvertController::class, 'index']);
 $router->get('/convert/snapshot', [UserConvertController::class, 'snapshot']);
+
+// =====================================================================
+// USER – Profile
+// =====================================================================
+$router->get('/user/profile',        [UserProfileController::class, 'index']);
+$router->post('/user/profile/update',[UserProfileController::class, 'update']);
+$router->post('/user/profile/avatar',[UserProfileController::class, 'uploadAvatar']);
+
+// =====================================================================
+// USER – Security
+// =====================================================================
+$router->get('/user/security',                   [UserSecurityController::class, 'index']);
+$router->post('/user/security/password',         [UserSecurityController::class, 'changePassword']);
+$router->get('/user/security/2fa/generate',      [UserSecurityController::class, 'generate2faSecret']);
+$router->post('/user/security/2fa/enable',       [UserSecurityController::class, 'enable2fa']);
+$router->post('/user/security/2fa/disable',      [UserSecurityController::class, 'disable2fa']);
+$router->post('/user/security/sessions/revoke',  [UserSecurityController::class, 'revokeSession']);
+$router->post('/user/security/settings',         [UserSecurityController::class, 'updateSecuritySettings']);
+
+// =====================================================================
+// USER – KYC
+// =====================================================================
+$router->get('/user/kyc',        [UserKycController::class, 'index']);
+$router->post('/user/kyc/submit',[UserKycController::class, 'submit']);
+
+// =====================================================================
+// USER – Wallet
+// =====================================================================
+$router->get('/user/wallet',              [UserWalletController::class, 'index']);
+$router->get('/user/wallet/deposit',      [UserWalletController::class, 'deposit']);
+$router->post('/user/wallet/deposit',     [UserWalletController::class, 'submitDeposit']);
+$router->get('/user/wallet/withdraw',     [UserWalletController::class, 'withdraw']);
+$router->post('/user/wallet/withdraw',    [UserWalletController::class, 'submitWithdrawal']);
+$router->get('/user/wallet/history',      [UserWalletController::class, 'history']);
+
+// =====================================================================
+// USER – Orders
+// =====================================================================
+$router->get('/user/orders',         [UserOrdersController::class, 'index']);
+$router->get('/user/orders/history', [UserOrdersController::class, 'history']);
+$router->post('/user/orders/cancel', [UserOrdersController::class, 'cancel']);
+
+// =====================================================================
+// USER – Trades
+// =====================================================================
+$router->get('/user/trades', [UserTradesController::class, 'index']);
+
+// =====================================================================
+// USER – Positions
+// =====================================================================
+$router->get('/user/positions',       [UserPositionsController::class, 'index']);
+$router->post('/user/positions/close',[UserPositionsController::class, 'close']);
+
+// =====================================================================
+// USER – Notifications
+// =====================================================================
+$router->get('/user/notifications',          [UserNotificationsController::class, 'index']);
+$router->post('/user/notifications/read',    [UserNotificationsController::class, 'markRead']);
+$router->post('/user/notifications/read-all',[UserNotificationsController::class, 'markAllRead']);
+$router->post('/user/notifications/delete',  [UserNotificationsController::class, 'delete']);
+
+// =====================================================================
+// USER – Support Tickets
+// =====================================================================
+$router->get('/user/tickets',         [UserTicketsController::class, 'index']);
+$router->get('/user/tickets/create',  [UserTicketsController::class, 'create']);
+$router->post('/user/tickets',        [UserTicketsController::class, 'store']);
+$router->get('/user/tickets/view',    [UserTicketsController::class, 'show']);
+$router->post('/user/tickets/reply',  [UserTicketsController::class, 'reply']);
+
+// =====================================================================
+// USER – Referral
+// =====================================================================
+$router->get('/user/referral', [UserReferralController::class, 'index']);
+
+// =====================================================================
+// USER – API Keys
+// =====================================================================
+$router->get('/user/api-keys',          [UserApiKeysController::class, 'index']);
+$router->post('/user/api-keys/create',  [UserApiKeysController::class, 'create']);
+$router->post('/user/api-keys/revoke',  [UserApiKeysController::class, 'revoke']);
 
 // =====================================================================
 // INSTALLER

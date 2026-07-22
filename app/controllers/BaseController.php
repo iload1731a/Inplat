@@ -12,4 +12,9 @@ abstract class BaseController
     {
         View::render($view, $data);
     }
+
+    protected function userView(string $view, array $data = []): void
+    {
+        View::render($view, $data, 'layouts/user');
+    }
 }

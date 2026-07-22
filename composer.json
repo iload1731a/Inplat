@@ -14,7 +14,13 @@
   },
   "autoload": {
     "psr-4": {
-      "App\\": "app/"
+      "App\\Controllers\\": "app/controllers/",
+      "App\\Repositories\\": "app/repositories/",
+      "App\\Services\\": "app/services/",
+      "App\\Libraries\\": "app/libraries/",
+      "App\\Middleware\\": "app/middleware/",
+      "App\\Validators\\": "app/validators/",
+      "App\\Traits\\": "app/traits/"
     },
     "files": [
       "app/helpers/functions.php"

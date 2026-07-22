@@ -87,20 +87,20 @@ final class UserDashboardRepository
     public function recentTrades(int $userId, int $limit = 8): array
     {
         $safeLimit = max(1, $limit);
-        $sql = 'SELECT t.id,
+        $sql = "SELECT t.id,
                        tp.symbol AS pair_symbol,
                        t.price,
                        t.quantity,
                        t.executed_at,
                        CASE
-                           WHEN t.buyer_id = :buyer_id THEN "buy"
-                           ELSE "sell"
+                           WHEN t.buyer_id = :buyer_id THEN 'buy'
+                           ELSE 'sell'
                        END AS side
                 FROM trades t
                 INNER JOIN trading_pairs tp ON tp.id = t.trading_pair_id
                 WHERE t.buyer_id = :buyer_id_filter OR t.seller_id = :seller_id_filter
                 ORDER BY t.id DESC
-                LIMIT :limit';
+                LIMIT :limit";
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->bindValue(':buyer_id', $userId, PDO::PARAM_INT);

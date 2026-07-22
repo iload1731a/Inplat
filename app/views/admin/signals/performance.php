@@ -50,8 +50,8 @@ $top         = (array)($top ?? []);
                             </div>
                         </td>
                         <td class="text-success"><?= number_format((float)$p['avg_profit_pct'], 2) ?>%</td>
-                        <td class="text-danger">0.00%</td>
-                        <td>—</td>
+                        <td class="text-danger"><?= number_format((float)($p['avg_loss_pct'] ?? 0), 2) ?>%</td>
+                        <td><?= isset($p['avg_rr_ratio']) && $p['avg_rr_ratio'] !== null ? number_format((float)$p['avg_rr_ratio'], 2) : '—' ?></td>
                         <td class="<?= $ret >= 0 ? 'text-profit' : 'text-loss' ?> fw-semibold">
                             <?= $ret >= 0 ? '+' : '' ?><?= number_format($ret, 2) ?>%
                         </td>

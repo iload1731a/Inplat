@@ -137,8 +137,9 @@ $bookmarks     = (array)($bookmarks ?? []);
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    let dtCounter = 0;
     document.querySelectorAll('table.table-user').forEach(t => {
-        if (!t.id) t.id = 'dt_' + Math.random().toString(36).substr(2,6);
+        if (!t.id) t.id = 'dt_perf_' + (++dtCounter);
         new DataTable('#' + t.id, {pageLength: 25});
     });
 });

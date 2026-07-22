@@ -568,9 +568,9 @@ final class SignalsRepository
     /** Recalculate performance from raw signals (used by cron + service). */
     public function recalculatePerformance(int $providerId, string $period): array
     {
-        $sinceMap = ['7d' => '-7 DAY', '30d' => '-30 DAY', '90d' => '-90 DAY', 'all' => null];
-        $since    = $sinceMap[$period] ?? '-30 DAY';
-        $dateCond = $since ? "AND published_at >= NOW() + INTERVAL '$since'" : '';
+        $sinceMap = ['7d' => '7 DAY', '30d' => '30 DAY', '90d' => '90 DAY', 'all' => null];
+        $since    = $sinceMap[$period] ?? '30 DAY';
+        $dateCond = $since ? "AND published_at >= NOW() - INTERVAL $since" : '';
 
         $stmt = Database::connection()->prepare(
             "SELECT

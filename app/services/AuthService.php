@@ -112,11 +112,16 @@ final class AuthService
         $token = bin2hex(random_bytes(32));
         $this->users->createPasswordReset($userId, hash('sha256', $token), new DateTimeImmutable('+1 hour'));
 
-        return [
+        $response = [
             'ok' => true,
-            'message' => 'Reset link generated. Connect SMTP/email templates in next phase for delivery.',
-            'token' => $token,
+            'message' => 'If this email exists, a reset link was generated.',
         ];
+
+        if ((bool)config('app.debug', false)) {
+            $response['token'] = $token;
+        }
+
+        return $response;
     }
 
     public function resetPassword(string $token, string $newPassword): bool
@@ -202,6 +207,11 @@ final class AuthService
         }
 
         if (!hash_equals((string)$session['user_agent'], $userAgent)) {
+            $logLine = '[' . date('c') . '] Remember-me user-agent mismatch for session ' . (string)($session['session_id'] ?? 'unknown') . PHP_EOL;
+            $written = file_put_contents((string)config('app.log_file'), $logLine, FILE_APPEND | LOCK_EX);
+            if ($written === false) {
+                error_log($logLine);
+            }
             $this->clearRememberCookie();
             return;
         }

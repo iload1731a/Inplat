@@ -21,7 +21,7 @@ final class RequestContext
             return $remoteAddress;
         }
 
-        $parts = array_map('trim', explode(',', $forwarded));
+        $parts = array_reverse(array_map('trim', explode(',', $forwarded)));
         foreach ($parts as $part) {
             if (filter_var($part, FILTER_VALIDATE_IP)) {
                 return $part;

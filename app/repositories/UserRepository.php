@@ -86,10 +86,10 @@ final class UserRepository
 
     public function hasRecentPasswordReset(int $userId, int $seconds = 60): bool
     {
-        $safeSeconds = max(1, $seconds);
+        $throttleSeconds = max(1, $seconds);
         $stmt = Database::connection()->prepare('SELECT COUNT(*) FROM password_resets WHERE user_id = :user_id AND created_at >= DATE_SUB(NOW(), INTERVAL :seconds SECOND)');
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':seconds', $safeSeconds, PDO::PARAM_INT);
+        $stmt->bindValue(':seconds', $throttleSeconds, PDO::PARAM_INT);
         $stmt->execute();
 
         return (int)$stmt->fetchColumn() > 0;

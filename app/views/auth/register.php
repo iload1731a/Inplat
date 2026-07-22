@@ -24,6 +24,6 @@
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3">Create account</button>
         </form>
-        <p class="small text-secondary mt-3 mb-0">After sign-up you will be redirected to email verification before trading access.</p>
+        <p class="small text-secondary mt-3 mb-0">After registration you will be redirected to email verification before trading access.</p>
     </div>
 </div>

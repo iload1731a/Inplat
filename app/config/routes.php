@@ -10,6 +10,8 @@ use App\Controllers\Admin\KycController as AdminKycController;
 use App\Controllers\Admin\LogsController as AdminLogsController;
 use App\Controllers\Admin\ManagementController as AdminManagementController;
 use App\Controllers\Admin\OrdersController as AdminOrdersController;
+use App\Controllers\Admin\TradesController as AdminTradesController;
+use App\Controllers\Admin\PositionsController as AdminPositionsController;
 use App\Controllers\Admin\PlatformController as AdminPlatformController;
 use App\Controllers\Admin\RolesController as AdminRolesController;
 use App\Controllers\Admin\SystemController as AdminSystemController;
@@ -35,6 +37,7 @@ use App\Controllers\User\SecurityController as UserSecurityController;
 use App\Controllers\User\StakingController as UserStakingController;
 use App\Controllers\User\TicketsController as UserTicketsController;
 use App\Controllers\User\TradesController as UserTradesController;
+use App\Controllers\User\PortfolioController as UserPortfolioController;
 use App\Controllers\User\WalletController as UserWalletController;
 use App\Controllers\User\DepositController as UserDepositController;
 use App\Controllers\User\WithdrawalController as UserWithdrawalController;
@@ -139,6 +142,8 @@ $router->get('/admin/orders', [AdminOrdersController::class, 'index']);
 $router->get('/admin/order', [AdminOrdersController::class, 'detail']);
 $router->post('/admin/orders/cancel', [AdminOrdersController::class, 'cancelOrder']);
 $router->post('/admin/orders/bulk-cancel', [AdminOrdersController::class, 'bulkCancel']);
+$router->get('/admin/orders/reports', [AdminOrdersController::class, 'reports']);
+$router->get('/admin/orders/export',  [AdminOrdersController::class, 'export']);
 
 // =====================================================================
 // ADMIN – Wallets Management
@@ -285,6 +290,21 @@ $router->post('/admin/trading-engine/fee-tiers/update',      [AdminTradingEngine
 $router->get('/admin/trading-engine/positions',              [AdminTradingEngineController::class, 'positions']);
 
 // =====================================================================
+// ADMIN – Trades Management
+// =====================================================================
+$router->get('/admin/trades',         [AdminTradesController::class, 'index']);
+$router->get('/admin/trades/reports', [AdminTradesController::class, 'reports']);
+$router->get('/admin/trades/export',  [AdminTradesController::class, 'export']);
+
+// =====================================================================
+// ADMIN – Positions Management
+// =====================================================================
+$router->get('/admin/positions',              [AdminPositionsController::class, 'index']);
+$router->get('/admin/positions/risk',         [AdminPositionsController::class, 'risk']);
+$router->post('/admin/positions/force-close', [AdminPositionsController::class, 'forceClose']);
+$router->get('/admin/positions/export',       [AdminPositionsController::class, 'export']);
+
+// =====================================================================
 // USER – Trading Terminal (full trading engine)
 // =====================================================================
 $router->get('/trade',                        [UserTradingController::class, 'index']);
@@ -376,20 +396,26 @@ $router->get('/user/withdrawal/fee-preview',     [UserWithdrawalController::clas
 // =====================================================================
 // USER – Orders
 // =====================================================================
-$router->get('/user/orders',         [UserOrdersController::class, 'index']);
-$router->get('/user/orders/history', [UserOrdersController::class, 'history']);
-$router->post('/user/orders/cancel', [UserOrdersController::class, 'cancel']);
+$router->get('/user/orders',              [UserOrdersController::class, 'index']);
+$router->get('/user/orders/history',     [UserOrdersController::class, 'history']);
+$router->get('/user/orders/detail',      [UserOrdersController::class, 'detail']);
+$router->get('/user/orders/export',      [UserOrdersController::class, 'export']);
+$router->post('/user/orders/cancel',     [UserOrdersController::class, 'cancel']);
 
 // =====================================================================
 // USER – Trades
 // =====================================================================
-$router->get('/user/trades', [UserTradesController::class, 'index']);
+$router->get('/user/trades',        [UserTradesController::class, 'index']);
+$router->get('/user/trades/export', [UserTradesController::class, 'export']);
 
 // =====================================================================
 // USER – Positions
 // =====================================================================
-$router->get('/user/positions',       [UserPositionsController::class, 'index']);
-$router->post('/user/positions/close',[UserPositionsController::class, 'close']);
+$router->get('/user/positions',            [UserPositionsController::class, 'index']);
+$router->get('/user/positions/history',    [UserPositionsController::class, 'history']);
+$router->get('/user/positions/analytics',  [UserPositionsController::class, 'analytics']);
+$router->post('/user/positions/close',     [UserPositionsController::class, 'close']);
+$router->post('/user/positions/add-margin',[UserPositionsController::class, 'addMargin']);
 
 // =====================================================================
 // USER – Notifications
@@ -412,6 +438,12 @@ $router->post('/user/tickets/reply',  [UserTicketsController::class, 'reply']);
 // USER – Referral
 // =====================================================================
 $router->get('/user/referral', [UserReferralController::class, 'index']);
+
+// =====================================================================
+// USER – Portfolio Analytics
+// =====================================================================
+$router->get('/user/portfolio',            [UserPortfolioController::class, 'index']);
+$router->get('/user/portfolio/analytics',  [UserPortfolioController::class, 'analytics']);
 
 // =====================================================================
 // USER – API Keys

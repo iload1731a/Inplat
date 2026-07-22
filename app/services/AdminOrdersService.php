@@ -70,4 +70,20 @@ final class AdminOrdersService
         $this->mgmtRepo->logAdminAction($adminId, 'bulk_cancel_orders', 'orders', '0', null, ['count' => $count, 'reason' => $reason], RequestContext::ipAddress());
         return $count;
     }
+
+    public function reports(): array
+    {
+        return [
+            'orderStats'      => $this->ordersRepo->getOrderStats(),
+            'dailyVol'        => $this->ordersRepo->dailyOrderVolume(30),
+            'byPair'          => $this->ordersRepo->ordersByPair(15),
+            'byType'          => $this->ordersRepo->ordersByType(),
+            'byStatus'        => $this->ordersRepo->ordersByStatus(),
+        ];
+    }
+
+    public function exportCsv(array $filters): array
+    {
+        return $this->ordersRepo->exportCsv($filters);
+    }
 }

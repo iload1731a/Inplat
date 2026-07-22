@@ -30,7 +30,9 @@ final class DashboardController extends BaseController
         try {
             $data = array_merge($data, (new AdminDashboardService())->data());
         } catch (Throwable $e) {
-            $data['dashboardError'] = 'Dashboard metrics are unavailable until trading data is available.';
+            $logLine = '[' . date('c') . '] Dashboard metrics error: ' . $e->getMessage() . PHP_EOL;
+            @file_put_contents(app_path('storage/logs/app.log'), $logLine, FILE_APPEND | LOCK_EX);
+            $data['dashboardError'] = 'Dashboard metrics are temporarily unavailable. Please check storage/logs/app.log for details.';
         }
 
         $this->view('admin/dashboard', [

@@ -10,7 +10,7 @@ return [
     'url' => $_ENV['APP_URL'] ?? 'http://localhost',
     'schema_file' => app_path('trading_platform_schema.sql'),
     'installed_lock' => app_path('storage/installed.lock'),
-    'license_file' => app_path('storage/config/license.php'),
-    'license_secret' => hash('sha256', 'inplat-license|' . __FILE__),
+    'license_file' => app_path('storage/config/license.json'),
+    'license_secret_file' => app_path('storage/config/license.key'),
     'session_name' => 'inplat_session',
 ];

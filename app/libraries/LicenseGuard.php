@@ -17,30 +17,50 @@ final class LicenseGuard
             return;
         }
 
-        $licensePath = (string)config('app.license_file');
-        if (!is_file($licensePath)) {
+        try {
+            $licensePath = (string)config('app.license_file');
+            if (!is_file($licensePath)) {
+                self::deny();
+            }
+
+            $json = file_get_contents($licensePath);
+            $license = is_string($json) ? json_decode($json, true) : null;
+            if (!is_array($license) || !isset($license['code'], $license['domain'], $license['signature'])) {
+                self::deny();
+            }
+
+            $domain = self::requestDomain();
+            if ($domain === '' || !hash_equals((string)$license['domain'], $domain)) {
+                self::deny();
+            }
+
+            $code = self::decrypt((string)$license['code']);
+            if (!self::isValidPurchaseCode($code)) {
+                self::deny();
+            }
+
+            $signature = self::signature($code, $domain);
+            if (!hash_equals((string)$license['signature'], $signature)) {
+                self::deny();
+            }
+        } catch (\Throwable) {
             self::deny();
         }
+    }
 
-        /** @var array<string, mixed> $license */
-        $license = require $licensePath;
-        if (!is_array($license) || !isset($license['code'], $license['domain'], $license['signature'])) {
-            self::deny();
+    public static function ensureSecretFile(): void
+    {
+        $secretPath = (string)config('app.license_secret_file');
+        if (is_file($secretPath)) {
+            return;
         }
 
-        $domain = self::normalizeDomain((string)($_SERVER['HTTP_HOST'] ?? ''));
-        if ($domain === '' || !hash_equals((string)$license['domain'], $domain)) {
-            self::deny();
+        $secret = bin2hex(random_bytes(32));
+        if (file_put_contents($secretPath, $secret, LOCK_EX) === false) {
+            throw new \RuntimeException('Unable to create license secret file.');
         }
-
-        $code = self::decrypt((string)$license['code']);
-        if (!self::isValidPurchaseCode($code)) {
-            self::deny();
-        }
-
-        $signature = self::signature($code, $domain);
-        if (!hash_equals((string)$license['signature'], $signature)) {
-            self::deny();
+        if (!chmod($secretPath, 0600)) {
+            throw new \RuntimeException('Unable to secure license secret file permissions.');
         }
     }
 
@@ -72,37 +92,75 @@ final class LicenseGuard
 
     private static function encrypt(string $value): string
     {
-        $iv = random_bytes(16);
-        $cipher = openssl_encrypt($value, 'AES-256-CBC', self::key(), OPENSSL_RAW_DATA, $iv);
+        $iv = random_bytes(12);
+        $tag = '';
+        $cipher = openssl_encrypt($value, 'aes-256-gcm', self::key(), OPENSSL_RAW_DATA, $iv, $tag);
         if ($cipher === false) {
             throw new \RuntimeException('Unable to encrypt license payload.');
         }
 
-        return base64_encode($iv . $cipher);
+        return base64_encode($iv . $tag . $cipher);
     }
 
     private static function decrypt(string $payload): string
     {
         $raw = base64_decode($payload, true);
-        if ($raw === false || strlen($raw) < 17) {
+        if ($raw === false || strlen($raw) < 29) {
             return '';
         }
 
-        $iv = substr($raw, 0, 16);
-        $cipher = substr($raw, 16);
-        $decoded = openssl_decrypt($cipher, 'AES-256-CBC', self::key(), OPENSSL_RAW_DATA, $iv);
+        $iv = substr($raw, 0, 12);
+        $tag = substr($raw, 12, 16);
+        $cipher = substr($raw, 28);
+        $decoded = openssl_decrypt($cipher, 'aes-256-gcm', self::key(), OPENSSL_RAW_DATA, $iv, $tag);
 
         return is_string($decoded) ? $decoded : '';
     }
 
     private static function signature(string $purchaseCode, string $domain): string
     {
-        return hash_hmac('sha256', $purchaseCode . '|' . $domain, (string)config('app.license_secret'));
+        $secret = self::secret();
+        if ($secret === '') {
+            throw new \RuntimeException('License secret is missing.');
+        }
+
+        return hash_hmac('sha256', $purchaseCode . '|' . $domain, $secret);
     }
 
     private static function key(): string
     {
-        return hash('sha256', (string)config('app.license_secret'), true);
+        $secret = self::secret();
+        if ($secret === '') {
+            throw new \RuntimeException('License secret is missing.');
+        }
+
+        return hash('sha256', $secret, true);
+    }
+
+    private static function secret(): string
+    {
+        $secretPath = (string)config('app.license_secret_file');
+        if (!is_file($secretPath)) {
+            return '';
+        }
+
+        $secret = trim((string)file_get_contents($secretPath));
+        return $secret;
+    }
+
+    private static function requestDomain(): string
+    {
+        $serverName = self::normalizeDomain((string)($_SERVER['SERVER_NAME'] ?? ''));
+        if ($serverName !== '') {
+            return $serverName;
+        }
+
+        $appUrlHost = self::normalizeDomain((string)(parse_url((string)config('app.url', ''), PHP_URL_HOST) ?? ''));
+        if ($appUrlHost !== '') {
+            return $appUrlHost;
+        }
+
+        return self::normalizeDomain((string)($_SERVER['HTTP_HOST'] ?? ''));
     }
 
     private static function deny(): never

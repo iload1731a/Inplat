@@ -33,7 +33,7 @@ final class InstallerController extends BaseController
 
     public function step2(Request $request): void
     {
-        $domain = LicenseGuard::normalizeDomain((string)($_SERVER['HTTP_HOST'] ?? ''));
+        $domain = LicenseGuard::normalizeDomain((string)($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? ''));
 
         $this->view('install/step2', [
             'title' => 'Installer - Database & License',
@@ -55,10 +55,10 @@ final class InstallerController extends BaseController
             'password' => (string)$request->input('password', ''),
         ];
         $license = [
-            'buyer_name' => trim((string)$request->input('buyer_name', '')),
+            'buyer_name' => preg_replace('/\s+/', ' ', trim((string)$request->input('buyer_name', ''))) ?? '',
             'buyer_email' => trim((string)$request->input('buyer_email', '')),
             'purchase_code' => trim((string)$request->input('purchase_code', '')),
-            'domain' => LicenseGuard::normalizeDomain((string)$request->input('domain', (string)($_SERVER['HTTP_HOST'] ?? ''))),
+            'domain' => LicenseGuard::normalizeDomain((string)$request->input('domain', (string)($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? ''))),
         ];
 
         if ($license['buyer_name'] === '' || $license['buyer_email'] === '' || $license['purchase_code'] === '' || $license['domain'] === '') {
@@ -67,6 +67,9 @@ final class InstallerController extends BaseController
 
         if (filter_var($license['buyer_email'], FILTER_VALIDATE_EMAIL) === false) {
             Response::json(['ok' => false, 'message' => 'License email is invalid.'], 422);
+        }
+        if (!preg_match('/^[\pL\pN .\'\-]{2,120}$/u', $license['buyer_name'])) {
+            Response::json(['ok' => false, 'message' => 'License buyer name is invalid.'], 422);
         }
 
         if (!LicenseGuard::isValidPurchaseCode($license['purchase_code'])) {
@@ -96,13 +99,15 @@ final class InstallerController extends BaseController
             Response::json(['ok' => false, 'message' => 'Unable to secure database configuration file permissions.'], 500);
         }
 
+        LicenseGuard::ensureSecretFile();
+
         $licensePayload = LicenseGuard::pack($license['purchase_code'], $license['domain']);
         $licensePayload['buyer_name'] = $license['buyer_name'];
         $licensePayload['buyer_email'] = $license['buyer_email'];
         $licensePayload['purchase_code_hash'] = LicenseGuard::purchaseCodeHash($license['purchase_code']);
-        $licenseContent = "<?php\n\ndeclare(strict_types=1);\n\nreturn " . var_export($licensePayload, true) . ";\n";
+        $licenseContent = json_encode($licensePayload, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $licenseConfigPath = (string)config('app.license_file');
-        if (file_put_contents($licenseConfigPath, $licenseContent, LOCK_EX) === false) {
+        if (!is_string($licenseContent) || file_put_contents($licenseConfigPath, $licenseContent, LOCK_EX) === false) {
             Response::json(['ok' => false, 'message' => 'Unable to save license configuration file.'], 500);
         }
         if (!chmod($licenseConfigPath, 0600)) {
@@ -287,8 +292,8 @@ final class InstallerController extends BaseController
             throw new \RuntimeException('License configuration file is missing.');
         }
 
-        /** @var array<string, mixed> $license */
-        $license = require $licensePath;
+        $licenseJson = file_get_contents($licensePath);
+        $license = is_string($licenseJson) ? json_decode($licenseJson, true) : null;
         if (!is_array($license)) {
             throw new \RuntimeException('Invalid license configuration format.');
         }

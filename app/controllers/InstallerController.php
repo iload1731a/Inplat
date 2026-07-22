@@ -55,7 +55,7 @@ final class InstallerController extends BaseController
             'password' => (string)$request->input('password', ''),
         ];
         $license = [
-            'buyer_name' => (string)preg_replace('/\s+/', ' ', trim((string)$request->input('buyer_name', ''))),
+            'buyer_name' => LicenseGuard::normalizeBuyerName((string)$request->input('buyer_name', '')),
             'buyer_email' => trim((string)$request->input('buyer_email', '')),
             'purchase_code' => trim((string)$request->input('purchase_code', '')),
             'domain' => LicenseGuard::normalizeDomain((string)$request->input('domain', (string)($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? ''))),

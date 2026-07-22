@@ -99,6 +99,11 @@ final class LicenseGuard
         return (bool)preg_match('/^[\pL\pN .\'\-]{2,120}$/u', $name);
     }
 
+    public static function normalizeBuyerName(string $name): string
+    {
+        return (string)preg_replace('/\s+/', ' ', trim($name));
+    }
+
     private static function encrypt(string $value): string
     {
         // 12-byte IV is the recommended nonce size for AES-GCM.
@@ -169,8 +174,8 @@ final class LicenseGuard
         if ($appUrlHost !== '') {
             return $appUrlHost;
         }
-
-        return self::normalizeDomain((string)($_SERVER['HTTP_HOST'] ?? ''));
+        
+        return '';
     }
 
     private static function deny(): never

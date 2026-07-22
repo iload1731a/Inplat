@@ -23,7 +23,7 @@
         </form>
         <div class="d-flex justify-content-between mt-3 small">
             <a href="/register">Create account</a>
-            <a href="/two-factor-challenge">2FA challenge</a>
+            <span class="text-secondary">2FA is requested automatically when enabled.</span>
         </div>
     </div>
 </div>

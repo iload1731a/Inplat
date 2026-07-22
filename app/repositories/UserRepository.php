@@ -12,7 +12,7 @@ final class UserRepository
 {
     public function findByEmailOrUsername(string $identity): ?array
     {
-        $sql = 'SELECT id, username, email, password_hash, status, two_factor_enabled, email_verified_at FROM users WHERE email = :identity OR username = :identity LIMIT 1';
+        $sql = 'SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, email_verified_at FROM users WHERE email = :identity OR username = :identity LIMIT 1';
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute(['identity' => $identity]);
         $row = $stmt->fetch();
@@ -22,7 +22,7 @@ final class UserRepository
 
     public function findById(int $userId): ?array
     {
-        $stmt = Database::connection()->prepare('SELECT id, username, email, password_hash, status, two_factor_enabled, email_verified_at FROM users WHERE id = :id LIMIT 1');
+        $stmt = Database::connection()->prepare('SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, email_verified_at FROM users WHERE id = :id LIMIT 1');
         $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $row = $stmt->fetch();
@@ -121,7 +121,7 @@ final class UserRepository
 
     public function findActiveSessionByTokenHash(string $sessionTokenHash): ?array
     {
-        $sql = "SELECT s.id AS session_id, s.user_id, u.username, u.email
+        $sql = "SELECT s.id AS session_id, s.user_id, s.ip_address, s.user_agent, u.username, u.email
                 FROM user_sessions s
                 INNER JOIN users u ON u.id = s.user_id
                 WHERE s.session_token = :token_hash
@@ -140,7 +140,7 @@ final class UserRepository
     public function sessionsForUser(int $userId, int $limit = 20): array
     {
         $safeLimit = max(1, $limit);
-        $stmt = Database::connection()->prepare('SELECT session_token, ip_address, user_agent, country_code, is_active, expires_at, created_at FROM user_sessions WHERE user_id = :user_id ORDER BY id DESC LIMIT :limit');
+        $stmt = Database::connection()->prepare('SELECT id, ip_address, user_agent, country_code, is_active, expires_at, created_at FROM user_sessions WHERE user_id = :user_id ORDER BY id DESC LIMIT :limit');
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
         $stmt->execute();
@@ -148,11 +148,11 @@ final class UserRepository
         return $stmt->fetchAll() ?: [];
     }
 
-    public function revokeSession(int $userId, string $sessionTokenHash): void
+    public function revokeSessionById(int $userId, int $sessionId): void
     {
-        $stmt = Database::connection()->prepare('UPDATE user_sessions SET is_active = 0 WHERE user_id = :user_id AND session_token = :session_token');
+        $stmt = Database::connection()->prepare('UPDATE user_sessions SET is_active = 0 WHERE user_id = :user_id AND id = :session_id');
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':session_token', $sessionTokenHash);
+        $stmt->bindValue(':session_id', $sessionId, PDO::PARAM_INT);
         $stmt->execute();
     }
 

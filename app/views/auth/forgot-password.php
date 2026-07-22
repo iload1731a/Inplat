@@ -18,6 +18,7 @@
 $(document).on('ajax:success', '#forgotPasswordForm', function (event, payload) {
     if (!payload || !payload.reset_link) return;
     const box = $('#resetLinkBox');
-    box.removeClass('d-none').html('Reset URL: <a href="' + payload.reset_link + '">' + payload.reset_link + '</a>');
+    const link = $('<a>').attr('href', payload.reset_link).text(payload.reset_link);
+    box.removeClass('d-none').empty().append('Reset URL: ').append(link);
 });
 </script>

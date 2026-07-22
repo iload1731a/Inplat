@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Libraries\Csrf;
 use App\Libraries\Request;
+use App\Libraries\RequestContext;
 use App\Libraries\Response;
 use App\Libraries\Session;
 use App\Services\AuthService;
@@ -29,7 +30,7 @@ final class AuthController extends BaseController
         $rememberMe = ((string)$request->input('remember_me', '0')) === '1';
 
         $auth = new AuthService();
-        $result = $auth->attempt($identity, $password, $rememberMe, $this->ipAddress(), $this->userAgent());
+        $result = $auth->attempt($identity, $password, $rememberMe, RequestContext::ipAddress(), RequestContext::userAgent());
 
         if (!($result['ok'] ?? false)) {
             Response::json(['ok' => false, 'message' => $result['message'] ?? 'Invalid credentials'], 422);
@@ -83,7 +84,13 @@ final class AuthController extends BaseController
             Response::json(['ok' => false, 'errors' => $errors], 422);
         }
 
+        $lastResetRequestAt = (int)(Session::get('auth.reset_request_at') ?? 0);
+        if ($lastResetRequestAt > 0 && (time() - $lastResetRequestAt) < 60) {
+            Response::json(['ok' => false, 'message' => 'Please wait before requesting another reset link'], 429);
+        }
+
         $payload = (new AuthService())->createPasswordReset($email);
+        Session::put('auth.reset_request_at', time());
 
         $response = ['ok' => true, 'message' => (string)$payload['message']];
         if (!empty($payload['token'])) {
@@ -188,13 +195,13 @@ final class AuthController extends BaseController
         }
 
         $userId = (int)(Session::get('auth.user_id') ?? 0);
-        $tokenHash = trim((string)$request->input('session_token', ''));
+        $sessionId = (int)$request->input('session_id', 0);
 
-        if ($userId <= 0 || $tokenHash === '') {
+        if ($userId <= 0 || $sessionId <= 0) {
             Response::json(['ok' => false, 'message' => 'Invalid request'], 422);
         }
 
-        (new AuthService())->revokeSession($userId, $tokenHash);
+        (new AuthService())->revokeSession($userId, $sessionId);
         Response::json(['ok' => true, 'message' => 'Session revoked']);
     }
 
@@ -208,14 +215,4 @@ final class AuthController extends BaseController
         Response::redirect('/login');
     }
 
-    private function ipAddress(): string
-    {
-        $candidate = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
-        return filter_var($candidate, FILTER_VALIDATE_IP) ? $candidate : '0.0.0.0';
-    }
-
-    private function userAgent(): string
-    {
-        return substr(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? 'unknown')), 0, 500);
-    }
 }

@@ -6,12 +6,12 @@ namespace App\Services;
 
 use App\Libraries\Session;
 use App\Repositories\UserRepository;
-use DateInterval;
 use DateTimeImmutable;
 
 final class AuthService
 {
     private const REMEMBER_COOKIE = 'inplat_remember';
+    private const REMEMBER_DAYS = 30;
 
     public function __construct(private readonly UserRepository $users = new UserRepository())
     {
@@ -30,10 +30,8 @@ final class AuthService
         }
 
         if ((int)($user['two_factor_enabled'] ?? 0) === 1) {
-            $otpCode = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             Session::put('auth.pending_user_id', (int)$user['id']);
             Session::put('auth.pending_identity', (string)$identity);
-            Session::put('auth.pending_2fa_code', $otpCode);
             Session::put('auth.pending_2fa_expires_at', (new DateTimeImmutable('+10 minutes'))->format('Y-m-d H:i:s'));
             Session::put('auth.pending_remember_me', $rememberMe);
             Session::put('auth.pending_ip', $ipAddress);
@@ -50,10 +48,9 @@ final class AuthService
     public function verifyTwoFactorCode(string $code): array
     {
         $pendingUserId = (int)(Session::get('auth.pending_user_id') ?? 0);
-        $pendingCode = (string)(Session::get('auth.pending_2fa_code') ?? '');
         $pendingExpiresAt = (string)(Session::get('auth.pending_2fa_expires_at') ?? '');
 
-        if ($pendingUserId <= 0 || $pendingCode === '' || $pendingExpiresAt === '') {
+        if ($pendingUserId <= 0 || $pendingExpiresAt === '') {
             return ['ok' => false, 'message' => '2FA session expired'];
         }
 
@@ -62,22 +59,23 @@ final class AuthService
             return ['ok' => false, 'message' => '2FA code has expired'];
         }
 
-        if (!hash_equals($pendingCode, trim($code))) {
-            $identity = (string)(Session::get('auth.pending_identity') ?? '');
-            if ($identity !== '') {
-                $this->users->logLoginAttempt($pendingUserId, (string)(Session::get('auth.pending_ip') ?? '0.0.0.0'), (string)(Session::get('auth.pending_agent') ?? 'unknown'), 'failed_2fa');
-            }
+        $user = $this->users->findById($pendingUserId);
+        if ($user === null) {
+            return ['ok' => false, 'message' => 'User account not found'];
+        }
 
+        $secret = (string)($user['two_factor_secret'] ?? '');
+        if ($secret === '' || !$this->verifyTotpCode($secret, trim($code))) {
+            $this->users->logLoginAttempt($pendingUserId, (string)(Session::get('auth.pending_ip') ?? '0.0.0.0'), (string)(Session::get('auth.pending_agent') ?? 'unknown'), 'failed_2fa');
             return ['ok' => false, 'message' => 'Invalid authentication code'];
         }
 
         $identity = (string)(Session::get('auth.pending_identity') ?? '');
-        $username = (string)(($this->users->findById($pendingUserId)['username'] ?? 'Trader'));
         $rememberMe = (bool)(Session::get('auth.pending_remember_me') ?? false);
         $ipAddress = (string)(Session::get('auth.pending_ip') ?? '0.0.0.0');
         $userAgent = (string)(Session::get('auth.pending_agent') ?? 'unknown');
 
-        $this->completeLogin($pendingUserId, $identity, $username, $rememberMe, $ipAddress, $userAgent);
+        $this->completeLogin($pendingUserId, $identity, (string)$user['username'], $rememberMe, $ipAddress, $userAgent);
         $this->clearPendingTwoFactor();
 
         return ['ok' => true, 'redirect' => $this->redirectPathForIdentity($identity)];
@@ -198,6 +196,11 @@ final class AuthService
             return;
         }
 
+        if (!hash_equals((string)$session['ip_address'], $ipAddress) || !hash_equals((string)$session['user_agent'], $userAgent)) {
+            $this->clearRememberCookie();
+            return;
+        }
+
         $identity = (string)($session['email'] ?? $session['username'] ?? '');
         $this->completeLogin((int)$session['user_id'], $identity, (string)$session['username'], true, $ipAddress, $userAgent, false);
     }
@@ -207,9 +210,9 @@ final class AuthService
         return $this->users->sessionsForUser($userId);
     }
 
-    public function revokeSession(int $userId, string $tokenHash): void
+    public function revokeSession(int $userId, int $sessionId): void
     {
-        $this->users->revokeSession($userId, $tokenHash);
+        $this->users->revokeSessionById($userId, $sessionId);
     }
 
     public function logout(): void
@@ -230,9 +233,9 @@ final class AuthService
 
         if ($rememberMe && $storeRemember) {
             $rememberToken = bin2hex(random_bytes(32));
-            $this->users->createSession($userId, hash('sha256', $rememberToken), $ipAddress, $userAgent, new DateTimeImmutable('+30 days'));
+            $this->users->createSession($userId, hash('sha256', $rememberToken), $ipAddress, $userAgent, new DateTimeImmutable('+' . self::REMEMBER_DAYS . ' days'));
             setcookie(self::REMEMBER_COOKIE, $rememberToken, [
-                'expires' => time() + (60 * 60 * 24 * 30),
+                'expires' => time() + (60 * 60 * 24 * self::REMEMBER_DAYS),
                 'path' => '/',
                 'secure' => $this->isHttps(),
                 'httponly' => true,
@@ -250,7 +253,6 @@ final class AuthService
     {
         Session::forget('auth.pending_user_id');
         Session::forget('auth.pending_identity');
-        Session::forget('auth.pending_2fa_code');
         Session::forget('auth.pending_2fa_expires_at');
         Session::forget('auth.pending_remember_me');
         Session::forget('auth.pending_ip');
@@ -266,6 +268,60 @@ final class AuthService
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
+    }
+
+    private function verifyTotpCode(string $base32Secret, string $code): bool
+    {
+        if (!preg_match('/^\d{6}$/', $code)) {
+            return false;
+        }
+
+        $secret = $this->base32Decode($base32Secret);
+        if ($secret === '') {
+            return false;
+        }
+
+        $timeSlice = (int)floor(time() / 30);
+
+        for ($window = -1; $window <= 1; $window++) {
+            $counter = pack('N*', 0, $timeSlice + $window);
+            $hash = hash_hmac('sha1', $counter, $secret, true);
+            $offset = ord(substr($hash, -1)) & 0x0F;
+            $value = unpack('N', substr($hash, $offset, 4));
+            $binary = ((int)$value[1]) & 0x7fffffff;
+            $otp = str_pad((string)($binary % 1000000), 6, '0', STR_PAD_LEFT);
+
+            if (hash_equals($otp, $code)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function base32Decode(string $secret): string
+    {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $secret = strtoupper(preg_replace('/[^A-Z2-7]/', '', $secret) ?? '');
+
+        $bits = '';
+        foreach (str_split($secret) as $char) {
+            $position = strpos($alphabet, $char);
+            if ($position === false) {
+                return '';
+            }
+            $bits .= str_pad(decbin($position), 5, '0', STR_PAD_LEFT);
+        }
+
+        $decoded = '';
+        foreach (str_split($bits, 8) as $chunk) {
+            if (strlen($chunk) < 8) {
+                continue;
+            }
+            $decoded .= chr(bindec($chunk));
+        }
+
+        return $decoded;
     }
 
     private function tokenKey(): string

@@ -21,7 +21,7 @@
                                 <?php if ((int)($session['is_active'] ?? 0) === 1): ?>
                                     <form action="/security/sessions/revoke" method="post" data-ajax="true">
                                         <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
-                                        <input type="hidden" name="session_token" value="<?= e((string)($session['session_token'] ?? '')) ?>">
+                                        <input type="hidden" name="session_id" value="<?= (int)($session['id'] ?? 0) ?>">
                                         <button class="btn btn-sm btn-outline-danger" type="submit">Revoke</button>
                                     </form>
                                 <?php endif; ?>

@@ -11,8 +11,8 @@ date_default_timezone_set((string)config('app.timezone', 'UTC'));
 \App\Libraries\Session::start();
 
 (new \App\Services\AuthService())->hydrateFromRememberCookie(
-    (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'),
-    substr(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? 'unknown')), 0, 500)
+    \App\Libraries\RequestContext::ipAddress(),
+    \App\Libraries\RequestContext::userAgent()
 );
 
 $installed = is_file((string)config('app.installed_lock'));

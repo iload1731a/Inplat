@@ -97,7 +97,7 @@ $csrf    = \App\Libraries\Csrf::token();
                             <td class="small text-secondary">#<?= (int)$h['wallet_id'] ?></td>
                             <td>
                                 <span class="badge bg-<?= ($h['direction'] ?? '') === 'credit' ? 'success' : 'danger' ?>">
-                                    <i class="fas fa-arrow-<?= ($h['direction'] ?? '') === 'credit' ? 'up' : 'down' ?> me-1"></i>
+                                    <i class="fas fa-arrow-<?= ($h['direction'] ?? '') === 'credit' ? 'down' : 'up' ?> me-1"></i>
                                     <?= ucfirst((string)($h['direction'] ?? '-')) ?>
                                 </span>
                             </td>

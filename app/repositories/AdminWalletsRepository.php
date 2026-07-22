@@ -201,19 +201,20 @@ final class AdminWalletsRepository
 
     public function updateDepositStatus(int $id, string $status, ?int $reviewedBy, ?string $flagReason): void
     {
-        $creditedAt = $status === 'credited' ? 'NOW()' : 'NULL';
+        $creditedAt = $status === 'credited' ? date('Y-m-d H:i:s') : null;
         $stmt = Database::connection()->prepare(
             "UPDATE deposits
              SET status = :status,
                  flagged_reason = :flag_reason,
                  reviewed_by = :reviewed_by,
-                 credited_at = {$creditedAt}
+                 credited_at = :credited_at
              WHERE id = :id"
         );
         $stmt->bindValue(':status',      $status);
         $stmt->bindValue(':flag_reason', $flagReason);
-        $stmt->bindValue(':reviewed_by', $reviewedBy, PDO::PARAM_INT);
-        $stmt->bindValue(':id',          $id,         PDO::PARAM_INT);
+        $stmt->bindValue(':reviewed_by', $reviewedBy,  PDO::PARAM_INT);
+        $stmt->bindValue(':credited_at', $creditedAt);
+        $stmt->bindValue(':id',          $id,          PDO::PARAM_INT);
         $stmt->execute();
     }
 
@@ -294,21 +295,22 @@ final class AdminWalletsRepository
         ?string $txHash,
         ?string $rejectionReason
     ): void {
-        $processedAt = in_array($status, ['completed', 'rejected', 'cancelled'], true) ? 'NOW()' : 'NULL';
+        $processedAt = in_array($status, ['completed', 'rejected', 'cancelled'], true) ? date('Y-m-d H:i:s') : null;
         $stmt = Database::connection()->prepare(
             "UPDATE withdrawals
              SET status           = :status,
                  reviewed_by      = :reviewed_by,
                  tx_hash          = :tx_hash,
                  rejection_reason = :rejection_reason,
-                 processed_at     = {$processedAt}
+                 processed_at     = :processed_at
              WHERE id = :id"
         );
         $stmt->bindValue(':status',           $status);
-        $stmt->bindValue(':reviewed_by',      $reviewedBy, PDO::PARAM_INT);
+        $stmt->bindValue(':reviewed_by',      $reviewedBy,      PDO::PARAM_INT);
         $stmt->bindValue(':tx_hash',          $txHash);
         $stmt->bindValue(':rejection_reason', $rejectionReason);
-        $stmt->bindValue(':id',               $id,         PDO::PARAM_INT);
+        $stmt->bindValue(':processed_at',     $processedAt);
+        $stmt->bindValue(':id',               $id,              PDO::PARAM_INT);
         $stmt->execute();
     }
 

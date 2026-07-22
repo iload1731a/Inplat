@@ -107,15 +107,19 @@ final class WalletBalanceRepository
 
             $newBalance = bcadd((string)$wallet['available_balance'], $amount, 18);
 
+            // Only update total_deposited when this is an actual deposit credit
+            $depositIncrement = $referenceType === 'deposit' ? ':amt' : '0';
             $upd = $pdo->prepare(
-                'UPDATE wallets
+                "UPDATE wallets
                  SET available_balance = :bal,
-                     total_deposited   = total_deposited + :amt,
+                     total_deposited   = total_deposited + {$depositIncrement},
                      updated_at        = NOW()
-                 WHERE id = :id'
+                 WHERE id = :id"
             );
             $upd->bindValue(':bal', $newBalance);
-            $upd->bindValue(':amt', $amount);
+            if ($referenceType === 'deposit') {
+                $upd->bindValue(':amt', $amount);
+            }
             $upd->bindValue(':id',  $walletId, PDO::PARAM_INT);
             $upd->execute();
 
@@ -163,15 +167,19 @@ final class WalletBalanceRepository
 
             $newBalance = bcsub((string)$wallet['available_balance'], $amount, 18);
 
+            // Only update total_withdrawn when this is an actual withdrawal debit
+            $withdrawIncrement = $referenceType === 'withdrawal' ? ':amt' : '0';
             $upd = $pdo->prepare(
-                'UPDATE wallets
+                "UPDATE wallets
                  SET available_balance = :bal,
-                     total_withdrawn   = total_withdrawn + :amt,
+                     total_withdrawn   = total_withdrawn + {$withdrawIncrement},
                      updated_at        = NOW()
-                 WHERE id = :id'
+                 WHERE id = :id"
             );
             $upd->bindValue(':bal', $newBalance);
-            $upd->bindValue(':amt', $amount);
+            if ($referenceType === 'withdrawal') {
+                $upd->bindValue(':amt', $amount);
+            }
             $upd->bindValue(':id',  $walletId, PDO::PARAM_INT);
             $upd->execute();
 

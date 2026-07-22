@@ -68,6 +68,8 @@ final class PlatformRepository
 
     private function adminModuleStatus(PDO $pdo): array
     {
+        $faqCount = $this->tableCount($pdo, 'faqs');
+        $smsTemplateCount = $this->tableCount($pdo, 'sms_templates');
         $counts = [
             'users' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
             'roles' => (int)$pdo->query('SELECT COUNT(*) FROM roles')->fetchColumn(),
@@ -88,7 +90,7 @@ final class PlatformRepository
             'languages' => (int)$pdo->query('SELECT COUNT(*) FROM system_settings WHERE category = \'localization\'')->fetchColumn(),
             'logs' => (int)$pdo->query('SELECT COUNT(*) FROM audit_logs')->fetchColumn(),
             'email_templates' => (int)$pdo->query('SELECT COUNT(*) FROM email_templates')->fetchColumn(),
-            'sms_templates' => (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE channel = 'sms'")->fetchColumn(),
+            'sms_templates' => $smsTemplateCount,
             'notification_templates' => (int)$pdo->query('SELECT COUNT(*) FROM notifications')->fetchColumn(),
             'cron_jobs' => (int)$pdo->query('SELECT COUNT(*) FROM pair_import_jobs')->fetchColumn(),
             'api_settings' => (int)$pdo->query('SELECT COUNT(*) FROM price_data_providers')->fetchColumn(),
@@ -109,7 +111,7 @@ final class PlatformRepository
             ['module' => 'KYC', 'total' => $counts['kyc']],
             ['module' => 'Support Tickets', 'total' => $counts['tickets']],
             ['module' => 'CMS Pages', 'total' => $counts['pages']],
-            ['module' => 'FAQ', 'total' => 0],
+            ['module' => 'FAQ', 'total' => $faqCount],
             ['module' => 'News', 'total' => $counts['news']],
             ['module' => 'Announcements', 'total' => $counts['announcements']],
             ['module' => 'Languages', 'total' => $counts['languages']],
@@ -174,5 +176,22 @@ final class PlatformRepository
         }
 
         return $status;
+    }
+
+    private function tableCount(PDO $pdo, string $table): int
+    {
+        $existsStmt = $pdo->prepare('SHOW TABLES LIKE :table');
+        $existsStmt->bindValue(':table', $table);
+        $existsStmt->execute();
+        if ($existsStmt->fetchColumn() === false) {
+            return 0;
+        }
+
+        $safeTable = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+        if ($safeTable === '') {
+            return 0;
+        }
+
+        return (int)$pdo->query('SELECT COUNT(*) FROM `' . $safeTable . '`')->fetchColumn();
     }
 }

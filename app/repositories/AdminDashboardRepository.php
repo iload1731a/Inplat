@@ -24,9 +24,13 @@ final class AdminDashboardRepository
         $feesStmt = $pdo->prepare('SELECT COALESCE(SUM(fee_amount), 0) FROM fee_revenue_ledger WHERE created_at >= :since');
         $feesStmt->bindValue(':since', $since24h);
         $feesStmt->execute();
-        $activeMaintenanceStmt = $pdo->prepare('SELECT COUNT(*) FROM maintenance_windows WHERE is_active = 1 AND :now BETWEEN starts_at AND ends_at');
-        $activeMaintenanceStmt->bindValue(':now', date('Y-m-d H:i:s'));
-        $activeMaintenanceStmt->execute();
+        $openMaintenance = 0;
+        if ($this->tableExists('maintenance_windows')) {
+            $activeMaintenanceStmt = $pdo->prepare('SELECT COUNT(*) FROM maintenance_windows WHERE is_active = 1 AND :now BETWEEN starts_at AND ends_at');
+            $activeMaintenanceStmt->bindValue(':now', date('Y-m-d H:i:s'));
+            $activeMaintenanceStmt->execute();
+            $openMaintenance = (int)$activeMaintenanceStmt->fetchColumn();
+        }
 
         return [
             'users' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
@@ -41,15 +45,16 @@ final class AdminDashboardRepository
             'fee_revenue_24h' => (float)$feesStmt->fetchColumn(),
             'unread_notifications' => (int)$pdo->query('SELECT COUNT(*) FROM notifications WHERE is_read = 0')->fetchColumn(),
             'open_tickets' => (int)$pdo->query("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','pending_admin','awaiting_user')")->fetchColumn(),
-            'open_maintenance' => (int)$activeMaintenanceStmt->fetchColumn(),
+            'open_maintenance' => $openMaintenance,
         ];
     }
 
     public function recentTrades(int $limit = 8): array
     {
+        $pairReference = $this->columnExists('trades', 'trading_pair_id') ? 't.trading_pair_id' : 't.pair_id';
         $sql = 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
                 FROM trades t
-                LEFT JOIN trading_pairs tp ON tp.id = t.trading_pair_id
+                LEFT JOIN trading_pairs tp ON tp.id = ' . $pairReference . '
                 ORDER BY t.id DESC
                 LIMIT :limit';
 
@@ -62,6 +67,10 @@ final class AdminDashboardRepository
 
     public function recentLogins(int $limit = 10): array
     {
+        if (!$this->tableExists('login_history')) {
+            return [];
+        }
+
         $sql = 'SELECT lh.created_at, lh.status, lh.ip_address, u.username
                 FROM login_history lh
                 INNER JOIN users u ON u.id = lh.user_id
@@ -77,6 +86,10 @@ final class AdminDashboardRepository
 
     public function activityTimeline(int $limit = 10): array
     {
+        if (!$this->tableExists('admin_activity_logs') || !$this->tableExists('admin_users')) {
+            return [];
+        }
+
         $sql = 'SELECT aal.action, aal.entity_type, aal.entity_id, aal.created_at, au.username
                 FROM admin_activity_logs aal
                 INNER JOIN admin_users au ON au.id = aal.admin_id
@@ -173,6 +186,10 @@ final class AdminDashboardRepository
 
     public function candlestickSeries(int $limit = 20, string $intervalCode = '1h'): array
     {
+        if (!$this->tableExists('candlesticks')) {
+            return [];
+        }
+
         $safeLimit = max(5, $limit);
         $allowedIntervals = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', '1M'];
         $safeInterval = in_array($intervalCode, $allowedIntervals, true) ? $intervalCode : '1h';
@@ -189,5 +206,25 @@ final class AdminDashboardRepository
         $rows = $stmt->fetchAll() ?: [];
 
         return array_reverse($rows);
+    }
+
+    private function tableExists(string $table): bool
+    {
+        $stmt = Database::connection()->prepare('SHOW TABLES LIKE :table');
+        $stmt->bindValue(':table', $table);
+        $stmt->execute();
+
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private function columnExists(string $table, string $column): bool
+    {
+        $sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column";
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->bindValue(':table', $table);
+        $stmt->bindValue(':column', $column);
+        $stmt->execute();
+
+        return ((int)$stmt->fetchColumn()) > 0;
     }
 }

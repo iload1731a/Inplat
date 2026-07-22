@@ -63,7 +63,7 @@ require app_path('app/views/user/_nav.php');
                     <td><span class="badge bg-success"><?= e((string)($order['status'] ?? '-')) ?></span></td>
                     <td class="small"><?= e(date('M d H:i', strtotime((string)($order['created_at'] ?? 'now')))) ?></td>
                     <td>
-                        <button class="btn btn-xs btn-outline-danger" onclick="cancelOrder(<?= (int)$order['id'] ?>)">
+                        <button class="btn btn-xs btn-outline-danger btn-cancel-order" data-order-id="<?= (int)$order['id'] ?>">
                             <i class="fas fa-times"></i> Cancel
                         </button>
                     </td>
@@ -82,7 +82,8 @@ require app_path('app/views/user/_nav.php');
 <script>
 $('#openOrdersTable').DataTable({ order: [[0,'desc']], pageLength: 25 });
 
-function cancelOrder(orderId) {
+$(document).on('click', '.btn-cancel-order', function () {
+    const orderId = $(this).data('order-id');
     Swal.fire({
         title: 'Cancel Order #' + orderId + '?',
         text: 'This action cannot be undone.',
@@ -92,7 +93,7 @@ function cancelOrder(orderId) {
         confirmButtonText: 'Yes, Cancel Order'
     }).then(r => {
         if (!r.isConfirmed) return;
-        $.post('/user/orders/cancel', { _token: _csrfToken, order_id: orderId }, res => {
+        $.post('/user/orders/cancel', { _token: csrfToken, order_id: orderId }, res => {
             if (res.ok) {
                 Swal.fire({ icon: 'success', title: 'Cancelled', timer: 1500, showConfirmButton: false })
                     .then(() => location.reload());
@@ -101,5 +102,5 @@ function cancelOrder(orderId) {
             }
         }).fail(() => Swal.fire({ icon: 'error', text: 'Request failed' }));
     });
-}
+});
 </script>

@@ -74,7 +74,7 @@ require app_path('app/views/user/_nav.php');
                                 <?= ($upnl >= 0 ? '+' : '') . number_format($upnl, 4) ?>
                             </td>
                             <td>
-                                <button class="btn btn-xs btn-outline-danger" onclick="closePosition(<?= (int)$pos['id'] ?>)">
+                                 <button class="btn btn-xs btn-outline-danger btn-close-position" data-position-id="<?= (int)$pos['id'] ?>">
                                     <i class="fas fa-times me-1"></i>Close
                                 </button>
                             </td>
@@ -153,7 +153,8 @@ if (pnlLabels.length > 0) {
     }).render();
 }
 
-function closePosition(posId) {
+$(document).on('click', '.btn-close-position', function () {
+    const posId = $(this).data('position-id');
     Swal.fire({
         title: 'Close Position #' + posId + '?',
         text: 'This will close your position at market price.',
@@ -163,7 +164,7 @@ function closePosition(posId) {
         confirmButtonText: 'Close Position'
     }).then(r => {
         if (!r.isConfirmed) return;
-        $.post('/user/positions/close', { _token: _csrfToken, position_id: posId }, res => {
+        $.post('/user/positions/close', { _token: csrfToken, position_id: posId }, res => {
             if (res.ok) {
                 Swal.fire({ icon: 'success', title: 'Closed', timer: 1500, showConfirmButton: false })
                     .then(() => location.reload());

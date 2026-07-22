@@ -37,14 +37,18 @@ require app_path('app/views/user/_nav.php');
                         <?php endforeach; ?>
                     </td>
                     <td class="font-monospace small text-secondary">
-                        <?= !empty($key['ip_whitelist']) ? e(substr((string)$key['ip_whitelist'], 0, 20)) : '<span class="text-secondary">Any</span>' ?>
+                        <?php if (!empty($key['ip_whitelist'])): ?>
+                            <?= e(substr((string)$key['ip_whitelist'], 0, 20)) ?>
+                        <?php else: ?>
+                            <span class="text-secondary">Any</span>
+                        <?php endif; ?>
                     </td>
                     <td><span class="badge bg-<?= ($key['is_active'] ?? 0) ? 'success' : 'secondary' ?>"><?= ($key['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
                     <td class="small text-secondary"><?= !empty($key['last_used_at']) ? e(date('M d, Y', strtotime((string)$key['last_used_at']))) : 'Never' ?></td>
                     <td class="small text-secondary"><?= !empty($key['expires_at']) ? e(date('M d, Y', strtotime((string)$key['expires_at']))) : 'No expiry' ?></td>
                     <td class="small"><?= e(date('M d, Y', strtotime((string)($key['created_at'] ?? 'now')))) ?></td>
                     <td>
-                        <button class="btn btn-xs btn-outline-danger" onclick="revokeKey(<?= (int)$key['id'] ?>, '<?= e((string)$key['label']) ?>')">
+                        <button class="btn btn-xs btn-outline-danger btn-revoke-key" data-key-id="<?= (int)$key['id'] ?>" data-key-label="<?= e((string)$key['label']) ?>">
                             <i class="fas fa-trash me-1"></i>Revoke
                         </button>
                     </td>
@@ -139,19 +143,19 @@ require app_path('app/views/user/_nav.php');
                     <label class="form-label text-secondary small">API Key</label>
                     <div class="input-group">
                         <input type="text" id="newApiKey" class="form-control bg-transparent text-light border-secondary font-monospace" readonly>
-                        <button class="btn btn-outline-secondary" onclick="copyVal('newApiKey')"><i class="fas fa-copy"></i></button>
+                        <button class="btn btn-outline-secondary btn-copy-val" data-target="newApiKey"><i class="fas fa-copy"></i></button>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label text-secondary small">API Secret</label>
                     <div class="input-group">
                         <input type="text" id="newApiSecret" class="form-control bg-transparent text-light border-secondary font-monospace" readonly>
-                        <button class="btn btn-outline-secondary" onclick="copyVal('newApiSecret')"><i class="fas fa-copy"></i></button>
+                        <button class="btn btn-outline-secondary btn-copy-val" data-target="newApiSecret"><i class="fas fa-copy"></i></button>
                     </div>
                 </div>
             </div>
             <div class="modal-footer border-secondary">
-                <button class="btn btn-success" onclick="confirmKeyCreated()">I have saved my credentials</button>
+                <button class="btn btn-success" id="btnConfirmKeyCreated">I have saved my credentials</button>
             </div>
         </div>
     </div>
@@ -160,14 +164,12 @@ require app_path('app/views/user/_nav.php');
 <script>
 $('#apiKeysTable').DataTable({ order: [[7,'desc']], pageLength: 10 });
 
-document.getElementById('createKeyForm').addEventListener('submit', function (e) {
+$('#createKeyForm').on('submit', function (e) {
     e.preventDefault();
     const btn = document.getElementById('createKeyBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating...';
     const fd = new FormData(this);
-
-    // Build array-style name manually
     const data = { _token: fd.get('_token'), label: fd.get('label'), ip_whitelist: fd.get('ip_whitelist'), expires_at: fd.get('expires_at'), 'permissions[]': [] };
     for (const [k, v] of fd.entries()) { if (k === 'permissions[]') data['permissions[]'].push(v); }
 
@@ -195,17 +197,21 @@ document.getElementById('createKeyForm').addEventListener('submit', function (e)
     });
 });
 
-function confirmKeyCreated() {
+$('#btnConfirmKeyCreated').on('click', function () {
     bootstrap.Modal.getInstance(document.getElementById('keyCreatedModal'))?.hide();
     location.reload();
-}
+});
 
-function copyVal(id) {
-    navigator.clipboard.writeText(document.getElementById(id).value)
+$(document).on('click', '.btn-copy-val', function () {
+    const targetId = $(this).data('target');
+    const val = document.getElementById(targetId)?.value || '';
+    navigator.clipboard.writeText(val)
         .then(() => Swal.fire({ icon: 'success', title: 'Copied!', timer: 800, showConfirmButton: false }));
-}
+});
 
-function revokeKey(keyId, label) {
+$(document).on('click', '.btn-revoke-key', function () {
+    const keyId = $(this).data('key-id');
+    const label = $(this).data('key-label');
     Swal.fire({
         title: 'Revoke "' + label + '"?',
         text: 'This key will be permanently revoked and cannot be recovered.',
@@ -215,7 +221,7 @@ function revokeKey(keyId, label) {
         confirmButtonText: 'Revoke Key'
     }).then(r => {
         if (!r.isConfirmed) return;
-        $.post('/user/api-keys/revoke', { _token: _csrfToken, key_id: keyId }, res => {
+        $.post('/user/api-keys/revoke', { _token: csrfToken, key_id: keyId }, res => {
             if (res.ok) {
                 Swal.fire({ icon: 'success', title: 'Revoked', timer: 1200, showConfirmButton: false })
                     .then(() => location.reload());
@@ -224,5 +230,5 @@ function revokeKey(keyId, label) {
             }
         }).fail(() => Swal.fire({ icon: 'error', text: 'Request failed' }));
     });
-}
+});
 </script>

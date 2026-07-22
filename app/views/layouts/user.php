@@ -343,8 +343,8 @@ function toggleSidebar() {
 }
 
 // CSRF token helper
-const _csrfToken = $('meta[name="csrf-token"]').attr('content') || '';
-$.ajaxSetup({ headers: { 'X-CSRF-TOKEN': _csrfToken } });
+const csrfToken = $('meta[name="csrf-token"]').attr('content') || '';
+$.ajaxSetup({ headers: { 'X-CSRF-TOKEN': csrfToken } });
 
 // Global AJAX form handler
 $(document).on('submit', 'form[data-ajax="true"]', function (e) {

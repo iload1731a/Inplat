@@ -33,7 +33,7 @@ require app_path('app/views/user/_nav.php');
                 <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
                 <label class="btn btn-outline-info btn-sm w-100">
                     <i class="fas fa-camera me-1"></i>Change Avatar
-                    <input type="file" name="avatar" accept="image/*" class="d-none" onchange="document.getElementById('avatarForm').dispatchEvent(new Event('submit'))">
+                    <input type="file" name="avatar" accept="image/*" class="d-none" id="avatarFileInput">
                 </label>
             </form>
         </div>
@@ -184,8 +184,12 @@ require app_path('app/views/user/_nav.php');
 </div>
 
 <script>
-// Avatar upload
-document.getElementById('avatarForm').addEventListener('submit', function (e) {
+// Avatar upload via event delegation on file input change
+$('#avatarFileInput').on('change', function () {
+    $('#avatarForm').trigger('submit');
+});
+
+$('#avatarForm').on('submit', function (e) {
     e.preventDefault();
     const fd = new FormData(this);
     $.ajax({

@@ -104,7 +104,7 @@ require app_path('app/views/user/_nav.php');
 </div>
 
 <script>
-const walletBalanceMap = <?= json_encode((object)$walletBalanceMap) ?>;
+const walletBalanceMap = <?= json_encode($walletBalanceMap) ?>;
 
 $('#withdrawTable').DataTable({ order: [[0,'desc']], pageLength: 15 });
 

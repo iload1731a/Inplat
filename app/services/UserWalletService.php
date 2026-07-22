@@ -6,6 +6,8 @@ use App\Repositories\UserWalletRepository;
 
 final class UserWalletService
 {
+    private const CRYPTO_PRECISION = 8;
+
     private readonly UserWalletRepository $repo;
 
     public function __construct(?UserWalletRepository $repo = null)
@@ -61,8 +63,8 @@ final class UserWalletService
             'user_id'           => $userId,
             'wallet_id'         => $wallet ? (int)$wallet['id'] : null,
             'currency_id'       => $currencyId,
-            'amount'            => number_format($amount, 8, '.', ''),
-            'net_amount'        => number_format($amount, 8, '.', ''),
+            'amount'            => number_format($amount, self::CRYPTO_PRECISION, '.', ''),
+            'net_amount'        => number_format($amount, self::CRYPTO_PRECISION, '.', ''),
             'method'            => trim((string)($input['method'] ?? 'manual')),
             'reference'         => trim((string)($input['reference'] ?? '')) ?: null,
             'payment_proof_url' => $proofUrl,
@@ -93,8 +95,8 @@ final class UserWalletService
             'user_id'             => $userId,
             'wallet_id'           => (int)$wallet['id'],
             'currency_id'         => $currencyId,
-            'amount'              => number_format($amount, 8, '.', ''),
-            'net_amount'          => number_format($amount, 8, '.', ''),
+            'amount'              => number_format($amount, self::CRYPTO_PRECISION, '.', ''),
+            'net_amount'          => number_format($amount, self::CRYPTO_PRECISION, '.', ''),
             'destination_address' => $address,
             'destination_memo'    => trim((string)($input['destination_memo'] ?? '')) ?: null,
             'method'              => trim((string)($input['method'] ?? 'crypto')),

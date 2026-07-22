@@ -47,7 +47,7 @@ require app_path('app/views/user/_nav.php');
                         <label class="form-label text-secondary small">Confirm Password to Disable</label>
                         <input type="password" name="password" class="form-control bg-transparent text-light border-secondary" required>
                     </div>
-                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Disable 2FA?')">
+                    <button type="submit" class="btn btn-outline-danger" id="disable2faBtn">
                         <i class="fas fa-unlock me-1"></i>Disable 2FA
                     </button>
                 </form>
@@ -64,7 +64,7 @@ require app_path('app/views/user/_nav.php');
                         <label class="form-label text-secondary small">Secret Key</label>
                         <div class="input-group">
                             <input type="text" id="tfSecret" class="form-control bg-transparent text-light border-secondary font-monospace" readonly>
-                            <button class="btn btn-outline-secondary" onclick="copySecret()"><i class="fas fa-copy"></i></button>
+                            <button class="btn btn-outline-secondary" id="btnCopySecret"><i class="fas fa-copy"></i></button>
                         </div>
                         <div class="form-text text-secondary">Add this key to your authenticator app (Google Authenticator, Authy, etc.)</div>
                     </div>
@@ -125,7 +125,7 @@ require app_path('app/views/user/_nav.php');
                             <td class="small text-secondary text-truncate" style="max-width:200px"><?= e(substr((string)($sess['user_agent'] ?? '-'), 0, 50)) ?></td>
                             <td class="small"><?= e(date('M d, H:i', strtotime((string)($sess['expires_at'] ?? 'now')))) ?></td>
                             <td>
-                                <button class="btn btn-xs btn-outline-danger" onclick="revokeSession(<?= (int)$sess['id'] ?>)">
+                                 <button class="btn btn-xs btn-outline-danger btn-revoke-session" data-session-id="<?= (int)$sess['id'] ?>">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </td>
@@ -172,16 +172,17 @@ require app_path('app/views/user/_nav.php');
 <script>
 $('#loginHistoryTable').DataTable({ order: [[0,'desc']], pageLength: 15 });
 
-function revokeSession(sessionId) {
+$(document).on('click', '.btn-revoke-session', function () {
+    const sessionId = $(this).data('session-id');
     Swal.fire({ title: 'Revoke session?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' })
         .then(r => {
             if (!r.isConfirmed) return;
-            $.post('/user/security/sessions/revoke', { _token: _csrfToken, session_id: sessionId }, res => {
+            $.post('/user/security/sessions/revoke', { _token: csrfToken, session_id: sessionId }, res => {
                 if (res.ok) location.reload();
                 else Swal.fire({ icon: 'error', text: res.message });
             }).fail(() => Swal.fire({ icon: 'error', text: 'Request failed' }));
         });
-}
+});
 
 $('#btn2faSetup').on('click', function () {
     $.get('/user/security/2fa/generate', function (r) {
@@ -194,8 +195,12 @@ $('#btn2faSetup').on('click', function () {
     });
 });
 
-function copySecret() {
-    const v = document.getElementById('tfSecret').value;
+$('#btnCopySecret').on('click', function () {
+    const v = $('#tfSecret').val();
     navigator.clipboard.writeText(v).then(() => Swal.fire({ icon: 'success', title: 'Copied!', timer: 1000, showConfirmButton: false }));
-}
+});
+
+$('#disable2faBtn').closest('form').on('submit', function (e) {
+    if (!confirm('Disable 2FA?')) { e.preventDefault(); }
+});
 </script>

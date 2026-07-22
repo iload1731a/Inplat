@@ -44,7 +44,7 @@ final class UserApiKeysService
             $ips = array_map('trim', explode(',', $ipWhitelist));
             foreach ($ips as $ip) {
                 if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-                    throw new \InvalidArgumentException('One or more IP addresses in the whitelist are invalid. Please check your entries.');
+                    throw new \InvalidArgumentException("Invalid IP address in whitelist: '" . $ip . "'. Please enter valid IPv4 or IPv6 addresses separated by commas.");
                 }
             }
             $ipWhitelist = implode(',', $ips);

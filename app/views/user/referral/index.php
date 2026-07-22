@@ -17,7 +17,7 @@ require app_path('app/views/user/_nav.php');
     <div class="input-group">
         <input type="text" id="refLink" class="form-control bg-transparent text-light border-secondary font-monospace"
                value="<?= e($referralLink) ?>" readonly>
-        <button class="btn btn-info" onclick="copyRefLink()">
+        <button class="btn btn-info" id="btnCopyRefLink">
             <i class="fas fa-copy me-1"></i>Copy
         </button>
     </div>
@@ -122,14 +122,12 @@ require app_path('app/views/user/_nav.php');
 $('#referralsTable').DataTable({ pageLength: 10 });
 $('#commissionsTable').DataTable({ order: [[0,'desc']], pageLength: 15 });
 
-function copyRefLink() {
-    navigator.clipboard.writeText(document.getElementById('refLink').value)
+$('#btnCopyRefLink').on('click', function () {
+    const val = $('#refLink').val();
+    navigator.clipboard.writeText(val)
         .then(() => Swal.fire({ icon: 'success', title: 'Copied!', timer: 1000, showConfirmButton: false }))
-        .catch(() => {
-            const el = document.getElementById('refLink');
-            el.select(); document.execCommand('copy');
-        });
-}
+        .catch(() => { $('#refLink')[0].select(); document.execCommand('copy'); });
+});
 
 const earnLabels = <?= $earnLabels ?: '[]' ?>;
 const earnValues = <?= $earnValues ?: '[]' ?>;

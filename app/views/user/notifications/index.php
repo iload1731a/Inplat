@@ -55,7 +55,7 @@ require app_path('app/views/user/_nav.php');
                 </div>
                 <div class="d-flex gap-1 flex-shrink-0">
                     <?php if ($isUnread): ?>
-                    <button class="btn btn-xs btn-outline-info" onclick="markRead(<?= (int)$notif['id'] ?>)" title="Mark as read">
+                    <button class="btn btn-xs btn-outline-info btn-mark-read" data-notif-id="<?= (int)$notif['id'] ?>" title="Mark as read">
                         <i class="fas fa-check"></i>
                     </button>
                     <?php endif; ?>
@@ -64,7 +64,7 @@ require app_path('app/views/user/_nav.php');
                         <i class="fas fa-external-link-alt"></i>
                     </a>
                     <?php endif; ?>
-                    <button class="btn btn-xs btn-outline-danger" onclick="deleteNotif(<?= (int)$notif['id'] ?>)" title="Delete">
+                    <button class="btn btn-xs btn-outline-danger btn-delete-notif" data-notif-id="<?= (int)$notif['id'] ?>" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -75,27 +75,29 @@ require app_path('app/views/user/_nav.php');
 </div>
 
 <script>
-function markRead(id) {
-    $.post('/user/notifications/read', { _token: _csrfToken, id }, res => {
+$(document).on('click', '.btn-mark-read', function () {
+    const id = $(this).data('notif-id');
+    $.post('/user/notifications/read', { _token: csrfToken, id }, res => {
         if (res.ok) {
             const el = document.getElementById('notif-' + id);
             if (el) {
                 el.style.background = 'rgba(255,255,255,.02)';
                 el.classList.remove('border', 'border-info', 'border-opacity-50');
-                el.querySelector('.btn-outline-info')?.remove();
+                el.querySelector('.btn-mark-read')?.remove();
             }
         }
     });
-}
+});
 
-function deleteNotif(id) {
-    $.post('/user/notifications/delete', { _token: _csrfToken, id }, res => {
+$(document).on('click', '.btn-delete-notif', function () {
+    const id = $(this).data('notif-id');
+    $.post('/user/notifications/delete', { _token: csrfToken, id }, res => {
         if (res.ok) document.getElementById('notif-' + id)?.remove();
     });
-}
+});
 
 $('#markAllBtn').on('click', function () {
-    $.post('/user/notifications/read-all', { _token: _csrfToken }, res => {
+    $.post('/user/notifications/read-all', { _token: csrfToken }, res => {
         if (res.ok) {
             Swal.fire({ icon: 'success', title: 'Done', timer: 1000, showConfirmButton: false })
                 .then(() => location.reload());

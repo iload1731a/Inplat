@@ -82,7 +82,7 @@ require app_path('app/views/user/_nav.php');
                 </div>
                 <div class="alert alert-warning small rounded-3">
                     <i class="fas fa-clock me-1"></i>
-                    Withdrawals are reviewed by our team. Processing time: 1–24 hours.
+                    Withdrawals are reviewed by our team. Processing time: 1-24 hours.
                 </div>
                 <button type="submit" class="btn btn-warning w-100 fw-semibold">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="withdrawSpinner"></span>

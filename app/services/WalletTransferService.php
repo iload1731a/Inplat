@@ -52,7 +52,7 @@ final class WalletTransferService
 
         // Get or verify source wallet
         $fromWallet = $this->walletRepo->walletByUserAndCurrency($fromUserId, $currencyId, 'spot');
-        if ($fromWallet === null || (float)$fromWallet['available_balance'] < (float)$amount) {
+        if ($fromWallet === null || bccomp((string)$fromWallet['available_balance'], $amount, 18) < 0) {
             throw new InvalidArgumentException('Insufficient balance');
         }
         if ((int)$fromWallet['is_frozen'] === 1) {

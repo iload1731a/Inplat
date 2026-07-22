@@ -7,6 +7,9 @@ use PDO;
 
 final class UserWalletRepository
 {
+    /** Whitelist address cooldown duration before a new address becomes active */
+    public const WHITELIST_COOLDOWN = '+24 hours';
+
     // -------------------------------------------------------------------------
     // Wallets
     // -------------------------------------------------------------------------
@@ -248,7 +251,7 @@ final class UserWalletRepository
                 (:uid, :cid, :addr, :tag, :label,
                  :status, :cooldown, :ip, NOW())'
         );
-        $cooldown = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        $cooldown = date('Y-m-d H:i:s', strtotime(self::WHITELIST_COOLDOWN));
         $stmt->bindValue(':uid',      $userId,              PDO::PARAM_INT);
         $stmt->bindValue(':cid',      (int)$data['currency_id'], PDO::PARAM_INT);
         $stmt->bindValue(':addr',     $data['address']);

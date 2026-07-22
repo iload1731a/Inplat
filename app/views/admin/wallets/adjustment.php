@@ -129,12 +129,14 @@ document.getElementById('adjustmentForm').addEventListener('submit', async funct
 
     const data = Object.fromEntries(new FormData(this));
     const dirLabel = data.direction === 'credit' ? '+ Credit' : '- Debit';
+    const safeNotes = document.createTextNode(data.notes || '').textContent
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
     const confirmed = await Swal.fire({
         icon: 'warning',
         title: 'Confirm Adjustment',
         html: `Apply <strong>${dirLabel} ${data.amount}</strong> to wallet <strong>#${data.wallet_id}</strong>?<br>
-               <small class="text-secondary">Notes: ${data.notes}</small>`,
+               <small class="text-secondary">Notes: ${safeNotes}</small>`,
         showCancelButton: true,
         confirmButtonText: 'Yes, Apply',
         confirmButtonColor: '#3b82f6',

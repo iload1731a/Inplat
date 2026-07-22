@@ -248,6 +248,7 @@ final class WalletController extends BaseController
         try {
             $data = (new UserWalletService())->ledger($userId, $walletId, $page);
         } catch (Throwable $e) {
+            error_log('[WalletController::ledger] ' . $e->getMessage() . ' | user=' . $userId . ' wallet=' . $walletId);
             Session::put('flash.error', $e->getMessage());
             Response::redirect('/user/wallet');
         }

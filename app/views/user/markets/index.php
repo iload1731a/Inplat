@@ -203,18 +203,20 @@ $csrf         = \App\Libraries\Csrf::token();
 <input type="hidden" id="csrfToken" value="<?= e($csrf) ?>">
 
 <script>
-// Client-side filter
-document.getElementById('marketSearch').addEventListener('input', applyFilters);
-document.getElementById('sortSelect').addEventListener('change', function() {
-    const u = new URL(location.href);
-    u.searchParams.set('sort', this.value);
-    location.href = u.toString();
-});
-document.getElementById('typeFilter').addEventListener('change', function() {
-    const u = new URL(location.href);
-    if (this.value) u.searchParams.set('market_type', this.value);
-    else u.searchParams.delete('market_type');
-    location.href = u.toString();
+document.addEventListener('DOMContentLoaded', function() {
+    // Client-side filter
+    document.getElementById('marketSearch').addEventListener('input', applyFilters);
+    document.getElementById('sortSelect').addEventListener('change', function() {
+        const u = new URL(location.href);
+        u.searchParams.set('sort', this.value);
+        location.href = u.toString();
+    });
+    document.getElementById('typeFilter').addEventListener('change', function() {
+        const u = new URL(location.href);
+        if (this.value) u.searchParams.set('market_type', this.value);
+        else u.searchParams.delete('market_type');
+        location.href = u.toString();
+    });
 });
 
 function applyFilters() {
@@ -266,7 +268,7 @@ function toggleWatchlist(pairId, btn) {
 
 // Auto-refresh tickers every 15s
 setInterval(function() {
-    const quote = '<?= e((string)($filters['quote'] ?? '')) ?>';
+    const quote = <?= json_encode((string)($filters['quote'] ?? '')) ?>;
     fetch('/markets/tickers' + (quote ? '?quote=' + encodeURIComponent(quote) : ''))
         .then(r => r.json())
         .then(function(data) {

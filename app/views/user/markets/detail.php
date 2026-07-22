@@ -70,7 +70,7 @@ $csrf         = \App\Libraries\Csrf::token();
                     ['Best Bid',   number_format((float)($pair['best_bid'] ?? 0), $prec),   'text-secondary'],
                     ['Best Ask',   number_format((float)($pair['best_ask'] ?? 0), $prec),   'text-secondary'],
                     ['Volume 24H', number_format((float)($pair['volume_24h'] ?? 0), 2),     'text-info'],
-                    ['Max Leverage', $pair['max_leverage'] . 'x',                            'text-warning'],
+                    ['Max Leverage', ($pair['max_leverage'] ?? '1') . 'x',                       'text-warning'],
                 ];
                 ?>
                 <?php foreach ($stats as [$label, $val, $cls]): ?>
@@ -105,7 +105,7 @@ $csrf         = \App\Libraries\Csrf::token();
                     ['Min Notional',        $pair['min_notional'] ?? '0'],
                     ['Price Precision',     $pair['price_precision'] ?? '2'],
                     ['Quantity Precision',  $pair['quantity_precision'] ?? '6'],
-                    ['Max Leverage',        $pair['max_leverage'] . 'x'],
+                    ['Max Leverage',        ($pair['max_leverage'] ?? '1') . 'x'],
                 ];
                 ?>
                 <?php foreach ($infoFields as [$k, $v]): ?>

@@ -106,12 +106,12 @@ $typeVols = is_array($typeVols ?? null) ? $typeVols : [];
     <!-- Top By Volume -->
     <div class="col-lg-4">
         <div class="glass rounded-4 p-3">
-            <h2 class="h6 text-info mb-3"><i class="fas fa-fire me-1"></i>Top 20 by Volume</h2>
+            <h2 class="h6 text-info mb-3"><i class="fas fa-fire me-1"></i>Top by Volume</h2>
             <div class="table-responsive" style="max-height:280px;overflow-y:auto">
                 <table class="table table-dark table-sm mb-0">
                     <thead><tr><th>#</th><th>Pair</th><th>Volume</th><th>%</th></tr></thead>
                     <tbody>
-                    <?php foreach (array_slice($topPairs, 0, 20) as $i => $p): ?>
+                    <?php foreach ($topPairs as $i => $p): ?>
                         <?php $chg = (float)($p['change_24h_percent'] ?? 0); ?>
                         <tr>
                             <td class="text-secondary small"><?= $i+1 ?></td>

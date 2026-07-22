@@ -328,32 +328,11 @@ final class MarketsRepository
                 updated_at = NOW()
              WHERE id = :id"
         );
-        $params = $this->bindProviderData($data);
-        $params[':id'] = $id;
-        // On update don't overwrite API keys unless explicitly provided
-        if (!empty($data['api_key'])) {
-            $params[':api_key'] = trim((string)$data['api_key']);
-        }
-        if (!empty($data['api_secret'])) {
-            $params[':api_secret'] = trim((string)$data['api_secret']);
-        }
-        unset($stmt);
-        $stmt = Database::connection()->prepare(
-            "UPDATE price_data_providers SET
-                name = :name, provider_code = :provider_code, provider_type = :provider_type,
-                base_url = :base_url, websocket_url = :websocket_url,
-                auth_type = :auth_type, auth_header_name = :auth_header_name,
-                rate_limit_per_minute = :rate_limit, priority = :priority,
-                supports_pair_import = :supports_import, supports_realtime_price = :supports_price,
-                default_sync_interval_seconds = :sync_interval, is_active = :is_active, notes = :notes,
-                updated_at = NOW()
-             WHERE id = :id"
-        );
         $stmt->execute([
             ':name'           => trim((string)($data['name'] ?? '')),
             ':provider_code'  => strtolower(trim((string)($data['provider_code'] ?? ''))),
             ':provider_type'  => trim((string)($data['provider_type'] ?? 'rest_market_data')),
-            ':base_url'       => trim((string)($data['base_url'] ?? '')),
+            ':base_url'       => trim((string)($data['base_url'] ?? '')) ?: null,
             ':websocket_url'  => trim((string)($data['websocket_url'] ?? '')) ?: null,
             ':auth_type'      => trim((string)($data['auth_type'] ?? 'api_key_header')),
             ':auth_header_name' => trim((string)($data['auth_header_name'] ?? '')) ?: null,
@@ -712,6 +691,10 @@ final class MarketsRepository
 
     public function getCandlesticksForPair(int $pairId, string $interval = '1h', int $limit = 50): array
     {
+        $allowedIntervals = ['1m', '5m', '15m', '1h', '4h', '1d'];
+        if (!in_array($interval, $allowedIntervals, true)) {
+            $interval = '1h';
+        }
         $intervalMap = [
             '1m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/60)*60',
             '5m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/300)*300',
@@ -720,7 +703,7 @@ final class MarketsRepository
             '4h'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/14400)*14400',
             '1d'  => 'DATE(created_at)',
         ];
-        $bucketExpr = $intervalMap[$interval] ?? $intervalMap['1h'];
+        $bucketExpr = $intervalMap[$interval];
 
         $stmt = Database::connection()->prepare(
             "SELECT {$bucketExpr} AS bucket,

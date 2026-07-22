@@ -40,7 +40,7 @@ $csrf         = \App\Libraries\Csrf::token();
         ['Volume 24H',  number_format((float)($pair['volume_24h'] ?? 0), 2),      'text-info'],
         ['Best Bid',    number_format((float)($pair['best_bid'] ?? 0), $prec),    'text-success'],
         ['Best Ask',    number_format((float)($pair['best_ask'] ?? 0), $prec),    'text-danger'],
-        ['Max Leverage',$pair['max_leverage'] ?? '1' . 'x',                        'text-warning'],
+        ['Max Leverage',($pair['max_leverage'] ?? '1') . 'x',                      'text-warning'],
     ];
     ?>
     <?php foreach ($kpis as [$label, $val, $cls]): ?>

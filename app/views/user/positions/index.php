@@ -206,6 +206,7 @@ require app_path('app/views/user/_nav.php');
 </div>
 
 <script>
+const csrfToken = '<?= e($csrf) ?>';
 $('#closedPositionsTable').DataTable({ order: [[8,'desc']], pageLength: 20 });
 
 // Charts

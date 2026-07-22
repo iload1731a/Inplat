@@ -161,7 +161,7 @@ final class AdminOrdersRepository
         $stmt = Database::connection()->prepare(
             "SELECT DATE(created_at) AS day,
                     COUNT(*) AS order_count,
-                    SUM(filled_quantity * COALESCE(average_fill_price, price)) AS volume,
+                    COALESCE(SUM(CASE WHEN status = 'filled' THEN filled_quantity * average_fill_price ELSE 0 END), 0) AS volume,
                     SUM(CASE WHEN status = 'filled' THEN 1 ELSE 0 END) AS filled,
                     SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled
              FROM orders
@@ -178,7 +178,7 @@ final class AdminOrdersRepository
     {
         $stmt = Database::connection()->prepare(
             "SELECT tp.symbol, COUNT(*) AS order_count,
-                    SUM(o.filled_quantity * COALESCE(o.average_fill_price, o.price)) AS volume,
+                    COALESCE(SUM(CASE WHEN o.status = 'filled' THEN o.filled_quantity * o.average_fill_price ELSE 0 END), 0) AS volume,
                     SUM(CASE WHEN o.side = 'buy' THEN 1 ELSE 0 END) AS buy_count,
                     SUM(CASE WHEN o.side = 'sell' THEN 1 ELSE 0 END) AS sell_count
              FROM orders o

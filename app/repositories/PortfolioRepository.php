@@ -72,7 +72,9 @@ final class PortfolioRepository
                 COALESCE(SUM(CASE WHEN status = 'open' THEN unrealized_pnl ELSE 0 END), 0) AS total_unrealized_pnl,
                 SUM(CASE WHEN realized_pnl > 0 AND status != 'open' THEN 1 ELSE 0 END) AS winning_trades,
                 SUM(CASE WHEN realized_pnl < 0 AND status != 'open' THEN 1 ELSE 0 END) AS losing_trades,
-                SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_positions
+                SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_positions,
+                COALESCE(SUM(CASE WHEN realized_pnl > 0 AND status != 'open' THEN realized_pnl ELSE 0 END), 0) AS gross_profit,
+                COALESCE(ABS(SUM(CASE WHEN realized_pnl < 0 AND status != 'open' THEN realized_pnl ELSE 0 END)), 0) AS gross_loss
              FROM positions
              WHERE user_id = :uid"
         );

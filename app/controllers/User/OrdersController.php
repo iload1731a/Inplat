@@ -85,6 +85,7 @@ final class OrdersController extends BaseController
         } catch (Throwable $e) {
             Session::put('flash.error', 'Order not found.');
             Response::redirect('/user/orders/history');
+            return;
         }
 
         $this->userView('user/orders/detail', [

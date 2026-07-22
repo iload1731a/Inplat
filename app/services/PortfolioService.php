@@ -63,12 +63,9 @@ final class PortfolioService
             : 0.0;
 
         $profitFactor = 0.0;
-        if ((int)($positionPnl['losing_trades'] ?? 0) > 0) {
-            $profitFactor = round(
-                (int)($positionPnl['winning_trades'] ?? 0) /
-                (int)($positionPnl['losing_trades'] ?? 0),
-                2
-            );
+        $grossLoss = (float)($positionPnl['gross_loss'] ?? 0);
+        if ($grossLoss > 0) {
+            $profitFactor = round((float)($positionPnl['gross_profit'] ?? 0) / $grossLoss, 2);
         }
 
         return [

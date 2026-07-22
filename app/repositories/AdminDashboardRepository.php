@@ -11,6 +11,19 @@ final class AdminDashboardRepository
     public function overview(): array
     {
         $pdo = Database::connection();
+        $since24h = date('Y-m-d H:i:s', time() - 86400);
+        $tradeVolumeStmt = $pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM trades WHERE executed_at >= :since');
+        $tradeVolumeStmt->bindValue(':since', $since24h);
+        $tradeVolumeStmt->execute();
+        $depositsStmt = $pdo->prepare('SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE created_at >= :since');
+        $depositsStmt->bindValue(':since', $since24h);
+        $depositsStmt->execute();
+        $withdrawalsStmt = $pdo->prepare('SELECT COALESCE(SUM(amount), 0) FROM withdrawals WHERE requested_at >= :since');
+        $withdrawalsStmt->bindValue(':since', $since24h);
+        $withdrawalsStmt->execute();
+        $feesStmt = $pdo->prepare('SELECT COALESCE(SUM(fee_amount), 0) FROM fee_revenue_ledger WHERE created_at >= :since');
+        $feesStmt->bindValue(':since', $since24h);
+        $feesStmt->execute();
 
         return [
             'users' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
@@ -19,10 +32,10 @@ final class AdminDashboardRepository
             'revenue_total' => (float)$pdo->query('SELECT COALESCE(SUM(fee_amount), 0) FROM fee_revenue_ledger')->fetchColumn(),
             'deposits_pending' => (int)$pdo->query("SELECT COUNT(*) FROM deposits WHERE status = 'pending'")->fetchColumn(),
             'withdrawals_pending' => (int)$pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status = 'pending'")->fetchColumn(),
-            'deposits_24h' => (float)$pdo->query("SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)")->fetchColumn(),
-            'withdrawals_24h' => (float)$pdo->query("SELECT COALESCE(SUM(amount), 0) FROM withdrawals WHERE requested_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)")->fetchColumn(),
-            'trade_volume_24h' => (float)$pdo->query('SELECT COALESCE(SUM(quantity), 0) FROM trades WHERE executed_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)')->fetchColumn(),
-            'fee_revenue_24h' => (float)$pdo->query('SELECT COALESCE(SUM(fee_amount), 0) FROM fee_revenue_ledger WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)')->fetchColumn(),
+            'deposits_24h' => (float)$depositsStmt->fetchColumn(),
+            'withdrawals_24h' => (float)$withdrawalsStmt->fetchColumn(),
+            'trade_volume_24h' => (float)$tradeVolumeStmt->fetchColumn(),
+            'fee_revenue_24h' => (float)$feesStmt->fetchColumn(),
             'unread_notifications' => (int)$pdo->query('SELECT COUNT(*) FROM notifications WHERE is_read = 0')->fetchColumn(),
             'open_tickets' => (int)$pdo->query("SELECT COUNT(*) FROM support_tickets WHERE status IN ('open','pending_admin','awaiting_user')")->fetchColumn(),
             'open_maintenance' => (int)$pdo->query('SELECT COUNT(*) FROM maintenance_windows WHERE is_active = 1 AND NOW() BETWEEN starts_at AND ends_at')->fetchColumn(),
@@ -155,9 +168,11 @@ final class AdminDashboardRepository
         return $stmt->fetchAll() ?: [];
     }
 
-    public function candlestickSeries(int $limit = 20): array
+    public function candlestickSeries(int $limit = 20, string $intervalCode = '1h'): array
     {
         $safeLimit = max(5, $limit);
+        $allowedIntervals = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', '1M'];
+        $safeInterval = in_array($intervalCode, $allowedIntervals, true) ? $intervalCode : '1h';
         $sql = 'SELECT c.open_time, c.open_price, c.high_price, c.low_price, c.close_price, tp.symbol AS pair_symbol
                 FROM candlesticks c
                 INNER JOIN trading_pairs tp ON tp.id = c.trading_pair_id
@@ -165,7 +180,7 @@ final class AdminDashboardRepository
                 ORDER BY c.open_time DESC
                 LIMIT :limit';
         $stmt = Database::connection()->prepare($sql);
-        $stmt->bindValue(':interval_code', '1h');
+        $stmt->bindValue(':interval_code', $safeInterval);
         $stmt->bindValue(':limit', $safeLimit, \PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll() ?: [];

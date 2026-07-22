@@ -12,5 +12,6 @@ return [
     'installed_lock' => app_path('storage/installed.lock'),
     'license_file' => app_path('storage/config/license.json'),
     'license_secret_file' => app_path('storage/config/license.key'),
+    'log_file' => app_path('storage/logs/app.log'),
     'session_name' => 'inplat_session',
 ];

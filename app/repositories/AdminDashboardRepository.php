@@ -68,29 +68,30 @@ final class AdminDashboardRepository
 
     public function tradeVolumeSeries(int $days = 7): array
     {
-        $safeDays = max(1, $days);
-        $sql = "SELECT DATE(created_at) AS day, COALESCE(SUM(quantity), 0) AS volume
-                FROM trades
-                WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL CAST(:days AS UNSIGNED) DAY)
-                GROUP BY DATE(created_at)
-                ORDER BY day ASC";
-
-        $stmt = Database::connection()->prepare($sql);
-        $stmt->bindValue(':days', $safeDays, \PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchAll() ?: [];
+        return $this->dateSeries(
+            "COALESCE(SUM(quantity), 0) AS volume",
+            'trades',
+            $days
+        );
     }
 
     public function userGrowthSeries(int $days = 7): array
     {
+        return $this->dateSeries(
+            'COUNT(*) AS total',
+            'users',
+            $days
+        );
+    }
+
+    private function dateSeries(string $aggregate, string $table, int $days): array
+    {
         $safeDays = max(1, $days);
-        $sql = "SELECT DATE(created_at) AS day, COUNT(*) AS total
-                FROM users
+        $sql = "SELECT DATE(created_at) AS day, {$aggregate}
+                FROM {$table}
                 WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL CAST(:days AS UNSIGNED) DAY)
                 GROUP BY DATE(created_at)
                 ORDER BY day ASC";
-
         $stmt = Database::connection()->prepare($sql);
         $stmt->bindValue(':days', $safeDays, \PDO::PARAM_INT);
         $stmt->execute();

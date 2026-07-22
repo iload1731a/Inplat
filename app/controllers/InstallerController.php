@@ -68,7 +68,7 @@ final class InstallerController extends BaseController
         if (filter_var($license['buyer_email'], FILTER_VALIDATE_EMAIL) === false) {
             Response::json(['ok' => false, 'message' => 'License email is invalid.'], 422);
         }
-        if (!preg_match('/^[\pL\pN .\'\-]{2,120}$/u', $license['buyer_name'])) {
+        if (!LicenseGuard::isValidBuyerName($license['buyer_name'])) {
             Response::json(['ok' => false, 'message' => 'License buyer name is invalid.'], 422);
         }
 

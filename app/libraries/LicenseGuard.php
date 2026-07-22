@@ -90,6 +90,11 @@ final class LicenseGuard
         return (bool)preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', trim($purchaseCode));
     }
 
+    public static function isValidBuyerName(string $name): bool
+    {
+        return (bool)preg_match('/^[\pL\pN .\'\-]{2,120}$/u', $name);
+    }
+
     private static function encrypt(string $value): string
     {
         $iv = random_bytes(12);
@@ -106,7 +111,7 @@ final class LicenseGuard
     {
         $raw = base64_decode($payload, true);
         // Minimum size: 12-byte IV + 16-byte GCM tag + at least 1-byte ciphertext.
-        if ($raw === false || strlen($raw) < 29) {
+        if ($raw === false || strlen($raw) < (12 + 16 + 1)) {
             return '';
         }
 

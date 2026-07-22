@@ -23,10 +23,13 @@ $overviewCards = [
         <h1 class="h3 mb-1">Trading Dashboard</h1>
         <p class="text-secondary mb-0">Welcome back, <?= e((string)($username ?? 'Trader')) ?>.</p>
     </div>
-    <form action="/logout" method="post">
-        <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
-        <button class="btn btn-outline-danger btn-sm" type="submit">Logout</button>
-    </form>
+    <div class="d-flex gap-2">
+        <a href="/trading" class="btn btn-outline-info btn-sm">Trading Workspace</a>
+        <form action="/logout" method="post">
+            <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
+            <button class="btn btn-outline-danger btn-sm" type="submit">Logout</button>
+        </form>
+    </div>
 </div>
 
 <?php if (!empty($dashboardError)): ?>

@@ -15,7 +15,7 @@ final class DashboardController extends BaseController
 {
     public function index(Request $request): void
     {
-        AuthMiddleware::ensureAuthenticated();
+        AuthMiddleware::ensureAdmin();
 
         $data = [
             'overview' => [],
@@ -48,7 +48,7 @@ final class DashboardController extends BaseController
 
     public function metrics(Request $request): void
     {
-        AuthMiddleware::ensureAuthenticated();
+        AuthMiddleware::ensureAdmin();
 
         try {
             $payload = (new AdminDashboardService())->data();

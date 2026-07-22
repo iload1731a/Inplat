@@ -15,4 +15,13 @@ final class AuthMiddleware
             Response::redirect('/login');
         }
     }
+
+    public static function ensureAdmin(): void
+    {
+        self::ensureAuthenticated();
+
+        if ((bool)(Session::get('auth.is_admin') ?? false) !== true) {
+            Response::redirect('/dashboard');
+        }
+    }
 }

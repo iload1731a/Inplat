@@ -7,13 +7,12 @@ namespace App\Controllers;
 use App\Libraries\Csrf;
 use App\Libraries\Request;
 use App\Libraries\Response;
+use App\Libraries\Session;
 use App\Services\AuthService;
 use App\Validators\AuthValidator;
 
 final class AuthController extends BaseController
 {
-    private const USER_DASHBOARD_ROUTE = '/dashboard';
-
     public function loginForm(Request $request): void
     {
         $this->view('auth/login', ['title' => 'Login']);
@@ -25,16 +24,18 @@ final class AuthController extends BaseController
             Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
         }
 
-        $identity = (string)$request->input('identity', '');
+        $identity = trim((string)$request->input('identity', ''));
         $password = (string)$request->input('password', '');
+        $rememberMe = ((string)$request->input('remember_me', '0')) === '1';
 
         $auth = new AuthService();
+        $result = $auth->attempt($identity, $password, $rememberMe, $this->ipAddress(), $this->userAgent());
 
-        if (!$auth->attempt($identity, $password)) {
-            Response::json(['ok' => false, 'message' => 'Invalid credentials'], 422);
+        if (!($result['ok'] ?? false)) {
+            Response::json(['ok' => false, 'message' => $result['message'] ?? 'Invalid credentials'], 422);
         }
 
-        Response::json(['ok' => true, 'redirect' => self::USER_DASHBOARD_ROUTE]);
+        Response::json(['ok' => true, 'redirect' => $result['redirect'] ?? '/dashboard']);
     }
 
     public function registerForm(Request $request): void
@@ -57,9 +58,144 @@ final class AuthController extends BaseController
         }
 
         $auth = new AuthService();
-        $auth->register((string)$input['username'], (string)$input['email'], (string)$input['password']);
+        $userId = $auth->register((string)$input['username'], (string)$input['email'], (string)$input['password']);
+        $token = $auth->generateEmailVerificationToken($userId, (string)$input['email']);
+
+        Response::json(['ok' => true, 'redirect' => '/email/verify/notice?token=' . urlencode($token)]);
+    }
+
+    public function forgotPasswordForm(Request $request): void
+    {
+        $this->view('auth/forgot-password', ['title' => 'Forgot Password']);
+    }
+
+    public function forgotPassword(Request $request): void
+    {
+        if (!Csrf::validate((string)$request->input('_token'))) {
+            Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
+        }
+
+        $email = trim((string)$request->input('email', ''));
+        $validator = new AuthValidator();
+        $errors = $validator->validateForgotPassword(['email' => $email]);
+
+        if ($errors !== []) {
+            Response::json(['ok' => false, 'errors' => $errors], 422);
+        }
+
+        $payload = (new AuthService())->createPasswordReset($email);
+
+        $response = ['ok' => true, 'message' => (string)$payload['message']];
+        if (!empty($payload['token'])) {
+            $response['reset_link'] = '/reset-password?token=' . urlencode((string)$payload['token']);
+        }
+
+        Response::json($response);
+    }
+
+    public function resetPasswordForm(Request $request): void
+    {
+        $token = trim((string)$request->input('token', ''));
+        $this->view('auth/reset-password', [
+            'title' => 'Reset Password',
+            'token' => $token,
+        ]);
+    }
+
+    public function resetPassword(Request $request): void
+    {
+        if (!Csrf::validate((string)$request->input('_token'))) {
+            Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
+        }
+
+        $input = $request->all();
+        $validator = new AuthValidator();
+        $errors = $validator->validateResetPassword($input);
+
+        if ($errors !== []) {
+            Response::json(['ok' => false, 'errors' => $errors], 422);
+        }
+
+        $ok = (new AuthService())->resetPassword((string)$input['token'], (string)$input['password']);
+        if (!$ok) {
+            Response::json(['ok' => false, 'message' => 'Reset token is invalid or expired'], 422);
+        }
 
         Response::json(['ok' => true, 'redirect' => '/login']);
+    }
+
+    public function verifyNotice(Request $request): void
+    {
+        $this->view('auth/email-verify-notice', [
+            'title' => 'Verify Email',
+            'token' => trim((string)$request->input('token', '')),
+        ]);
+    }
+
+    public function verifyEmail(Request $request): void
+    {
+        $token = trim((string)$request->input('token', ''));
+        $verified = (new AuthService())->verifyEmailToken($token);
+
+        if (!$verified) {
+            Response::redirect('/email/verify/notice?invalid=1');
+        }
+
+        Response::redirect('/login?verified=1');
+    }
+
+    public function twoFactorChallengeForm(Request $request): void
+    {
+        $this->view('auth/two-factor-challenge', ['title' => 'Two Factor Authentication']);
+    }
+
+    public function verifyTwoFactorChallenge(Request $request): void
+    {
+        if (!Csrf::validate((string)$request->input('_token'))) {
+            Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
+        }
+
+        $code = trim((string)$request->input('code', ''));
+        if ($code === '' || strlen($code) !== 6) {
+            Response::json(['ok' => false, 'message' => 'Enter a valid 6-digit code'], 422);
+        }
+
+        $result = (new AuthService())->verifyTwoFactorCode($code);
+        if (!($result['ok'] ?? false)) {
+            Response::json(['ok' => false, 'message' => $result['message'] ?? 'Invalid code'], 422);
+        }
+
+        Response::json(['ok' => true, 'redirect' => $result['redirect'] ?? '/dashboard']);
+    }
+
+    public function sessions(Request $request): void
+    {
+        $userId = (int)(Session::get('auth.user_id') ?? 0);
+        if ($userId <= 0) {
+            Response::redirect('/login');
+        }
+
+        $this->view('auth/sessions', [
+            'title' => 'Session Management',
+            'sessions' => (new AuthService())->userSessions($userId),
+        ]);
+    }
+
+    public function revokeSession(Request $request): void
+    {
+        if (!Csrf::validate((string)$request->input('_token'))) {
+            Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
+        }
+
+        $userId = (int)(Session::get('auth.user_id') ?? 0);
+        $tokenHash = trim((string)$request->input('session_token', ''));
+
+        if ($userId <= 0 || $tokenHash === '') {
+            Response::json(['ok' => false, 'message' => 'Invalid request'], 422);
+        }
+
+        (new AuthService())->revokeSession($userId, $tokenHash);
+        Response::json(['ok' => true, 'message' => 'Session revoked']);
     }
 
     public function logout(Request $request): void
@@ -72,8 +208,14 @@ final class AuthController extends BaseController
         Response::redirect('/login');
     }
 
-    public function forgotPasswordForm(Request $request): void
+    private function ipAddress(): string
     {
-        $this->view('auth/forgot-password', ['title' => 'Forgot Password']);
+        $candidate = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        return filter_var($candidate, FILTER_VALIDATE_IP) ? $candidate : '0.0.0.0';
+    }
+
+    private function userAgent(): string
+    {
+        return substr(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? 'unknown')), 0, 500);
     }
 }

@@ -14,10 +14,13 @@ $userGrowthJson = json_encode($userGrowthSeries, JSON_UNESCAPED_UNICODE | JSON_U
         <h1 class="h3 mb-1">Admin Dashboard</h1>
         <p class="text-secondary mb-0">Welcome back, <?= e((string)($username ?? 'Admin')) ?>.</p>
     </div>
-    <form action="/logout" method="post">
-        <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
-        <button class="btn btn-outline-danger btn-sm" type="submit">Logout</button>
-    </form>
+    <div class="d-flex gap-2">
+        <a href="/admin/platform" class="btn btn-outline-warning btn-sm">Admin Modules</a>
+        <form action="/logout" method="post">
+            <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
+            <button class="btn btn-outline-danger btn-sm" type="submit">Logout</button>
+        </form>
+    </div>
 </div>
 
 <?php if (!empty($dashboardError)): ?>

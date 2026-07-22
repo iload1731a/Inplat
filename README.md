@@ -1,6 +1,6 @@
 # Inplat
 
-Professional Trading Platform foundation (Phase 1) generated around the provided MySQL schema.
+Professional Trading Platform foundation generated around the provided MySQL schema.
 
 ## Stack
 
@@ -10,7 +10,7 @@ Professional Trading Platform foundation (Phase 1) generated around the provided
 - jQuery + AJAX
 - PDO + CSRF + session auth
 
-## Phase 1 + Phase 2 + Phase 3 Included
+## Current Delivery Scope
 
 - MVC folder architecture
 - Clean routing bootstrap
@@ -20,20 +20,20 @@ Professional Trading Platform foundation (Phase 1) generated around the provided
   3. SQL import from `trading_platform_schema.sql`
   4. Admin account creation
   5. Install finish lock
-- Authentication baseline:
-  - Login
+- Authentication module pages:
+  - Login + Remember Me
   - Register
-  - Logout
-  - Forgot password screen
-- Admin dashboard entrypoint with auth guard
-- Phase 2 admin dashboard foundation:
-  - KPI cards (users, orders, volume, fees)
-  - Live Chart.js visualizations for activity trends
-  - Recent trades/deposits/withdrawals tables
-- Phase 3 user dashboard foundation:
-  - Portfolio overview (balance, open orders/positions, PnL)
-  - Wallet allocation + realized PnL Chart.js visualizations
-  - User-scoped recent orders and trades tables
+  - Forgot Password (token generation)
+  - Reset Password
+  - Email Verification notice + verification route
+  - 2FA challenge flow
+  - Session management (revoke remembered sessions)
+- Admin dashboard + admin operations page:
+  - KPI cards and charts
+  - User status, KYC queue, payments queue, support tickets, settings preview
+- User dashboard + trading workspace page:
+  - Portfolio overview
+  - Market overview, orders, positions, wallets, notifications, API keys, tickets
 - Installer license activation:
   - CodeCanyon buyer details + purchase code capture
   - Domain-bound encrypted local license validation

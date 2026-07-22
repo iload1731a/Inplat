@@ -3,6 +3,7 @@
 $currencies = is_array($currencies ?? null) ? $currencies : [];
 $deposits   = is_array($deposits   ?? null) ? $deposits   : [];
 $stats      = is_array($stats      ?? null) ? $stats      : [];
+$paymentRef = isset($paymentRef) ? e((string)$paymentRef) : 'DEP-' . e((string)\App\Libraries\Session::get('auth.user_id'));
 require app_path('app/views/user/_nav.php');
 ?>
 
@@ -45,7 +46,7 @@ require app_path('app/views/user/_nav.php');
                     <div class="col-7 font-monospace fw-semibold">XXXX GB 2L</div>
                     <div class="col-5 text-secondary">Reference:</div>
                     <div class="col-7 text-warning font-monospace fw-bold" id="yourRef">
-                        DEP-<?= e((string)\App\Libraries\Session::get('auth.user_id')) ?>-<?= strtoupper(bin2hex(random_bytes(4))) ?>
+                        <?= $paymentRef ?>
                     </div>
                 </div>
                 <div class="mt-2">

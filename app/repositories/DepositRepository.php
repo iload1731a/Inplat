@@ -274,44 +274,143 @@ final class DepositRepository
         ?int    $reviewedBy,
         ?string $flaggedReason
     ): void {
-        $creditedAt = $status === 'credited' ? ', credited_at = NOW()' : '';
-        $stmt = Database::connection()->prepare(
-            "UPDATE deposits
+        $pdo  = Database::connection();
+        $stmt = $pdo->prepare(
+            'UPDATE deposits
                 SET status         = :status,
                     flagged_reason = :flag_reason,
                     reviewed_by    = :reviewed_by
-                    {$creditedAt}
-              WHERE id = :id"
+              WHERE id = :id'
         );
         $stmt->bindValue(':status',      $status);
         $stmt->bindValue(':flag_reason', $flaggedReason);
         $stmt->bindValue(':reviewed_by', $reviewedBy, $reviewedBy !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
         $stmt->bindValue(':id',          $id, PDO::PARAM_INT);
         $stmt->execute();
+
+        // Set credited_at separately to avoid conditional SQL concatenation
+        if ($status === 'credited') {
+            $ts = $pdo->prepare('UPDATE deposits SET credited_at = NOW() WHERE id = :id AND credited_at IS NULL');
+            $ts->bindValue(':id', $id, PDO::PARAM_INT);
+            $ts->execute();
+        }
     }
 
-    /** Bulk status update for a list of IDs. */
+    /**
+     * Atomically credit a wallet and mark the deposit as credited in a single
+     * transaction, preventing balance/status desync if one step fails.
+     */
+    public function creditAndMarkDeposit(int $depositId, int $walletId, string $amount, int $adminId): void
+    {
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+        try {
+            // Lock and verify wallet
+            $walletStmt = $pdo->prepare(
+                'SELECT available_balance, total_deposited, is_frozen FROM wallets WHERE id = :id FOR UPDATE'
+            );
+            $walletStmt->bindValue(':id', $walletId, PDO::PARAM_INT);
+            $walletStmt->execute();
+            $wallet = $walletStmt->fetch();
+            if ($wallet === false) {
+                throw new \RuntimeException('Wallet not found');
+            }
+            if ((int)$wallet['is_frozen'] === 1) {
+                throw new \RuntimeException('Wallet is frozen');
+            }
+
+            $newBalance  = bcadd((string)$wallet['available_balance'], $amount, 18);
+            $newDeposited = bcadd((string)$wallet['total_deposited'],    $amount, 18);
+
+            // Update wallet balance
+            $updWallet = $pdo->prepare(
+                'UPDATE wallets SET available_balance = :bal, total_deposited = :dep, updated_at = NOW() WHERE id = :id'
+            );
+            $updWallet->bindValue(':bal', $newBalance);
+            $updWallet->bindValue(':dep', $newDeposited);
+            $updWallet->bindValue(':id',  $walletId, PDO::PARAM_INT);
+            $updWallet->execute();
+
+            // Write ledger entry
+            $ledger = $pdo->prepare(
+                'INSERT INTO ledger_entries
+                    (wallet_id, reference_type, reference_id, direction, amount, balance_after, notes, created_by_admin, created_at)
+                 VALUES (:wid, :ref_type, :ref_id, :dir, :amt, :bal, :notes, :admin, NOW())'
+            );
+            $ledger->bindValue(':wid',      $walletId, PDO::PARAM_INT);
+            $ledger->bindValue(':ref_type', 'deposit');
+            $ledger->bindValue(':ref_id',   $depositId, PDO::PARAM_INT);
+            $ledger->bindValue(':dir',      'credit');
+            $ledger->bindValue(':amt',      $amount);
+            $ledger->bindValue(':bal',      $newBalance);
+            $ledger->bindValue(':notes',    "Admin credit for deposit #{$depositId}");
+            $ledger->bindValue(':admin',    $adminId, PDO::PARAM_INT);
+            $ledger->execute();
+
+            // Mark deposit as credited
+            $updDep = $pdo->prepare(
+                "UPDATE deposits
+                    SET status = 'credited', credited_at = NOW(), reviewed_by = :admin
+                  WHERE id = :id AND status != 'credited'"
+            );
+            $updDep->bindValue(':admin', $adminId, PDO::PARAM_INT);
+            $updDep->bindValue(':id',    $depositId, PDO::PARAM_INT);
+            $updDep->execute();
+
+            if ($updDep->rowCount() === 0) {
+                // Already credited by another request — rollback wallet changes
+                throw new \RuntimeException('Deposit is already credited.');
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /** Bulk status update for a list of IDs (non-credit statuses only). */
     public function bulkUpdateStatus(array $ids, string $status, int $adminId): int
     {
         if (empty($ids)) {
             return 0;
         }
-        $pdo         = Database::connection();
+        $pdo          = Database::connection();
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $creditedAt   = $status === 'credited' ? ', credited_at = NOW()' : '';
+
         $stmt = $pdo->prepare(
             "UPDATE deposits
-                SET status = ?, reviewed_by = ? {$creditedAt}
+                SET status = ?, reviewed_by = ?
               WHERE id IN ({$placeholders}) AND status NOT IN ('credited','failed')"
         );
         $bindings = array_merge([$status, $adminId], $ids);
         $stmt->execute($bindings);
+
         return (int)$stmt->rowCount();
     }
 
     // -------------------------------------------------------------------------
     // Reporting
     // -------------------------------------------------------------------------
+
+    /** Monthly deposit totals for a specific user (credited only). */
+    public function userMonthlyReport(int $userId, int $months = 12): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month,
+                    SUM(CASE WHEN status = 'credited' THEN amount ELSE 0 END) AS total,
+                    SUM(status = 'credited') AS count
+             FROM deposits
+             WHERE user_id = :uid
+               AND created_at >= DATE_SUB(CURDATE(), INTERVAL :months MONTH)
+             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+             ORDER BY month ASC"
+        );
+        $stmt->bindValue(':uid',    $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':months', $months, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    }
 
     /** Daily deposit volume for the last N days. */
     public function dailyVolumeReport(int $days = 30): array

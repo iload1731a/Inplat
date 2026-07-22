@@ -78,9 +78,13 @@ final class DepositController extends BaseController
             $data = ['currencies' => [], 'deposits' => [], 'stats' => [], 'filters' => []];
         }
 
+        // Generate a stable server-side payment reference tied to the user session
+        $paymentRef = 'DEP-' . $userId . '-' . strtoupper(bin2hex(random_bytes(4)));
+
         $this->userView('user/deposit/fiat', [
             'title'       => 'Fiat Deposit',
             'userSection' => 'deposit',
+            'paymentRef'  => $paymentRef,
             ...$data,
         ]);
     }

@@ -153,26 +153,10 @@ final class DepositService
 
     public function userDepositReport(int $userId): array
     {
-        $deposits = $this->repo->userDeposits($userId, [], 500);
-
-        // Build monthly totals from the user's deposit history
-        $monthly = [];
-        foreach ($deposits as $dep) {
-            $month = substr((string)$dep['created_at'], 0, 7);
-            if (!isset($monthly[$month])) {
-                $monthly[$month] = ['month' => $month, 'total' => '0', 'count' => 0];
-            }
-            if ($dep['status'] === 'credited') {
-                $monthly[$month]['total'] = bcadd($monthly[$month]['total'], (string)$dep['amount'], 8);
-                $monthly[$month]['count']++;
-            }
-        }
-        ksort($monthly);
-
         return [
-            'deposits' => $deposits,
+            'deposits' => $this->repo->userDeposits($userId, [], 500),
             'stats'    => $this->repo->userStats($userId),
-            'monthly'  => array_values($monthly),
+            'monthly'  => $this->repo->userMonthlyReport($userId),
         ];
     }
 
@@ -221,18 +205,17 @@ final class DepositService
             throw new InvalidArgumentException('Deposit is already credited.');
         }
 
-        // If crediting, credit the wallet balance atomically
+        // If crediting, use atomic credit + status update in one transaction
         if ($status === 'credited') {
-            $this->balanceRepo->credit(
+            $this->repo->creditAndMarkDeposit(
+                $depositId,
                 (int)$deposit['wallet_id'],
                 (string)$deposit['amount'],
-                'deposit',
-                $depositId,
-                "Admin credit for deposit #{$depositId}"
+                $adminId
             );
+        } else {
+            $this->repo->updateStatus($depositId, $status, $adminId, $flagReason ?: null);
         }
-
-        $this->repo->updateStatus($depositId, $status, $adminId, $flagReason ?: null);
 
         // Notify the user
         $notifTitle   = match($status) {

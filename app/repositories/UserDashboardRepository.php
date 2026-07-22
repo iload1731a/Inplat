@@ -120,17 +120,18 @@ final class UserDashboardRepository
     public function pnlSeries(int $userId, int $days = 7): array
     {
         $safeDays = max(1, $days);
+        $fromDate = (new \DateTimeImmutable('today'))->modify('-' . $safeDays . ' days')->format('Y-m-d H:i:s');
         $sql = "SELECT DATE(closed_at) AS day, COALESCE(SUM(realized_pnl), 0) AS pnl
                 FROM positions
                 WHERE user_id = :user_id
                   AND closed_at IS NOT NULL
-                  AND closed_at >= DATE_SUB(CURDATE(), INTERVAL :days DAY)
+                  AND closed_at >= :from_date
                 GROUP BY DATE(closed_at)
                 ORDER BY day ASC";
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':days', $safeDays, PDO::PARAM_INT);
+        $stmt->bindValue(':from_date', $fromDate);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];

@@ -54,17 +54,16 @@ final class AdminDashboardRepository
 
     public function recentTrades(int $limit = 8): array
     {
-        $sql = $this->columnExists('trades', 'trading_pair_id')
-            ? 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
-               FROM trades t
-               LEFT JOIN trading_pairs tp ON tp.id = t.trading_pair_id
-               ORDER BY t.id DESC
-               LIMIT :limit'
-            : 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
-               FROM trades t
-               LEFT JOIN trading_pairs tp ON tp.id = t.pair_id
-               ORDER BY t.id DESC
-               LIMIT :limit';
+        $pairColumn = $this->columnExists('trades', 'trading_pair_id') ? 'trading_pair_id' : 'pair_id';
+        if (!in_array($pairColumn, ['trading_pair_id', 'pair_id'], true)) {
+            return [];
+        }
+
+        $sql = 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
+                FROM trades t
+                LEFT JOIN trading_pairs tp ON tp.id = t.' . $pairColumn . '
+                ORDER BY t.id DESC
+                LIMIT :limit';
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
@@ -232,6 +231,11 @@ final class AdminDashboardRepository
 
     private function columnExists(string $table, string $column): bool
     {
+        $allowedTables = ['trades'];
+        if (!in_array($table, $allowedTables, true)) {
+            return false;
+        }
+
         $cacheKey = $table . ':' . $column;
         if (array_key_exists($cacheKey, self::$columnExistsCache)) {
             return self::$columnExistsCache[$cacheKey];

@@ -96,7 +96,7 @@ final class UserDashboardRepository
                        t.quantity,
                        t.executed_at,
                        CASE
-                           WHEN t.buyer_id = :buyer_id THEN :side_buy
+                           WHEN t.buyer_id = :buyer_id_case THEN :side_buy
                            ELSE :side_sell
                        END AS side
                 FROM trades t
@@ -106,7 +106,7 @@ final class UserDashboardRepository
                 LIMIT :limit";
 
         $stmt = Database::connection()->prepare($sql);
-        $stmt->bindValue(':buyer_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':buyer_id_case', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':buyer_id_filter', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':seller_id_filter', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':side_buy', self::SIDE_BUY);

@@ -35,7 +35,7 @@ $overviewCards = [
 
 <div class="row g-3 mb-4">
     <?php foreach ($overviewCards as $card): ?>
-        <div class="col-md-3">
+        <div class="col-md">
             <div class="glass rounded-4 p-3">
                 <div class="text-secondary small"><?= e((string)$card['label']) ?></div>
                 <div class="h4 mb-0 <?= e((string)$card['valueClass']) ?>"><?= e((string)$card['value']) ?></div>

@@ -12,6 +12,8 @@ use App\Validators\AuthValidator;
 
 final class AuthController extends BaseController
 {
+    private const USER_DASHBOARD_ROUTE = '/dashboard';
+
     public function loginForm(Request $request): void
     {
         $this->view('auth/login', ['title' => 'Login']);
@@ -32,7 +34,7 @@ final class AuthController extends BaseController
             Response::json(['ok' => false, 'message' => 'Invalid credentials'], 422);
         }
 
-        Response::json(['ok' => true, 'redirect' => '/dashboard']);
+        Response::json(['ok' => true, 'redirect' => self::USER_DASHBOARD_ROUTE]);
     }
 
     public function registerForm(Request $request): void

@@ -7,6 +7,16 @@ $recentTrades = is_array($recentTrades ?? null) ? $recentTrades : [];
 $pnlSeries = is_array($pnlSeries ?? null) ? $pnlSeries : [];
 $walletAllocationJson = json_encode($walletAllocation, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $pnlSeriesJson = json_encode($pnlSeries, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$overviewCards = [
+    ['label' => 'Portfolio Balance', 'value' => number_format((float)($overview['wallet_total_balance'] ?? 0), 6), 'valueClass' => ''],
+    ['label' => 'Open Orders', 'value' => number_format((int)($overview['open_orders'] ?? 0)), 'valueClass' => ''],
+    ['label' => 'Open Positions', 'value' => number_format((int)($overview['open_positions'] ?? 0)), 'valueClass' => ''],
+    [
+        'label' => 'Total PnL',
+        'value' => number_format((float)($overview['total_pnl'] ?? 0), 6),
+        'valueClass' => (float)($overview['total_pnl'] ?? 0) >= 0 ? 'text-success' : 'text-danger'
+    ],
+];
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -24,10 +34,14 @@ $pnlSeriesJson = json_encode($pnlSeries, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED
 <?php endif; ?>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="glass rounded-4 p-3"><div class="text-secondary small">Portfolio Balance</div><div class="h4 mb-0"><?= number_format((float)($overview['wallet_total_balance'] ?? 0), 6) ?></div></div></div>
-    <div class="col-md-3"><div class="glass rounded-4 p-3"><div class="text-secondary small">Open Orders</div><div class="h4 mb-0"><?= number_format((int)($overview['open_orders'] ?? 0)) ?></div></div></div>
-    <div class="col-md-3"><div class="glass rounded-4 p-3"><div class="text-secondary small">Open Positions</div><div class="h4 mb-0"><?= number_format((int)($overview['open_positions'] ?? 0)) ?></div></div></div>
-    <div class="col-md-3"><div class="glass rounded-4 p-3"><div class="text-secondary small">Total PnL</div><div class="h4 mb-0 <?= (float)($overview['total_pnl'] ?? 0) >= 0 ? 'text-success' : 'text-danger' ?>"><?= number_format((float)($overview['total_pnl'] ?? 0), 6) ?></div></div></div>
+    <?php foreach ($overviewCards as $card): ?>
+        <div class="col-md-3">
+            <div class="glass rounded-4 p-3">
+                <div class="text-secondary small"><?= e((string)$card['label']) ?></div>
+                <div class="h4 mb-0 <?= e((string)$card['valueClass']) ?>"><?= e((string)$card['value']) ?></div>
+            </div>
+        </div>
+    <?php endforeach; ?>
 </div>
 
 <div class="row g-3 mb-4">

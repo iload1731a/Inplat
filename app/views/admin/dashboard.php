@@ -139,12 +139,12 @@ $userGrowthJson = json_encode($userGrowthSeries, JSON_UNESCAPED_UNICODE | JSON_U
     new Chart(document.getElementById('statusChart'), {
         type: 'doughnut',
         data: {
-            labels: ['Pending Deposits', 'Pending Withdrawals', 'Completed Activity'],
+            labels: ['Pending Deposits', 'Pending Withdrawals', 'Total Trades'],
             datasets: [{
                 data: [
                     <?= (int)($overview['deposits_pending'] ?? 0) ?>,
                     <?= (int)($overview['withdrawals_pending'] ?? 0) ?>,
-                    <?= max(0, (int)($overview['trades'] ?? 0) - ((int)($overview['deposits_pending'] ?? 0) + (int)($overview['withdrawals_pending'] ?? 0))) ?>
+                    <?= (int)($overview['trades'] ?? 0) ?>
                 ],
                 backgroundColor: ['#38bdf8', '#fb7185', '#34d399']
             }]

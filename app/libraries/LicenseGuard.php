@@ -61,7 +61,7 @@ final class LicenseGuard
     public static function normalizeDomain(string $domain): string
     {
         $clean = strtolower(trim($domain));
-        $clean = preg_replace('/:\d+$/', '', $clean);
+        $clean = preg_replace('/:\d+$/', '', $clean) ?? $clean;
         return (string)$clean;
     }
 

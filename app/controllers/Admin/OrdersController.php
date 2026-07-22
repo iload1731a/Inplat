@@ -48,6 +48,7 @@ final class OrdersController extends AdminBaseController
         try {
             $data = $this->svc()->orderDetail($orderId);
         } catch (Throwable $e) {
+            Session::put('flash.error', 'Order not found or could not be loaded.');
             Response::redirect('/admin/orders');
         }
 

@@ -117,7 +117,7 @@ foreach ($legalDocuments as $doc) {
                         <td><span class="badge text-bg-<?= (int)($tmpl['is_active'] ?? 0) ? 'success' : 'secondary' ?>"><?= (int)($tmpl['is_active'] ?? 0) ? 'Active' : 'Off' ?></span></td>
                         <td class="small text-secondary"><?= e((string)($tmpl['updated_at'] ?? '-')) ?></td>
                         <td class="text-end">
-                            <button class="btn btn-xs btn-outline-light me-1" onclick="openEditEmailTemplate(<?= (int)$tmpl['id'] ?>, '<?= e((string)$tmpl['template_key']) ?>')">Edit</button>
+                            <button class="btn btn-xs btn-outline-light me-1" onclick="openEditEmailTemplate(<?= e(json_encode($tmpl)) ?>)">Edit</button>
                             <button class="btn btn-xs btn-outline-danger" onclick="deleteEmailTemplate(<?= (int)$tmpl['id'] ?>)">Del</button>
                         </td>
                     </tr>
@@ -291,6 +291,26 @@ foreach ($legalDocuments as $doc) {
     </div>
 </div>
 
+<!-- Edit Email Template Modal -->
+<div class="modal fade" id="editEmailTemplateModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <form class="modal-content bg-dark border-secondary" data-ajax="true" action="/admin/content/email-template/save" method="post">
+            <input type="hidden" name="_token" value="<?= e($csrf) ?>">
+            <input type="hidden" name="id" id="editTplId">
+            <div class="modal-header border-secondary"><h5 class="modal-title">Edit Email Template</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label">Template Key <span class="text-danger">*</span></label><input class="form-control" type="text" name="template_key" id="editTplKey" required></div>
+                    <div class="col-md-5"><label class="form-label">Subject <span class="text-danger">*</span></label><input class="form-control" type="text" name="subject" id="editTplSubject" required></div>
+                    <div class="col-md-1 d-flex align-items-end"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_active" value="1" id="editTplActive"><label class="form-check-label">On</label></div></div>
+                    <div class="col-12"><label class="form-label">HTML Body</label><textarea class="form-control font-monospace" name="body_html" id="editTplBody" rows="12" style="font-size:12px"></textarea></div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save Template</button></div>
+        </form>
+    </div>
+</div>
+
 <!-- Create Document Modal -->
 <div class="modal fade" id="createDocModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
@@ -380,9 +400,13 @@ function deleteBanner(id) {
     document.getElementById('deleteBannerId').value = id;
     $('#deleteBannerForm').trigger('submit');
 }
-function openEditEmailTemplate(id, key) {
-    // Open create modal pre-filled? For email templates with HTML body we keep it simple
-    alert('Edit template: open the create modal to re-save with template_id=' + id + ' and key=' + key);
+function openEditEmailTemplate(tmpl) {
+    document.getElementById('editTplId').value = tmpl.id;
+    document.getElementById('editTplKey').value = tmpl.template_key || '';
+    document.getElementById('editTplSubject').value = tmpl.subject || '';
+    document.getElementById('editTplActive').checked = parseInt(tmpl.is_active) === 1;
+    document.getElementById('editTplBody').value = tmpl.body_html || '';
+    new bootstrap.Modal(document.getElementById('editEmailTemplateModal')).show();
 }
 function deleteEmailTemplate(id) {
     if (!confirm('Delete email template?')) return;

@@ -102,11 +102,20 @@ final class AdminSystemRepository
 
     public function updateMaintenanceStatus(int $id, string $status): void
     {
-        $actualStart = in_array($status, ['in_progress'], true) ? ', actual_start = NOW()' : '';
-        $actualEnd   = in_array($status, ['completed', 'cancelled'], true) ? ', actual_end = NOW()' : '';
-        $stmt = Database::connection()->prepare(
-            "UPDATE maintenance_windows SET status = :status{$actualStart}{$actualEnd}, updated_at = NOW() WHERE id = :id"
-        );
+        $pdo = Database::connection();
+        if ($status === 'in_progress') {
+            $stmt = $pdo->prepare(
+                'UPDATE maintenance_windows SET status = :status, actual_start = NOW(), updated_at = NOW() WHERE id = :id'
+            );
+        } elseif (in_array($status, ['completed', 'cancelled'], true)) {
+            $stmt = $pdo->prepare(
+                'UPDATE maintenance_windows SET status = :status, actual_end = NOW(), updated_at = NOW() WHERE id = :id'
+            );
+        } else {
+            $stmt = $pdo->prepare(
+                'UPDATE maintenance_windows SET status = :status, updated_at = NOW() WHERE id = :id'
+            );
+        }
         $stmt->bindValue(':status', $status);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();

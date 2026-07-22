@@ -44,6 +44,7 @@ final class WalletsController extends AdminBaseController
         try {
             $data = $this->svc()->walletLedger($walletId);
         } catch (Throwable $e) {
+            Session::put('flash.error', 'Wallet not found or could not be loaded.');
             Response::redirect('/admin/wallets');
         }
 

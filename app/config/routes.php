@@ -14,6 +14,7 @@ use App\Controllers\Admin\PlatformController as AdminPlatformController;
 use App\Controllers\Admin\RolesController as AdminRolesController;
 use App\Controllers\Admin\SystemController as AdminSystemController;
 use App\Controllers\Admin\WalletsController as AdminWalletsController;
+use App\Controllers\Admin\WithdrawalsController as AdminWithdrawalsController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallerController;
@@ -32,6 +33,7 @@ use App\Controllers\User\StakingController as UserStakingController;
 use App\Controllers\User\TicketsController as UserTicketsController;
 use App\Controllers\User\TradesController as UserTradesController;
 use App\Controllers\User\WalletController as UserWalletController;
+use App\Controllers\User\WithdrawalController as UserWithdrawalController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -123,9 +125,22 @@ $router->post('/admin/wallets/unfreeze', [AdminWalletsController::class, 'unfree
 // Deposits
 $router->get('/admin/wallets/deposits', [AdminWalletsController::class, 'deposits']);
 $router->post('/admin/wallets/deposits/review', [AdminWalletsController::class, 'reviewDeposit']);
-// Withdrawals
+// Withdrawals (legacy – kept for backward compat)
 $router->get('/admin/wallets/withdrawals', [AdminWalletsController::class, 'withdrawals']);
 $router->post('/admin/wallets/withdrawals/review', [AdminWalletsController::class, 'reviewWithdrawal']);
+
+// =====================================================================
+// ADMIN – Dedicated Withdrawal Management
+// =====================================================================
+$router->get('/admin/withdrawals',                    [AdminWithdrawalsController::class, 'index']);
+$router->get('/admin/withdrawals/detail',             [AdminWithdrawalsController::class, 'detail']);
+$router->post('/admin/withdrawals/review',            [AdminWithdrawalsController::class, 'review']);
+$router->post('/admin/withdrawals/bulk-approve',      [AdminWithdrawalsController::class, 'bulkApprove']);
+$router->post('/admin/withdrawals/bulk-reject',       [AdminWithdrawalsController::class, 'bulkReject']);
+$router->get('/admin/withdrawals/reports',            [AdminWithdrawalsController::class, 'reports']);
+$router->get('/admin/withdrawals/export',             [AdminWithdrawalsController::class, 'export']);
+$router->get('/admin/withdrawals/gateways',           [AdminWithdrawalsController::class, 'gateways']);
+$router->post('/admin/withdrawals/gateways/update',   [AdminWithdrawalsController::class, 'updateGateway']);
 // Manual adjustment
 $router->get('/admin/wallets/adjustment', [AdminWalletsController::class, 'adjustment']);
 $router->post('/admin/wallets/adjustment', [AdminWalletsController::class, 'doAdjustment']);
@@ -273,6 +288,18 @@ $router->get('/user/wallet/addresses',         [UserWalletController::class, 'ad
 $router->post('/user/wallet/addresses/add',    [UserWalletController::class, 'addAddress']);
 $router->post('/user/wallet/addresses/revoke', [UserWalletController::class, 'revokeAddress']);
 $router->get('/user/wallet/balance',           [UserWalletController::class, 'balance']);
+
+// =====================================================================
+// USER – Dedicated Withdrawal System
+// =====================================================================
+$router->get('/user/withdrawal',                 [UserWithdrawalController::class, 'index']);
+$router->get('/user/withdrawal/fiat',            [UserWithdrawalController::class, 'fiat']);
+$router->post('/user/withdrawal/submit-crypto',  [UserWithdrawalController::class, 'submitCrypto']);
+$router->post('/user/withdrawal/submit-fiat',    [UserWithdrawalController::class, 'submitFiat']);
+$router->post('/user/withdrawal/cancel',         [UserWithdrawalController::class, 'cancel']);
+$router->get('/user/withdrawal/report',          [UserWithdrawalController::class, 'report']);
+$router->get('/user/withdrawal/limit-info',      [UserWithdrawalController::class, 'limitInfo']);
+$router->get('/user/withdrawal/fee-preview',     [UserWithdrawalController::class, 'feePreview']);
 
 // =====================================================================
 // USER – Orders

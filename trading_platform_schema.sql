@@ -1478,6 +1478,42 @@ VALUES
     ('Binance', 'binance', 'both', 'https://api.binance.com', 'wss://stream.binance.com:9443/ws', 'api_key_header', 'X-MBX-APIKEY', 1200, 10, 0, 1, 1, 1,
      'Preferred for real-time sub-second price ticks via WebSocket; not used for pair discovery.');
 
+-- ============================================================================
+-- SECTION 13: CHARTS & MARKET ANALYTICS
+-- ============================================================================
+
+-- Per-user chart layout and indicator preferences
+CREATE TABLE user_chart_preferences (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    trading_pair_id         INT UNSIGNED NULL,
+    interval_code           ENUM('1m','5m','15m','30m','1h','4h','1d','1w','1M') NOT NULL DEFAULT '1h',
+    chart_type              ENUM('candlestick','line','bar','area','heikin_ashi') NOT NULL DEFAULT 'candlestick',
+    indicators              JSON NULL COMMENT 'Active indicator configs: [{type,params,color}]',
+    drawings                JSON NULL COMMENT 'Saved drawing overlays as serialised objects',
+    layout                  JSON NULL COMMENT 'UI layout preferences (show_volume, theme, etc.)',
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_user_pair_pref (user_id, trading_pair_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (trading_pair_id) REFERENCES trading_pairs(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='Per-user chart preferences scoped to a trading pair (NULL = global default)';
+
+-- Saved chart templates/layouts users can name and recall
+CREATE TABLE chart_templates (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    name                    VARCHAR(80) NOT NULL,
+    description             VARCHAR(255) NULL,
+    chart_type              ENUM('candlestick','line','bar','area','heikin_ashi') NOT NULL DEFAULT 'candlestick',
+    indicators              JSON NOT NULL,
+    layout                  JSON NULL,
+    is_public               TINYINT(1) NOT NULL DEFAULT 0,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================================

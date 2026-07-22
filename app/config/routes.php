@@ -20,6 +20,7 @@ use App\Controllers\Admin\DepositsController as AdminDepositsController;
 use App\Controllers\Admin\WithdrawalsController as AdminWithdrawalsController;
 use App\Controllers\Admin\TradingEngineController as AdminTradingEngineController;
 use App\Controllers\Admin\MarketsController as AdminMarketsController;
+use App\Controllers\Admin\ChartsController as AdminChartsController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallerController;
@@ -43,6 +44,7 @@ use App\Controllers\User\DepositController as UserDepositController;
 use App\Controllers\User\WithdrawalController as UserWithdrawalController;
 use App\Controllers\User\TradingController as UserTradingController;
 use App\Controllers\User\MarketsController as UserMarketsController;
+use App\Controllers\User\ChartsController as UserChartsController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -134,6 +136,16 @@ $router->get('/admin/markets/sync-logs',            [AdminMarketsController::cla
 $router->get('/admin/markets/mappings',             [AdminMarketsController::class, 'mappings']);
 $router->post('/admin/markets/mappings/save',       [AdminMarketsController::class, 'saveMapping']);
 $router->post('/admin/markets/mappings/delete',     [AdminMarketsController::class, 'deleteMapping']);
+
+// =====================================================================
+// ADMIN – Charts & Market Analytics
+// =====================================================================
+$router->get('/admin/charts',               [AdminChartsController::class, 'index']);
+$router->get('/admin/charts/data',          [AdminChartsController::class, 'data']);
+$router->get('/admin/charts/volatility',    [AdminChartsController::class, 'volatility']);
+$router->get('/admin/charts/correlation',   [AdminChartsController::class, 'correlation']);
+$router->get('/admin/charts/heatmap',       [AdminChartsController::class, 'heatmap']);
+$router->get('/admin/charts/export',        [AdminChartsController::class, 'export']);
 
 // =====================================================================
 // ADMIN – Orders Management
@@ -461,6 +473,19 @@ $router->post('/markets/watchlist/toggle',  [UserMarketsController::class, 'togg
 $router->get('/markets/detail',             [UserMarketsController::class, 'detail']);
 $router->get('/markets/tickers',            [UserMarketsController::class, 'tickers']);
 $router->get('/markets/ticker',             [UserMarketsController::class, 'ticker']);
+
+// =====================================================================
+// USER – Advanced Charts & Market Analytics
+// =====================================================================
+$router->get('/charts',                        [UserChartsController::class, 'index']);
+$router->get('/charts/data',                   [UserChartsController::class, 'data']);
+$router->get('/charts/volume-profile',         [UserChartsController::class, 'volumeProfile']);
+$router->get('/charts/compare',                [UserChartsController::class, 'compare']);
+$router->get('/charts/compare/data',           [UserChartsController::class, 'compareData']);
+$router->post('/charts/preferences',           [UserChartsController::class, 'savePreferences']);
+$router->get('/charts/templates',              [UserChartsController::class, 'listTemplates']);
+$router->post('/charts/templates',             [UserChartsController::class, 'saveTemplate']);
+$router->post('/charts/templates/delete',      [UserChartsController::class, 'deleteTemplate']);
 
 // =====================================================================
 // INSTALLER

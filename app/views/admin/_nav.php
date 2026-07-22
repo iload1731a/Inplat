@@ -26,6 +26,7 @@
             'Markets' => [
                 'markets'         => ['/admin/markets',         '<i class="fas fa-chart-area me-1"></i>Markets'],
                 'assets'          => ['/admin/assets',          '<i class="fas fa-coins me-1"></i>Assets'],
+                'charts'          => ['/admin/charts',          '<i class="fas fa-chart-line me-1"></i>Analytics'],
                 'orders'          => ['/admin/orders',          '<i class="fas fa-list-ol me-1"></i>Orders'],
                 'trading'         => ['/admin/trading',         '<i class="fas fa-chart-line me-1"></i>Trading'],
                 'trading-engine'  => ['/admin/trading-engine',  '<i class="fas fa-exchange-alt me-1"></i>Engine'],

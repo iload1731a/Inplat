@@ -20,6 +20,8 @@ final class PlatformRepository
             'latest_deposits' => $pdo->query("SELECT id, amount, status, created_at FROM deposits ORDER BY id DESC LIMIT 10")->fetchAll() ?: [],
             'latest_withdrawals' => $pdo->query("SELECT id, amount, status, requested_at FROM withdrawals ORDER BY id DESC LIMIT 10")->fetchAll() ?: [],
             'settings' => $pdo->query('SELECT setting_key, setting_value FROM system_settings ORDER BY setting_key ASC LIMIT 20')->fetchAll() ?: [],
+            'module_status' => $this->adminModuleStatus($pdo),
+            'settings_status' => $this->settingsCoverageStatus($pdo),
         ];
     }
 
@@ -62,5 +64,113 @@ final class PlatformRepository
             'tickets' => $ticketsStmt->fetchAll() ?: [],
             'apiKeys' => $apiKeysStmt->fetchAll() ?: [],
         ];
+    }
+
+    private function adminModuleStatus(PDO $pdo): array
+    {
+        $counts = [
+            'users' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
+            'roles' => (int)$pdo->query('SELECT COUNT(*) FROM roles')->fetchColumn(),
+            'permissions' => (int)$pdo->query('SELECT COUNT(*) FROM permissions')->fetchColumn(),
+            'orders' => (int)$pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn(),
+            'markets' => (int)$pdo->query('SELECT COUNT(*) FROM trading_pairs')->fetchColumn(),
+            'assets' => (int)$pdo->query('SELECT COUNT(*) FROM currencies')->fetchColumn(),
+            'pairs' => (int)$pdo->query('SELECT COUNT(*) FROM trading_pairs')->fetchColumn(),
+            'deposits' => (int)$pdo->query('SELECT COUNT(*) FROM deposits')->fetchColumn(),
+            'withdrawals' => (int)$pdo->query('SELECT COUNT(*) FROM withdrawals')->fetchColumn(),
+            'wallets' => (int)$pdo->query('SELECT COUNT(*) FROM wallets')->fetchColumn(),
+            'kyc' => (int)$pdo->query('SELECT COUNT(*) FROM kyc_documents')->fetchColumn(),
+            'tickets' => (int)$pdo->query('SELECT COUNT(*) FROM support_tickets')->fetchColumn(),
+            'pages' => (int)$pdo->query('SELECT COUNT(*) FROM legal_documents')->fetchColumn(),
+            'news' => (int)$pdo->query('SELECT COUNT(*) FROM announcements')->fetchColumn(),
+            'languages' => (int)$pdo->query('SELECT COUNT(*) FROM system_settings WHERE category = \'localization\'')->fetchColumn(),
+            'logs' => (int)$pdo->query('SELECT COUNT(*) FROM audit_logs')->fetchColumn(),
+            'email_templates' => (int)$pdo->query('SELECT COUNT(*) FROM email_templates')->fetchColumn(),
+            'sms_templates' => (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE channel = 'sms'")->fetchColumn(),
+            'notification_templates' => (int)$pdo->query('SELECT COUNT(*) FROM notifications')->fetchColumn(),
+            'cron_jobs' => (int)$pdo->query('SELECT COUNT(*) FROM pair_import_jobs')->fetchColumn(),
+            'api_settings' => (int)$pdo->query('SELECT COUNT(*) FROM price_data_providers')->fetchColumn(),
+        ];
+
+        return [
+            ['module' => 'User Management', 'total' => $counts['users']],
+            ['module' => 'Role Management', 'total' => $counts['roles']],
+            ['module' => 'Permission Management', 'total' => $counts['permissions']],
+            ['module' => 'Trading Management', 'total' => $counts['orders']],
+            ['module' => 'Markets', 'total' => $counts['markets']],
+            ['module' => 'Assets', 'total' => $counts['assets']],
+            ['module' => 'Trading Pairs', 'total' => $counts['pairs']],
+            ['module' => 'Orders', 'total' => $counts['orders']],
+            ['module' => 'Deposits', 'total' => $counts['deposits']],
+            ['module' => 'Withdrawals', 'total' => $counts['withdrawals']],
+            ['module' => 'Wallets', 'total' => $counts['wallets']],
+            ['module' => 'KYC', 'total' => $counts['kyc']],
+            ['module' => 'Support Tickets', 'total' => $counts['tickets']],
+            ['module' => 'CMS Pages', 'total' => $counts['pages']],
+            ['module' => 'FAQ', 'total' => 0],
+            ['module' => 'News', 'total' => $counts['news']],
+            ['module' => 'Announcements', 'total' => $counts['news']],
+            ['module' => 'Languages', 'total' => $counts['languages']],
+            ['module' => 'Settings', 'total' => (int)$pdo->query('SELECT COUNT(*) FROM system_settings')->fetchColumn()],
+            ['module' => 'Logs', 'total' => $counts['logs']],
+            ['module' => 'Email Templates', 'total' => $counts['email_templates']],
+            ['module' => 'SMS Templates', 'total' => $counts['sms_templates']],
+            ['module' => 'Notification Templates', 'total' => $counts['notification_templates']],
+            ['module' => 'Maintenance Mode', 'total' => (int)$pdo->query("SELECT COUNT(*) FROM system_settings WHERE setting_key = 'maintenance_mode'")->fetchColumn()],
+            ['module' => 'Cron Jobs', 'total' => $counts['cron_jobs']],
+            ['module' => 'API Settings', 'total' => $counts['api_settings']],
+        ];
+    }
+
+    private function settingsCoverageStatus(PDO $pdo): array
+    {
+        $rows = $pdo->query('SELECT setting_key, setting_value FROM system_settings')->fetchAll() ?: [];
+        $indexed = [];
+        foreach ($rows as $row) {
+            $key = strtolower((string)($row['setting_key'] ?? ''));
+            if ($key !== '') {
+                $indexed[$key] = (string)($row['setting_value'] ?? '');
+            }
+        }
+
+        $mapping = [
+            'General' => ['platform_name', 'registration_enabled'],
+            'Company' => ['company_name'],
+            'Branding' => ['brand_primary_color'],
+            'Logo' => ['logo_url'],
+            'Dark Logo' => ['logo_dark_url'],
+            'Favicon' => ['favicon_url'],
+            'SMTP' => ['smtp_host'],
+            'SMS' => ['sms_provider'],
+            'API' => ['api_enabled'],
+            'Trading APIs' => ['trading_api_provider'],
+            'Cron' => ['cron_enabled'],
+            'Maintenance' => ['maintenance_mode'],
+            'Localization' => ['default_locale'],
+            'Timezone' => ['timezone'],
+            'Currency' => ['base_currency'],
+            'Language' => ['default_language'],
+        ];
+
+        $status = [];
+        foreach ($mapping as $label => $candidates) {
+            $configured = false;
+            $value = '';
+            foreach ($candidates as $candidate) {
+                if (array_key_exists($candidate, $indexed) && trim((string)$indexed[$candidate]) !== '') {
+                    $configured = true;
+                    $value = (string)$indexed[$candidate];
+                    break;
+                }
+            }
+
+            $status[] = [
+                'setting' => $label,
+                'state' => $configured ? 'Configured' : 'Pending',
+                'value' => $configured ? $value : '-',
+            ];
+        }
+
+        return $status;
     }
 }

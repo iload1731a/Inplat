@@ -94,9 +94,16 @@ $orderStatusJson = json_encode($orderStatusSeries, JSON_UNESCAPED_UNICODE | JSON
             <h2 class="h6 mb-3">Activity Timeline</h2>
             <div class="d-flex flex-column gap-2 small">
                 <?php foreach ($activityTimeline as $event): ?>
+                    <?php
+                    $timelineUser = e((string)($event['username'] ?? 'admin'));
+                    $timelineAction = e((string)($event['action'] ?? 'updated'));
+                    $timelineEntity = e((string)($event['entity_type'] ?? 'entity'));
+                    $timelineEntityId = e((string)($event['entity_id'] ?? '-'));
+                    $timelineCreatedAt = e((string)($event['created_at'] ?? '-'));
+                    ?>
                     <div class="border border-secondary-subtle rounded-3 px-2 py-2">
-                        <div class="text-light"><strong><?= e((string)($event['username'] ?? 'admin')) ?></strong> <?= e((string)($event['action'] ?? 'updated')) ?> <?= e((string)($event['entity_type'] ?? 'entity')) ?>#<?= e((string)($event['entity_id'] ?? '-')) ?></div>
-                        <div class="text-secondary"><?= e((string)($event['created_at'] ?? '-')) ?></div>
+                        <div class="text-light"><strong><?= $timelineUser ?></strong> <?= $timelineAction ?> <?= $timelineEntity ?>#<?= $timelineEntityId ?></div>
+                        <div class="text-secondary"><?= $timelineCreatedAt ?></div>
                     </div>
                 <?php endforeach; ?>
                 <?php if ($activityTimeline === []): ?><div class="text-secondary">No admin activity yet</div><?php endif; ?>

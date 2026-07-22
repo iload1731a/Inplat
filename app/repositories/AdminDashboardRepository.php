@@ -9,6 +9,7 @@ use App\Libraries\Database;
 final class AdminDashboardRepository
 {
     private static array $tableExistsCache = [];
+    private static array $columnExistsCache = [];
 
     public function overview(): array
     {
@@ -53,11 +54,17 @@ final class AdminDashboardRepository
 
     public function recentTrades(int $limit = 8): array
     {
-        $sql = 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
-                FROM trades t
-                LEFT JOIN trading_pairs tp ON tp.id = t.trading_pair_id
-                ORDER BY t.id DESC
-                LIMIT :limit';
+        $sql = $this->columnExists('trades', 'trading_pair_id')
+            ? 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
+               FROM trades t
+               LEFT JOIN trading_pairs tp ON tp.id = t.trading_pair_id
+               ORDER BY t.id DESC
+               LIMIT :limit'
+            : 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
+               FROM trades t
+               LEFT JOIN trading_pairs tp ON tp.id = t.pair_id
+               ORDER BY t.id DESC
+               LIMIT :limit';
 
         $stmt = Database::connection()->prepare($sql);
         $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
@@ -221,5 +228,20 @@ final class AdminDashboardRepository
 
         self::$tableExistsCache[$table] = $stmt->fetchColumn() !== false;
         return self::$tableExistsCache[$table];
+    }
+
+    private function columnExists(string $table, string $column): bool
+    {
+        $cacheKey = $table . ':' . $column;
+        if (array_key_exists($cacheKey, self::$columnExistsCache)) {
+            return self::$columnExistsCache[$cacheKey];
+        }
+
+        $stmt = Database::connection()->prepare('SHOW COLUMNS FROM `' . $table . '` LIKE :column');
+        $stmt->bindValue(':column', $column);
+        $stmt->execute();
+        self::$columnExistsCache[$cacheKey] = $stmt->fetchColumn() !== false;
+
+        return self::$columnExistsCache[$cacheKey];
     }
 }

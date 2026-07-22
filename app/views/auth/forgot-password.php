@@ -16,10 +16,23 @@
 </div>
 <script>
 $(document).on('ajax:success', '#forgotPasswordForm', function (event, payload) {
-    if (!payload || !payload.reset_link) return;
-    if (typeof payload.reset_link !== 'string' || !payload.reset_link.startsWith('/reset-password?token=')) return;
+    const debugMode = <?= (bool)config('app.debug', false) ? 'true' : 'false' ?>;
+    if (!debugMode || !payload || !payload.reset_link || typeof payload.reset_link !== 'string') return;
+
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(payload.reset_link, window.location.origin);
+    } catch {
+        return;
+    }
+
+    if (parsedUrl.origin !== window.location.origin || parsedUrl.pathname !== '/reset-password' || !parsedUrl.searchParams.get('token')) {
+        return;
+    }
+
     const box = $('#resetLinkBox');
-    const link = $('<a>').attr('href', payload.reset_link).text(payload.reset_link);
+    const safeHref = parsedUrl.pathname + parsedUrl.search;
+    const link = $('<a>').attr('href', safeHref).text(safeHref);
     box.removeClass('d-none').empty().append('Reset URL: ').append(link);
 });
 </script>

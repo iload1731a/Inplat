@@ -118,6 +118,7 @@ final class AuthService
         ];
 
         if ((bool)config('app.debug', false)) {
+            // Debug-only reset token exposure to support local development without SMTP.
             $response['token'] = $token;
         }
 
@@ -207,7 +208,7 @@ final class AuthService
         }
 
         if (!hash_equals((string)$session['user_agent'], $userAgent)) {
-            $logLine = '[' . date('c') . '] Remember-me user-agent mismatch for session ' . (string)($session['session_id'] ?? 'unknown') . PHP_EOL;
+            $logLine = '[' . date('c') . '] Remember-me user-agent mismatch for session ' . (string)($session['session_id'] ?? 'unknown') . ' expected=' . substr((string)$session['user_agent'], 0, 120) . ' received=' . substr($userAgent, 0, 120) . PHP_EOL;
             $written = file_put_contents((string)config('app.log_file'), $logLine, FILE_APPEND | LOCK_EX);
             if ($written === false) {
                 error_log($logLine);

@@ -21,6 +21,7 @@ final class RequestContext
             return $remoteAddress;
         }
 
+        // Rightmost forwarded address is closest to the client when traversing trusted proxies.
         $parts = array_reverse(array_map('trim', explode(',', $forwarded)));
         foreach ($parts as $part) {
             if (filter_var($part, FILTER_VALIDATE_IP)) {

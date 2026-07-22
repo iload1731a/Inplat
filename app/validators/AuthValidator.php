@@ -22,7 +22,7 @@ final class AuthValidator
             $errors['password'] = 'Password must be at least 8 characters.';
         }
 
-        if (($input['password'] ?? '') !== ($input['password_confirmation'] ?? '')) {
+        if (!hash_equals((string)($input['password'] ?? ''), (string)($input['password_confirmation'] ?? ''))) {
             $errors['password_confirmation'] = 'Passwords do not match.';
         }
 
@@ -52,7 +52,7 @@ final class AuthValidator
             $errors['password'] = 'Password must be at least 8 characters.';
         }
 
-        if (($input['password'] ?? '') !== ($input['password_confirmation'] ?? '')) {
+        if (!hash_equals((string)($input['password'] ?? ''), (string)($input['password_confirmation'] ?? ''))) {
             $errors['password_confirmation'] = 'Passwords do not match.';
         }
 

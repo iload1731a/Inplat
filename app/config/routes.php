@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Controllers\Admin\DashboardController;
+use App\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallerController;
+use App\Controllers\User\DashboardController as UserDashboardController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -20,8 +21,11 @@ $router->post('/register', [AuthController::class, 'register']);
 $router->get('/forgot-password', [AuthController::class, 'forgotPasswordForm']);
 $router->post('/logout', [AuthController::class, 'logout']);
 
-$router->get('/admin/dashboard', [DashboardController::class, 'index']);
-$router->get('/admin/dashboard/metrics', [DashboardController::class, 'metrics']);
+$router->get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+$router->get('/admin/dashboard/metrics', [AdminDashboardController::class, 'metrics']);
+
+$router->get('/dashboard', [UserDashboardController::class, 'index']);
+$router->get('/dashboard/metrics', [UserDashboardController::class, 'metrics']);
 
 $router->get('/install/step1', [InstallerController::class, 'step1']);
 $router->get('/install/step2', [InstallerController::class, 'step2']);

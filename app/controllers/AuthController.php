@@ -32,7 +32,7 @@ final class AuthController extends BaseController
             Response::json(['ok' => false, 'message' => 'Invalid credentials'], 422);
         }
 
-        Response::json(['ok' => true, 'redirect' => '/admin/dashboard']);
+        Response::json(['ok' => true, 'redirect' => '/dashboard']);
     }
 
     public function registerForm(Request $request): void

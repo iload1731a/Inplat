@@ -101,7 +101,7 @@ final class WithdrawalService
             'withdrawal',
             'Withdrawal Request Submitted',
             "Your withdrawal of {$amount} {$currency['code']} has been submitted and is pending review.",
-            '/user/wallet/withdraw'
+            '/user/withdrawal'
         );
 
         return $id;
@@ -170,7 +170,7 @@ final class WithdrawalService
             'withdrawal',
             'Fiat Withdrawal Request Submitted',
             "Your fiat withdrawal of {$amount} {$currency['code']} has been submitted and is pending bank processing.",
-            '/user/wallet/withdraw'
+            '/user/withdrawal'
         );
 
         return $id;
@@ -205,7 +205,7 @@ final class WithdrawalService
             'withdrawal',
             'Withdrawal Cancelled',
             "Your withdrawal #{$withdrawalId} has been cancelled and the amount refunded to your wallet.",
-            '/user/wallet/withdraw'
+            '/user/withdrawal'
         );
     }
 
@@ -237,6 +237,10 @@ final class WithdrawalService
         if ($hasLimit && bccomp($remaining, '0', 18) < 0) {
             $remaining = '0';
         }
+        // Include actual spot wallet balance for the currency
+        $wallet  = $this->balanceRepo->findOrCreate($userId, $currencyId, 'spot');
+        $balance = (string)($wallet['available_balance'] ?? '0');
+
         return [
             'currency_code' => $currency['code'],
             'fee_fixed'     => $currency['withdrawal_fee_fixed'],
@@ -245,6 +249,7 @@ final class WithdrawalService
             'max_daily'     => $maxDaily,
             'used_today'    => $usedToday,
             'remaining'     => $remaining,
+            'available_balance' => $balance,
         ];
     }
 
@@ -345,7 +350,7 @@ final class WithdrawalService
             'withdrawal',
             $title,
             $message,
-            '/user/wallet/withdraw'
+            '/user/withdrawal'
         );
     }
 
@@ -401,7 +406,7 @@ final class WithdrawalService
                     'withdrawal',
                     'Withdrawal Rejected – Refund Issued',
                     "Your withdrawal #{$row['id']} was rejected by the admin team: {$reason}. Your balance has been refunded.",
-                    '/user/wallet/withdraw'
+                    '/user/withdrawal'
                 );
                 $this->mgmtRepo->logAdminAction(
                     $adminId,

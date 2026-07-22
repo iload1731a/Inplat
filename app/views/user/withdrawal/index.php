@@ -258,6 +258,14 @@ const _csrf = '<?= e(\App\Libraries\Csrf::token()) ?>';
 
 $('#withdrawTable').DataTable({ order:[[0,'desc']], pageLength:15 });
 
+// MAX button: set amount from dynamically stored available balance
+document.getElementById('btnMax').addEventListener('click', function() {
+    const amtField = document.getElementById('cryptoAmount');
+    const maxVal   = amtField.getAttribute('data-max') || '0';
+    amtField.value = parseFloat(maxVal).toFixed(8);
+    amtField.dispatchEvent(new Event('input')); // trigger fee preview
+});
+
 // Load currency info on change
 document.getElementById('cryptoCurrency').addEventListener('change', async function() {
     const opt  = this.options[this.selectedIndex];
@@ -274,7 +282,7 @@ document.getElementById('cryptoCurrency').addEventListener('change', async funct
         const json = await res.json();
         if (json.ok) {
             const d = json.data;
-            document.getElementById('feeInfoBalance').textContent   = '— ' + code;
+            document.getElementById('feeInfoBalance').textContent   = parseFloat(d.available_balance || 0).toFixed(8) + ' ' + code;
             document.getElementById('feeInfoRemaining').textContent = d.remaining !== null
                 ? parseFloat(d.remaining).toFixed(8) + ' ' + code
                 : 'No limit';
@@ -284,6 +292,9 @@ document.getElementById('cryptoCurrency').addEventListener('change', async funct
             document.getElementById('feeInfoFee').textContent =
                 fixedFee.toFixed(8) + (pctFee > 0 ? ' + ' + pctFee + '%' : '') + ' ' + code;
             document.getElementById('feeInfoBox').classList.remove('d-none');
+            // Update MAX button and min input attribute dynamically
+            document.getElementById('cryptoAmount').min = parseFloat(d.min_amount) || 0.00000001;
+            document.getElementById('cryptoAmount').setAttribute('data-max', d.available_balance || '0');
         }
     } catch(e) {}
 });

@@ -76,9 +76,10 @@ $isFiat = ($withdrawal['currency_type'] ?? '') === 'fiat';
                 <div class="col-md-3">
                     <div class="small text-secondary">Gross Amount</div>
                     <div class="fw-semibold font-monospace h5 mb-0">
-                        <?= number_format((float)bcsub(
-                            bcadd((string)($withdrawal['amount'] ?? '0'), (string)($withdrawal['fee'] ?? '0'), 18),
-                            '0', 8
+                        <?= number_format((float)bcadd(
+                            (string)($withdrawal['amount'] ?? '0'),
+                            (string)($withdrawal['fee']    ?? '0'),
+                            8
                         ), 8) ?>
                         <span class="text-secondary small"><?= e((string)($withdrawal['currency_code'] ?? '')) ?></span>
                     </div>

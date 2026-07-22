@@ -175,8 +175,9 @@ final class WithdrawalController extends BaseController
         $userId = $this->userId();
 
         try {
-            $stats         = (new WithdrawalService())->userWithdrawalCenter($userId)['stats'];
-            $monthlyTotals = (new WithdrawalService())->userWithdrawalCenter($userId)['monthly_totals'];
+            $center        = (new WithdrawalService())->userWithdrawalCenter($userId);
+            $stats         = $center['stats'];
+            $monthlyTotals = $center['monthly_totals'];
         } catch (Throwable) {
             $stats         = [];
             $monthlyTotals = [];

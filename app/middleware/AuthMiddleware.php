@@ -11,7 +11,7 @@ final class AuthMiddleware
 {
     public static function ensureAuthenticated(): void
     {
-        if (Session::get('auth.user_id') === null) {
+        if (Session::get('auth.user_id') === null && Session::get('auth.admin_id') === null) {
             Response::redirect('/login');
         }
     }
@@ -20,7 +20,7 @@ final class AuthMiddleware
     {
         self::ensureAuthenticated();
 
-        if ((bool)(Session::get('auth.is_admin') ?? false) !== true) {
+        if ((bool)(Session::get('auth.is_admin') ?? false) !== true || (int)(Session::get('auth.admin_id') ?? 0) <= 0) {
             Response::redirect('/dashboard');
         }
     }

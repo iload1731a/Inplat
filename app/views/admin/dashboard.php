@@ -30,6 +30,8 @@ $orderStatusJson = json_encode($orderStatusSeries, JSON_UNESCAPED_UNICODE | JSON
     </div>
 </div>
 
+<?php $adminSection = 'dashboard'; require app_path('app/views/admin/_nav.php'); ?>
+
 <?php if (!empty($dashboardError)): ?>
     <div class="alert alert-warning"><?= e((string)$dashboardError) ?></div>
 <?php endif; ?>

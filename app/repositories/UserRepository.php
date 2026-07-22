@@ -10,6 +10,23 @@ use PDO;
 
 final class UserRepository
 {
+    public function findLoginIdentity(string $identity): ?array
+    {
+        $admin = $this->findAdminByEmailOrUsername($identity);
+        if ($admin !== null) {
+            $admin['actor_type'] = 'admin';
+            return $admin;
+        }
+
+        $user = $this->findByEmailOrUsername($identity);
+        if ($user !== null) {
+            $user['actor_type'] = 'user';
+            return $user;
+        }
+
+        return null;
+    }
+
     public function findByEmailOrUsername(string $identity): ?array
     {
         $sql = 'SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, email_verified_at FROM users WHERE email = :identity OR username = :identity LIMIT 1';
@@ -24,6 +41,29 @@ final class UserRepository
     {
         $stmt = Database::connection()->prepare('SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, email_verified_at FROM users WHERE id = :id LIMIT 1');
         $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch();
+
+        return $row === false ? null : $row;
+    }
+
+    public function findAdminByEmailOrUsername(string $identity): ?array
+    {
+        $sql = 'SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, full_name, role_id
+                FROM admin_users
+                WHERE deleted_at IS NULL AND (email = :identity OR username = :identity)
+                LIMIT 1';
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute(['identity' => $identity]);
+        $row = $stmt->fetch();
+
+        return $row === false ? null : $row;
+    }
+
+    public function findAdminById(int $adminId): ?array
+    {
+        $stmt = Database::connection()->prepare('SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, full_name, role_id FROM admin_users WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+        $stmt->bindValue(':id', $adminId, PDO::PARAM_INT);
         $stmt->execute();
         $row = $stmt->fetch();
 
@@ -180,7 +220,7 @@ final class UserRepository
 
     public function isAdminIdentity(string $identity): bool
     {
-        $sql = "SELECT COUNT(*) FROM admin_users WHERE (email = :identity OR username = :identity) AND status = 'active'";
+        $sql = "SELECT COUNT(*) FROM admin_users WHERE (email = :identity OR username = :identity) AND status = 'active' AND deleted_at IS NULL";
         $stmt = Database::connection()->prepare($sql);
         $stmt->bindValue(':identity', $identity);
         $stmt->execute();

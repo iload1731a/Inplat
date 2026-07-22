@@ -17,6 +17,8 @@ $settingsStatus = is_array($settings_status ?? null) ? $settings_status : [];
     <a href="/admin/dashboard" class="btn btn-outline-light btn-sm">Dashboard</a>
 </div>
 
+<?php $adminSection = 'platform'; require app_path('app/views/admin/_nav.php'); ?>
+
 <div class="row g-3 mb-4">
     <div class="col-lg-6">
         <div class="glass rounded-4 p-3 h-100">

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Controllers\Admin\ManagementController as AdminManagementController;
 use App\Controllers\Admin\PlatformController as AdminPlatformController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
@@ -36,6 +37,22 @@ $router->get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 $router->get('/admin/dashboard/metrics', [AdminDashboardController::class, 'metrics']);
 $router->get('/admin/platform', [AdminPlatformController::class, 'index']);
 $router->get('/admin/platform/snapshot', [AdminPlatformController::class, 'snapshot']);
+$router->get('/admin/users', [AdminManagementController::class, 'users']);
+$router->get('/admin/user', [AdminManagementController::class, 'user']);
+$router->post('/admin/users/update', [AdminManagementController::class, 'updateUser']);
+$router->post('/admin/users/kyc', [AdminManagementController::class, 'reviewKyc']);
+$router->post('/admin/users/balance', [AdminManagementController::class, 'adjustBalance']);
+$router->get('/admin/finance', [AdminManagementController::class, 'finance']);
+$router->post('/admin/finance/deposit', [AdminManagementController::class, 'reviewDeposit']);
+$router->post('/admin/finance/withdrawal', [AdminManagementController::class, 'reviewWithdrawal']);
+$router->get('/admin/communications', [AdminManagementController::class, 'communications']);
+$router->post('/admin/communications/notify', [AdminManagementController::class, 'sendNotification']);
+$router->post('/admin/communications/template', [AdminManagementController::class, 'saveEmailTemplate']);
+$router->get('/admin/support', [AdminManagementController::class, 'support']);
+$router->post('/admin/support/update', [AdminManagementController::class, 'updateSupportTicket']);
+$router->post('/admin/support/reply', [AdminManagementController::class, 'replySupportTicket']);
+$router->get('/admin/settings', [AdminManagementController::class, 'settings']);
+$router->post('/admin/settings/update', [AdminManagementController::class, 'updateSetting']);
 
 $router->get('/dashboard', [UserDashboardController::class, 'index']);
 $router->get('/dashboard/metrics', [UserDashboardController::class, 'metrics']);

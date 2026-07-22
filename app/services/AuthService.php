@@ -19,7 +19,7 @@ final class AuthService
 
     public function attempt(string $identity, string $password, bool $rememberMe, string $ipAddress, string $userAgent): array
     {
-        $user = $this->users->findByEmailOrUsername($identity);
+        $user = $this->users->findLoginIdentity($identity);
 
         if ($user === null || !password_verify($password, (string)$user['password_hash'])) {
             return ['ok' => false, 'message' => 'Invalid credentials'];
@@ -29,8 +29,16 @@ final class AuthService
             return ['ok' => false, 'message' => 'Account is not active'];
         }
 
-        if ((int)($user['two_factor_enabled'] ?? 0) === 1) {
-            Session::put('auth.pending_user_id', (int)$user['id']);
+        $requiresTwoFactor = ((int)($user['two_factor_enabled'] ?? 0) === 1)
+            && trim((string)($user['two_factor_secret'] ?? '')) !== '';
+
+        if ($requiresTwoFactor) {
+            if (($user['actor_type'] ?? 'user') === 'admin') {
+                Session::put('auth.pending_admin_id', (int)$user['id']);
+            } else {
+                Session::put('auth.pending_user_id', (int)$user['id']);
+            }
+            Session::put('auth.pending_actor_type', (string)($user['actor_type'] ?? 'user'));
             Session::put('auth.pending_identity', (string)$identity);
             Session::put('auth.pending_2fa_expires_at', (new DateTimeImmutable('+10 minutes'))->format('Y-m-d H:i:s'));
             Session::put('auth.pending_remember_me', $rememberMe);
@@ -40,14 +48,17 @@ final class AuthService
             return ['ok' => true, 'requires_2fa' => true, 'redirect' => '/two-factor-challenge'];
         }
 
-        $this->completeLogin((int)$user['id'], (string)$identity, (string)$user['username'], $rememberMe, $ipAddress, $userAgent);
+        $this->completeLogin($user, $rememberMe, $ipAddress, $userAgent);
 
-        return ['ok' => true, 'redirect' => $this->redirectPathForIdentity($identity)];
+        return ['ok' => true, 'redirect' => $this->redirectPathForAccount($user)];
     }
 
     public function verifyTwoFactorCode(string $code): array
     {
-        $pendingUserId = (int)(Session::get('auth.pending_user_id') ?? 0);
+        $pendingActorType = (string)(Session::get('auth.pending_actor_type') ?? 'user');
+        $pendingUserId = $pendingActorType === 'admin'
+            ? (int)(Session::get('auth.pending_admin_id') ?? 0)
+            : (int)(Session::get('auth.pending_user_id') ?? 0);
         $pendingExpiresAt = (string)(Session::get('auth.pending_2fa_expires_at') ?? '');
 
         if ($pendingUserId <= 0 || $pendingExpiresAt === '') {
@@ -59,26 +70,30 @@ final class AuthService
             return ['ok' => false, 'message' => '2FA code has expired'];
         }
 
-        $user = $this->users->findById($pendingUserId);
+        $user = $pendingActorType === 'admin'
+            ? $this->users->findAdminById($pendingUserId)
+            : $this->users->findById($pendingUserId);
         if ($user === null) {
             return ['ok' => false, 'message' => 'User account not found'];
         }
+        $user['actor_type'] = $pendingActorType;
 
         $secret = (string)($user['two_factor_secret'] ?? '');
         if ($secret === '' || !$this->verifyTotpCode($secret, trim($code))) {
-            $this->users->logLoginAttempt($pendingUserId, (string)(Session::get('auth.pending_ip') ?? '0.0.0.0'), (string)(Session::get('auth.pending_agent') ?? 'unknown'), 'failed_2fa');
+            if ($pendingActorType !== 'admin') {
+                $this->users->logLoginAttempt($pendingUserId, (string)(Session::get('auth.pending_ip') ?? '0.0.0.0'), (string)(Session::get('auth.pending_agent') ?? 'unknown'), 'failed_2fa');
+            }
             return ['ok' => false, 'message' => 'Invalid authentication code'];
         }
 
-        $identity = (string)(Session::get('auth.pending_identity') ?? '');
         $rememberMe = (bool)(Session::get('auth.pending_remember_me') ?? false);
         $ipAddress = (string)(Session::get('auth.pending_ip') ?? '0.0.0.0');
         $userAgent = (string)(Session::get('auth.pending_agent') ?? 'unknown');
 
-        $this->completeLogin($pendingUserId, $identity, (string)$user['username'], $rememberMe, $ipAddress, $userAgent);
+        $this->completeLogin($user, $rememberMe, $ipAddress, $userAgent);
         $this->clearPendingTwoFactor();
 
-        return ['ok' => true, 'redirect' => $this->redirectPathForIdentity($identity)];
+        return ['ok' => true, 'redirect' => $this->redirectPathForAccount($user)];
     }
 
     public function register(string $username, string $email, string $password): int
@@ -237,19 +252,37 @@ final class AuthService
         Session::destroy();
     }
 
-    private function completeLogin(int $userId, string $identity, string $username, bool $rememberMe, string $ipAddress, string $userAgent, bool $storeRemember = true): void
+    private function completeLogin(array $account, bool $rememberMe, string $ipAddress, string $userAgent, bool $storeRemember = true): void
     {
+        $actorType = (string)($account['actor_type'] ?? 'user');
+        $accountId = (int)($account['id'] ?? 0);
+        $username = (string)($account['username'] ?? '');
+        $identity = (string)($account['email'] ?? $username);
+
         Session::regenerate();
-        Session::put('auth.user_id', $userId);
         Session::put('auth.username', $username);
         Session::put('auth.identity', $identity);
-        Session::put('auth.is_admin', $this->users->isAdminIdentity($identity));
+        Session::put('auth.actor_type', $actorType);
+        Session::put('auth.display_name', $actorType === 'admin'
+            ? (string)($account['full_name'] ?: $username)
+            : $username);
 
-        $this->users->logLoginAttempt($userId, $ipAddress, $userAgent, 'success');
+        if ($actorType === 'admin') {
+            Session::forget('auth.user_id');
+            Session::put('auth.admin_id', $accountId);
+            Session::put('auth.role_id', (int)($account['role_id'] ?? 0));
+            Session::put('auth.is_admin', true);
+        } else {
+            Session::put('auth.user_id', $accountId);
+            Session::forget('auth.admin_id');
+            Session::forget('auth.role_id');
+            Session::put('auth.is_admin', $this->users->isAdminIdentity($identity));
+            $this->users->logLoginAttempt($accountId, $ipAddress, $userAgent, 'success');
+        }
 
-        if ($rememberMe && $storeRemember) {
+        if ($actorType === 'user' && $rememberMe && $storeRemember) {
             $rememberToken = bin2hex(random_bytes(32));
-            $this->users->createSession($userId, hash('sha256', $rememberToken), $ipAddress, $userAgent, new DateTimeImmutable('+' . self::REMEMBER_DAYS . ' days'));
+            $this->users->createSession($accountId, hash('sha256', $rememberToken), $ipAddress, $userAgent, new DateTimeImmutable('+' . self::REMEMBER_DAYS . ' days'));
             setcookie(self::REMEMBER_COOKIE, $rememberToken, [
                 'expires' => time() + (60 * 60 * 24 * self::REMEMBER_DAYS),
                 'path' => '/',
@@ -260,14 +293,16 @@ final class AuthService
         }
     }
 
-    private function redirectPathForIdentity(string $identity): string
+    private function redirectPathForAccount(array $account): string
     {
-        return $this->users->isAdminIdentity($identity) ? '/admin/dashboard' : '/dashboard';
+        return (($account['actor_type'] ?? 'user') === 'admin') ? '/admin/dashboard' : '/dashboard';
     }
 
     private function clearPendingTwoFactor(): void
     {
         Session::forget('auth.pending_user_id');
+        Session::forget('auth.pending_admin_id');
+        Session::forget('auth.pending_actor_type');
         Session::forget('auth.pending_identity');
         Session::forget('auth.pending_2fa_expires_at');
         Session::forget('auth.pending_remember_me');

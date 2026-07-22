@@ -18,16 +18,24 @@
 <body>
 <?php
 $authUserId = (int)(\App\Libraries\Session::get('auth.user_id') ?? 0);
+$authAdminId = (int)(\App\Libraries\Session::get('auth.admin_id') ?? 0);
+$authActorType = (string)(\App\Libraries\Session::get('auth.actor_type') ?? '');
 $isAdmin = (bool)(\App\Libraries\Session::get('auth.is_admin') ?? false);
+$isAuthenticated = $authUserId > 0 || $authAdminId > 0;
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark border-bottom border-secondary-subtle">
     <div class="container">
         <a class="navbar-brand fw-semibold" href="/"><?= e(config('app.name')) ?></a>
         <div class="d-flex gap-2 flex-wrap justify-content-end">
-            <?php if ($authUserId > 0): ?>
-                <a href="/dashboard" class="btn btn-outline-light btn-sm">User Dashboard</a>
-                <a href="/trading" class="btn btn-outline-info btn-sm">Trading</a>
-                <?php if ($isAdmin): ?><a href="/admin/platform" class="btn btn-outline-warning btn-sm">Admin Modules</a><?php endif; ?>
+            <?php if ($isAuthenticated): ?>
+                <?php if ($authActorType === 'admin'): ?>
+                    <a href="/admin/dashboard" class="btn btn-outline-light btn-sm">Admin Dashboard</a>
+                    <a href="/admin/platform" class="btn btn-outline-warning btn-sm">Admin Modules</a>
+                <?php else: ?>
+                    <a href="/dashboard" class="btn btn-outline-light btn-sm">User Dashboard</a>
+                    <a href="/trading" class="btn btn-outline-info btn-sm">Trading</a>
+                    <?php if ($isAdmin): ?><a href="/admin/platform" class="btn btn-outline-warning btn-sm">Admin Modules</a><?php endif; ?>
+                <?php endif; ?>
             <?php else: ?>
                 <a href="/login" class="btn btn-outline-light btn-sm">Login</a>
                 <a href="/register" class="btn btn-primary btn-sm">Register</a>

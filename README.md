@@ -46,3 +46,13 @@ php -S 127.0.0.1:8000 -t public
 ```
 
 Open `http://127.0.0.1:8000/install/step1`.
+
+## Optional Google reCAPTCHA (Auth Forms)
+
+Set environment variables before running PHP:
+
+```bash
+export RECAPTCHA_ENABLED=true
+export RECAPTCHA_SITE_KEY=your_site_key
+export RECAPTCHA_SECRET_KEY=your_secret_key
+```

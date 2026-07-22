@@ -15,4 +15,8 @@ return [
     'log_file' => app_path('storage/logs/app.log'),
     'session_name' => 'inplat_session',
     'trusted_proxies' => array_values(array_filter(array_map('trim', explode(',', (string)($_ENV['TRUSTED_PROXIES'] ?? ''))))),
+    'recaptcha_enabled' => filter_var($_ENV['RECAPTCHA_ENABLED'] ?? false, FILTER_VALIDATE_BOOL),
+    'recaptcha_site_key' => trim((string)($_ENV['RECAPTCHA_SITE_KEY'] ?? '')),
+    'recaptcha_secret_key' => trim((string)($_ENV['RECAPTCHA_SECRET_KEY'] ?? '')),
+    'recaptcha_verify_url' => 'https://www.google.com/recaptcha/api/siteverify',
 ];

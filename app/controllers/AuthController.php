@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Libraries\Csrf;
 use App\Libraries\Request;
 use App\Libraries\RequestContext;
+use App\Libraries\RecaptchaVerifier;
 use App\Libraries\Response;
 use App\Libraries\Session;
 use App\Services\AuthService;
@@ -24,6 +25,7 @@ final class AuthController extends BaseController
         if (!Csrf::validate((string)$request->input('_token'))) {
             Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
         }
+        $this->validateRecaptcha($request);
 
         $identity = trim((string)$request->input('identity', ''));
         $password = (string)$request->input('password', '');
@@ -49,6 +51,7 @@ final class AuthController extends BaseController
         if (!Csrf::validate((string)$request->input('_token'))) {
             Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
         }
+        $this->validateRecaptcha($request);
 
         $input = $request->all();
         $validator = new AuthValidator();
@@ -75,6 +78,7 @@ final class AuthController extends BaseController
         if (!Csrf::validate((string)$request->input('_token'))) {
             Response::json(['ok' => false, 'message' => 'Invalid CSRF token'], 422);
         }
+        $this->validateRecaptcha($request);
 
         $email = trim((string)$request->input('email', ''));
         $validator = new AuthValidator();
@@ -216,6 +220,18 @@ final class AuthController extends BaseController
 
         (new AuthService())->logout();
         Response::redirect('/login');
+    }
+
+    private function validateRecaptcha(Request $request): void
+    {
+        $result = (new RecaptchaVerifier())->verify(
+            trim((string)$request->input('g-recaptcha-response', '')),
+            RequestContext::ipAddress()
+        );
+
+        if (!($result['ok'] ?? false)) {
+            Response::json(['ok' => false, 'message' => $result['message'] ?? 'reCAPTCHA verification failed'], 422);
+        }
     }
 
 }

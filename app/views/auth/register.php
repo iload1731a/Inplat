@@ -1,4 +1,8 @@
 <?php declare(strict_types=1); ?>
+<?php
+$recaptchaEnabled = (bool)config('app.recaptcha_enabled', false);
+$recaptchaSiteKey = trim((string)config('app.recaptcha_site_key', ''));
+?>
 <div class="container-narrow mx-auto">
     <div class="glass rounded-4 p-4 shadow">
         <h1 class="h4 mb-3">Create Trading Account</h1>
@@ -22,8 +26,16 @@
                     <input type="password" name="password_confirmation" class="form-control" minlength="8" required autocomplete="new-password">
                 </div>
             </div>
+            <?php if ($recaptchaEnabled && $recaptchaSiteKey !== ''): ?>
+                <div class="my-3 d-flex justify-content-center">
+                    <div class="g-recaptcha" data-sitekey="<?= e($recaptchaSiteKey) ?>"></div>
+                </div>
+            <?php endif; ?>
             <button type="submit" class="btn btn-primary w-100 mt-3">Create account</button>
         </form>
         <p class="small text-secondary mt-3 mb-0">After registration you will be redirected to email verification before trading access.</p>
     </div>
 </div>
+<?php if ($recaptchaEnabled && $recaptchaSiteKey !== ''): ?>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<?php endif; ?>

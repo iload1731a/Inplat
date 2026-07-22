@@ -6,6 +6,10 @@ namespace App\Libraries;
 
 final class LicenseGuard
 {
+    private const GCM_IV_SIZE = 12;
+    private const GCM_TAG_SIZE = 16;
+    private const MIN_ENCRYPTED_PAYLOAD_SIZE = self::GCM_IV_SIZE + self::GCM_TAG_SIZE + 1;
+
     public static function assertValidForRequest(string $requestPath): void
     {
         if (str_starts_with($requestPath, '/install')) {
@@ -97,7 +101,8 @@ final class LicenseGuard
 
     private static function encrypt(string $value): string
     {
-        $iv = random_bytes(12);
+        // 12-byte IV is the recommended nonce size for AES-GCM.
+        $iv = random_bytes(self::GCM_IV_SIZE);
         $tag = '';
         $cipher = openssl_encrypt($value, 'aes-256-gcm', self::key(), OPENSSL_RAW_DATA, $iv, $tag);
         if ($cipher === false) {
@@ -110,14 +115,13 @@ final class LicenseGuard
     private static function decrypt(string $payload): string
     {
         $raw = base64_decode($payload, true);
-        // Minimum size: 12-byte IV + 16-byte GCM tag + at least 1-byte ciphertext.
-        if ($raw === false || strlen($raw) < (12 + 16 + 1)) {
+        if ($raw === false || strlen($raw) < self::MIN_ENCRYPTED_PAYLOAD_SIZE) {
             return '';
         }
 
-        $iv = substr($raw, 0, 12);
-        $tag = substr($raw, 12, 16);
-        $cipher = substr($raw, 28);
+        $iv = substr($raw, 0, self::GCM_IV_SIZE);
+        $tag = substr($raw, self::GCM_IV_SIZE, self::GCM_TAG_SIZE);
+        $cipher = substr($raw, self::GCM_IV_SIZE + self::GCM_TAG_SIZE);
         $decoded = openssl_decrypt($cipher, 'aes-256-gcm', self::key(), OPENSSL_RAW_DATA, $iv, $tag);
 
         return is_string($decoded) ? $decoded : '';

@@ -30,7 +30,7 @@ final class DashboardController extends BaseController
         try {
             $data = array_merge($data, (new AdminDashboardService())->data());
         } catch (Throwable $e) {
-            $logLine = '[' . date('c') . '] Dashboard metrics error: ' . $e->getMessage() . PHP_EOL;
+            $logLine = '[' . date('c') . '] Dashboard metrics error: ' . $e::class . PHP_EOL;
             $written = file_put_contents((string)config('app.log_file'), $logLine, FILE_APPEND | LOCK_EX);
             if ($written === false) {
                 error_log($logLine);

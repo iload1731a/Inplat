@@ -66,7 +66,10 @@ final class UserKycService
             throw new InvalidArgumentException('You already have a pending ' . str_replace('_', ' ', $docType) . ' under review');
         }
 
-        $mimeType = mime_content_type($file['tmp_name'] ?? '') ?: ($file['type'] ?? '');
+        $mimeType = mime_content_type($file['tmp_name'] ?? '');
+        if ($mimeType === false) {
+            $mimeType = (string)($file['type'] ?? '');
+        }
         if (!in_array($mimeType, self::ALLOWED_MIMES, true)) {
             throw new InvalidArgumentException('Invalid file type. Allowed: JPG, PNG, GIF, WEBP, PDF');
         }
@@ -112,8 +115,8 @@ final class UserKycService
         // Remove physical file
         if ($fileUrl !== '') {
             $physicalPath = app_path('public' . $fileUrl);
-            if (is_file($physicalPath)) {
-                @unlink($physicalPath);
+            if (is_file($physicalPath) && !unlink($physicalPath)) {
+                error_log('KYC: failed to delete file: ' . $physicalPath);
             }
         }
     }

@@ -1783,6 +1783,6 @@ INSERT INTO kyc_requirements (kyc_level, document_type, display_name, descriptio
 (1, 'selfie',           'Selfie with ID',       'Clear photo of your face holding your government ID',  1),
 (2, 'passport',         'Passport',             'Valid passport (any country)',                          1),
 (2, 'national_id',      'National ID',          'Government-issued national identity card',             2),
-(2, 'drivers_license',  "Driver's License",     'Valid driver''s license with photo',                   3),
+(2, 'drivers_license',  'Driver''s License',    'Valid driver''s license with photo',                   3),
 (3, 'proof_of_address', 'Proof of Address',     'Utility bill or bank statement (< 3 months old)',      1),
 (3, 'corporate_doc',    'Corporate Document',   'For business accounts: registration certificate',      2);

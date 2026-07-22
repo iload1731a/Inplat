@@ -197,8 +197,9 @@ if ($doc !== null) {
 <script>
 function submitReview(status) {
     document.getElementById('reviewStatus').value = status;
+    // Always set visibility before building FormData so level is correct
+    document.getElementById('levelGroup').style.display = status === 'approved' ? '' : 'none';
     const fd = new FormData(document.getElementById('reviewForm'));
-    if (status === 'rejected') document.getElementById('levelGroup').style.display = 'none';
     $.ajax({ url: '/admin/kyc/review', method: 'POST', data: fd, processData: false, contentType: false,
         success(r) {
             Swal.fire({ icon: r.ok ? 'success' : 'error', text: r.message, timer: 2000, showConfirmButton: false })

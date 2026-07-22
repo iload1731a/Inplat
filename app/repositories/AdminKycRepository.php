@@ -74,10 +74,15 @@ final class AdminKycRepository
 
         $limit  = max(10, min(200, (int)($filters['limit'] ?? 50)));
         $offset = max(0, (int)($filters['offset'] ?? 0));
-        $sql .= " LIMIT {$limit} OFFSET {$offset}";
+        $sql .= ' LIMIT :limit OFFSET :offset';
 
         $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
         return $stmt->fetchAll() ?: [];
     }
 
@@ -194,7 +199,7 @@ final class AdminKycRepository
 
     /**
      * Bulk update a set of document IDs to a given status.
-     * Returns array of ['doc_id' => ..., 'user_id' => ..., 'old_status' => ...] for post-processing.
+     * Returns array of ['id' => ..., 'user_id' => ..., 'status' => ...] for post-processing.
      */
     public function bulkUpdateStatus(array $docIds, int $adminId, string $status, string $notes): array
     {
@@ -202,19 +207,25 @@ final class AdminKycRepository
             return [];
         }
 
-        $placeholders = implode(',', array_fill(0, count($docIds), '?'));
+        // Ensure all IDs are positive integers
+        $safeIds = array_values(array_filter(array_map('intval', $docIds), static fn(int $id) => $id > 0));
+        if ($safeIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($safeIds), '?'));
         // Fetch current docs first
         $fetch = Database::connection()->prepare(
             "SELECT id, user_id, status FROM kyc_documents WHERE id IN ({$placeholders}) AND status = 'pending'"
         );
-        $fetch->execute(array_values($docIds));
+        $fetch->execute($safeIds);
         $docs = $fetch->fetchAll() ?: [];
 
         if ($docs === []) {
             return [];
         }
 
-        $ids = array_column($docs, 'id');
+        $ids = array_values(array_map('intval', array_column($docs, 'id')));
         $ph2 = implode(',', array_fill(0, count($ids), '?'));
 
         $upd = Database::connection()->prepare(

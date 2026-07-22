@@ -93,6 +93,8 @@ $bannerConfig = match($status) {
                     <div class="col-6">
                         <label class="form-label text-secondary small">Issue Country</label>
                         <input type="text" name="issue_country" maxlength="2"
+                               pattern="[A-Za-z]{2}"
+                               title="2-letter ISO country code, e.g. US"
                                class="form-control bg-transparent text-light border-secondary text-uppercase"
                                placeholder="US">
                     </div>
@@ -292,7 +294,7 @@ document.querySelectorAll('.btn-delete-doc').forEach(btn => {
             confirmButtonText: 'Yes, remove it'
         }).then(res => {
             if (!res.isConfirmed) return;
-            $.post('/user/kyc/delete', { _token: '<?= e(\App\Libraries\Csrf::token()) ?>', document_id: docId }, r => {
+            $.post('/user/kyc/delete', { _token: '<?= e($csrf) ?>', document_id: docId }, r => {
                 if (r.ok) {
                     Swal.fire({ icon: 'success', text: r.message, timer: 1500, showConfirmButton: false })
                         .then(() => location.reload());

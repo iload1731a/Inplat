@@ -140,15 +140,12 @@ $csrf         = \App\Libraries\Csrf::token();
             <?= number_format($total) ?> documents
             <?php if ($total > $perPage): ?> — Page <?= $page ?> of <?= $totalPages ?><?php endif; ?>
         </span>
-        <label class="small d-flex align-items-center gap-1">
-            <input type="checkbox" id="selectAll"> Select all on page
-        </label>
     </div>
     <div class="table-responsive">
         <table class="table table-dark table-hover align-middle mb-0 small" id="kycTable">
             <thead class="text-secondary">
                 <tr>
-                    <th width="30"><input type="checkbox" id="selectAllHead"></th>
+                    <th width="30"><input type="checkbox" id="selectAll" title="Select all pending on this page"></th>
                     <th>ID</th>
                     <th>User</th>
                     <th>KYC Status</th>
@@ -333,12 +330,10 @@ function updateBulk() {
     document.getElementById('bulkApproveCount').textContent = n;
     document.getElementById('bulkRejectCount').textContent  = n;
 }
-document.querySelectorAll('#selectAll, #selectAllHead').forEach(el =>
-    el.addEventListener('change', function () {
-        document.querySelectorAll('.doc-checkbox').forEach(c => c.checked = this.checked);
-        updateBulk();
-    })
-);
+document.getElementById('selectAll')?.addEventListener('change', function () {
+    document.querySelectorAll('.doc-checkbox').forEach(c => c.checked = this.checked);
+    updateBulk();
+});
 document.querySelectorAll('.doc-checkbox').forEach(c => c.addEventListener('change', updateBulk));
 
 function getSelectedIds() {

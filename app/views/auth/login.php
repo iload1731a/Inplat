@@ -35,7 +35,7 @@ $recaptchaSiteKey = trim((string)config('app.recaptcha_site_key', ''));
             <span class="text-secondary">2FA is requested automatically when enabled.</span>
         </div>
     </div>
-    <?php if ($recaptchaEnabled && $recaptchaSiteKey !== ''): ?>
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <?php endif; ?>
 </div>
+<?php if ($recaptchaEnabled && $recaptchaSiteKey !== ''): ?>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<?php endif; ?>

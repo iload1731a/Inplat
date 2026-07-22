@@ -120,7 +120,10 @@ final class UserDashboardRepository
     public function pnlSeries(int $userId, int $days = 7): array
     {
         $safeDays = $this->sanitizePositiveInt($days);
-        $fromDate = (new \DateTimeImmutable('today'))->modify('-' . ($safeDays - 1) . ' days')->format('Y-m-d H:i:s');
+        $daysBack = $safeDays - 1;
+        $fromDate = (new \DateTimeImmutable('today'))
+            ->sub(new \DateInterval('P' . $daysBack . 'D'))
+            ->format('Y-m-d H:i:s');
         $sql = "SELECT DATE(closed_at) AS day, COALESCE(SUM(realized_pnl), 0) AS pnl
                 FROM positions
                 WHERE user_id = :user_id

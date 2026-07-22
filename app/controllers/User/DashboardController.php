@@ -31,7 +31,8 @@ final class DashboardController extends BaseController
         try {
             $data = array_merge($data, (new UserDashboardService())->data($userId));
         } catch (Throwable $e) {
-            $safeMessage = preg_replace('/[\r\n\t]+/', ' ', $e->getMessage()) ?? 'unknown error';
+            $safeMessageRaw = preg_replace('/[\r\n\t]+/', ' ', $e->getMessage());
+            $safeMessage = is_string($safeMessageRaw) ? $safeMessageRaw : 'unknown error';
             $logLine = '[' . date('c') . '] User dashboard metrics error: ' . $e::class . ' - ' . $safeMessage . PHP_EOL;
             $written = file_put_contents((string)config('app.log_file'), $logLine, FILE_APPEND | LOCK_EX);
             if ($written === false) {

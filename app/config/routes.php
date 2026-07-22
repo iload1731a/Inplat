@@ -208,8 +208,19 @@ $router->post('/admin/wallets/monitoring/delete', [AdminWalletsController::class
 // =====================================================================
 // ADMIN – KYC Verification
 // =====================================================================
-$router->get('/admin/kyc', [AdminKycController::class, 'index']);
-$router->post('/admin/kyc/review', [AdminKycController::class, 'review']);
+$router->get('/admin/kyc',                          [AdminKycController::class, 'index']);
+$router->post('/admin/kyc/review',                  [AdminKycController::class, 'review']);
+$router->get('/admin/kyc/detail',                   [AdminKycController::class, 'detail']);
+$router->get('/admin/kyc/user',                     [AdminKycController::class, 'userProfile']);
+$router->post('/admin/kyc/bulk-approve',            [AdminKycController::class, 'bulkApprove']);
+$router->post('/admin/kyc/bulk-reject',             [AdminKycController::class, 'bulkReject']);
+$router->post('/admin/kyc/re-request',              [AdminKycController::class, 'reRequest']);
+$router->post('/admin/kyc/risk',                    [AdminKycController::class, 'risk']);
+$router->get('/admin/kyc/compliance',               [AdminKycController::class, 'compliance']);
+$router->get('/admin/kyc/export',                   [AdminKycController::class, 'export']);
+$router->get('/admin/kyc/requirements',             [AdminKycController::class, 'requirements']);
+$router->post('/admin/kyc/requirements/update',     [AdminKycController::class, 'requirementUpdate']);
+$router->get('/admin/kyc/audit',                    [AdminKycController::class, 'auditLog']);
 
 // =====================================================================
 // ADMIN – Finance (Deposits & Withdrawals)
@@ -361,8 +372,11 @@ $router->post('/user/security/settings',         [UserSecurityController::class,
 // =====================================================================
 // USER – KYC
 // =====================================================================
-$router->get('/user/kyc',        [UserKycController::class, 'index']);
-$router->post('/user/kyc/submit',[UserKycController::class, 'submit']);
+$router->get('/user/kyc',             [UserKycController::class, 'index']);
+$router->post('/user/kyc/submit',     [UserKycController::class, 'submit']);
+$router->post('/user/kyc/delete',     [UserKycController::class, 'delete']);
+$router->get('/user/kyc/document',    [UserKycController::class, 'document']);
+$router->get('/user/kyc/status',      [UserKycController::class, 'status']);
 
 // =====================================================================
 // USER – Wallet

@@ -1725,3 +1725,64 @@ CREATE TABLE automation_rule_logs (
 ) ENGINE=InnoDB COMMENT='Execution log for automation rule firings';
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- =============================================================================
+-- KYC VERIFICATION AND DOCUMENT MANAGEMENT SYSTEM
+-- =============================================================================
+
+-- KYC audit trail – every status change, submission, and admin action
+CREATE TABLE kyc_audit_log (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL,
+    document_id             BIGINT UNSIGNED NULL,
+    actor_type              ENUM('user','admin','system') NOT NULL DEFAULT 'user',
+    actor_id                BIGINT UNSIGNED NULL,
+    action                  VARCHAR(80) NOT NULL,
+    old_status              VARCHAR(30) NULL,
+    new_status              VARCHAR(30) NULL,
+    notes                   VARCHAR(500) NULL,
+    ip_address              VARCHAR(45) NULL,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_kyc_audit_user (user_id),
+    INDEX idx_kyc_audit_doc  (document_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Complete audit trail for all KYC events';
+
+-- Configurable document requirements per KYC level
+CREATE TABLE kyc_requirements (
+    id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    kyc_level               TINYINT UNSIGNED NOT NULL,
+    document_type           VARCHAR(50) NOT NULL,
+    is_required             TINYINT(1) NOT NULL DEFAULT 1,
+    is_enabled              TINYINT(1) NOT NULL DEFAULT 1,
+    display_name            VARCHAR(100) NOT NULL,
+    description             VARCHAR(255) NULL,
+    sort_order              TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_kyc_req_level (kyc_level, is_enabled)
+) ENGINE=InnoDB COMMENT='Configurable KYC document requirements per level';
+
+-- Risk scoring per user for compliance purposes
+CREATE TABLE kyc_risk_assessments (
+    id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id                 BIGINT UNSIGNED NOT NULL UNIQUE,
+    risk_score              TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    risk_level              ENUM('low','medium','high','critical') NOT NULL DEFAULT 'low',
+    risk_factors            JSON NULL,
+    last_assessed_at        DATETIME NULL,
+    assessed_by             BIGINT UNSIGNED NULL,
+    notes                   VARCHAR(500) NULL,
+    created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='KYC AML risk assessment scores per user';
+
+-- Seed default KYC requirements
+INSERT INTO kyc_requirements (kyc_level, document_type, display_name, description, sort_order) VALUES
+(1, 'selfie',           'Selfie with ID',       'Clear photo of your face holding your government ID',  1),
+(2, 'passport',         'Passport',             'Valid passport (any country)',                          1),
+(2, 'national_id',      'National ID',          'Government-issued national identity card',             2),
+(2, 'drivers_license',  "Driver's License",     'Valid driver''s license with photo',                   3),
+(3, 'proof_of_address', 'Proof of Address',     'Utility bill or bank statement (< 3 months old)',      1),
+(3, 'corporate_doc',    'Corporate Document',   'For business accounts: registration certificate',      2);

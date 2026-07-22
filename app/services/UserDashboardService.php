@@ -8,8 +8,11 @@ use App\Repositories\UserDashboardRepository;
 
 final class UserDashboardService
 {
-    public function __construct(private readonly UserDashboardRepository $dashboard = new UserDashboardRepository())
+    private readonly UserDashboardRepository $dashboard;
+
+    public function __construct(?UserDashboardRepository $dashboard = null)
     {
+        $this->dashboard = $dashboard ?? new UserDashboardRepository();
     }
 
     public function data(int $userId): array

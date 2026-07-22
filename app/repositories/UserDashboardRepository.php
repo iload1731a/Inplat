@@ -53,7 +53,7 @@ final class UserDashboardRepository
 
     public function walletAllocation(int $userId, int $limit = 6): array
     {
-        $safeLimit = max(1, $limit);
+        $safeLimit = $this->sanitizePositiveInt($limit);
         $sql = 'SELECT c.code, (w.available_balance + w.locked_balance) AS total_balance
                 FROM wallets w
                 INNER JOIN currencies c ON c.id = w.currency_id
@@ -71,7 +71,7 @@ final class UserDashboardRepository
 
     public function recentOrders(int $userId, int $limit = 8): array
     {
-        $safeLimit = max(1, $limit);
+        $safeLimit = $this->sanitizePositiveInt($limit);
         $sql = 'SELECT o.id, o.side, o.quantity, o.price, o.status, o.created_at, tp.symbol AS pair_symbol
                 FROM orders o
                 INNER JOIN trading_pairs tp ON tp.id = o.trading_pair_id
@@ -89,7 +89,7 @@ final class UserDashboardRepository
 
     public function recentTrades(int $userId, int $limit = 8): array
     {
-        $safeLimit = max(1, $limit);
+        $safeLimit = $this->sanitizePositiveInt($limit);
         $sql = "SELECT t.id,
                        tp.symbol AS pair_symbol,
                        t.price,
@@ -119,8 +119,8 @@ final class UserDashboardRepository
 
     public function pnlSeries(int $userId, int $days = 7): array
     {
-        $safeDays = max(1, $days);
-        $fromDate = (new \DateTimeImmutable('today'))->modify('-' . $safeDays . ' days')->format('Y-m-d H:i:s');
+        $safeDays = $this->sanitizePositiveInt($days);
+        $fromDate = (new \DateTimeImmutable('today'))->modify('-' . ($safeDays - 1) . ' days')->format('Y-m-d H:i:s');
         $sql = "SELECT DATE(closed_at) AS day, COALESCE(SUM(realized_pnl), 0) AS pnl
                 FROM positions
                 WHERE user_id = :user_id
@@ -135,5 +135,10 @@ final class UserDashboardRepository
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
+    }
+
+    private function sanitizePositiveInt(int $value): int
+    {
+        return max(1, $value);
     }
 }

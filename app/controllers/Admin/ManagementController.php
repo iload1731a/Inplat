@@ -517,4 +517,73 @@ final class ManagementController extends AdminBaseController
 
         Response::json(['ok' => true, 'message' => 'IP unblocked.', 'redirect' => '/admin/risk']);
     }
+
+    // -----------------------------------------------------------------------
+    // Enhanced User Actions
+    // -----------------------------------------------------------------------
+
+    public function banUser(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $userId = (int)$request->input('user_id', 0);
+        $reason = trim((string)$request->input('reason', ''));
+
+        try {
+            (new AdminManagementService())->banUser($this->adminId(), $userId, $reason);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'User banned.', 'redirect' => '/admin/user?id=' . $userId]);
+    }
+
+    public function unbanUser(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $userId = (int)$request->input('user_id', 0);
+
+        try {
+            (new AdminManagementService())->unbanUser($this->adminId(), $userId);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'User unbanned.', 'redirect' => '/admin/user?id=' . $userId]);
+    }
+
+    public function resetUserTwoFactor(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $userId = (int)$request->input('user_id', 0);
+
+        try {
+            (new AdminManagementService())->resetUserTwoFactor($this->adminId(), $userId);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'Two-factor authentication reset.', 'redirect' => '/admin/user?id=' . $userId]);
+    }
+
+    public function revokeUserSessions(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $userId = (int)$request->input('user_id', 0);
+
+        try {
+            (new AdminManagementService())->revokeUserSessions($this->adminId(), $userId);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'All user sessions revoked.', 'redirect' => '/admin/user?id=' . $userId]);
+    }
 }

@@ -13,6 +13,7 @@
         .glass { background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.15); }
         .container-narrow { max-width: 560px; }
         .navbar .btn { white-space: nowrap; }
+        .btn-xs { padding: .1rem .4rem; font-size: .75rem; line-height: 1.4; }
     </style>
 </head>
 <body>

@@ -1321,4 +1321,62 @@ final class AdminManagementRepository
             'sanctioned_countries' => (int)$sanctionedCountries,
         ];
     }
+
+    // -----------------------------------------------------------------------
+    // Enhanced User Actions
+    // -----------------------------------------------------------------------
+
+    public function banUser(int $userId, string $reason): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE users SET status = 'banned', ban_reason = :reason, updated_at = NOW() WHERE id = :id"
+        );
+        $stmt->bindValue(':reason', $reason);
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+
+    public function unbanUser(int $userId): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE users SET status = 'active', ban_reason = NULL, updated_at = NOW() WHERE id = :id"
+        );
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+
+    public function resetUserTwoFactor(int $userId): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE users SET two_factor_enabled = 0, two_factor_secret = NULL, two_factor_recovery_codes = NULL, updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $stmt2 = Database::connection()->prepare(
+            "UPDATE account_security_settings SET two_factor_enabled = 0, two_factor_secret = NULL, updated_at = NOW() WHERE user_id = :id"
+        );
+        $stmt2->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt2->execute();
+    }
+
+    public function revokeAllUserSessions(int $userId): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE user_sessions SET is_active = 0, revoked_at = NOW() WHERE user_id = :id AND is_active = 1"
+        );
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+
+    public function getUserBasic(int $userId): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, username, email, status, kyc_status FROM users WHERE id = :id AND deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row === false ? null : $row;
+    }
 }

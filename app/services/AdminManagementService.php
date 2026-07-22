@@ -520,4 +520,56 @@ final class AdminManagementService
 
         $this->repository->unblockIP($entryId, $adminId);
     }
+
+    // -----------------------------------------------------------------------
+    // Enhanced User Actions
+    // -----------------------------------------------------------------------
+
+    public function banUser(int $adminId, int $userId, string $reason): void
+    {
+        $user = $this->repository->getUserBasic($userId);
+        if ($user === null) {
+            throw new \InvalidArgumentException('User not found.');
+        }
+
+        if ($reason === '') {
+            throw new \InvalidArgumentException('Ban reason is required.');
+        }
+
+        $this->repository->banUser($userId, $reason);
+        $this->repository->logAdminAction($adminId, 'ban_user', 'users', (string)$userId, null, ['reason' => $reason], RequestContext::ipAddress());
+    }
+
+    public function unbanUser(int $adminId, int $userId): void
+    {
+        $user = $this->repository->getUserBasic($userId);
+        if ($user === null) {
+            throw new \InvalidArgumentException('User not found.');
+        }
+
+        $this->repository->unbanUser($userId);
+        $this->repository->logAdminAction($adminId, 'unban_user', 'users', (string)$userId, null, [], RequestContext::ipAddress());
+    }
+
+    public function resetUserTwoFactor(int $adminId, int $userId): void
+    {
+        $user = $this->repository->getUserBasic($userId);
+        if ($user === null) {
+            throw new \InvalidArgumentException('User not found.');
+        }
+
+        $this->repository->resetUserTwoFactor($userId);
+        $this->repository->logAdminAction($adminId, 'reset_2fa', 'users', (string)$userId, null, [], RequestContext::ipAddress());
+    }
+
+    public function revokeUserSessions(int $adminId, int $userId): void
+    {
+        $user = $this->repository->getUserBasic($userId);
+        if ($user === null) {
+            throw new \InvalidArgumentException('User not found.');
+        }
+
+        $this->repository->revokeAllUserSessions($userId);
+        $this->repository->logAdminAction($adminId, 'revoke_user_sessions', 'users', (string)$userId, null, [], RequestContext::ipAddress());
+    }
 }

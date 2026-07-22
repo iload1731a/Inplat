@@ -14,6 +14,7 @@ use App\Controllers\Admin\PlatformController as AdminPlatformController;
 use App\Controllers\Admin\RolesController as AdminRolesController;
 use App\Controllers\Admin\SystemController as AdminSystemController;
 use App\Controllers\Admin\WalletsController as AdminWalletsController;
+use App\Controllers\Admin\DepositsController as AdminDepositsController;
 use App\Controllers\Admin\WithdrawalsController as AdminWithdrawalsController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
@@ -33,6 +34,7 @@ use App\Controllers\User\StakingController as UserStakingController;
 use App\Controllers\User\TicketsController as UserTicketsController;
 use App\Controllers\User\TradesController as UserTradesController;
 use App\Controllers\User\WalletController as UserWalletController;
+use App\Controllers\User\DepositController as UserDepositController;
 use App\Controllers\User\WithdrawalController as UserWithdrawalController;
 use App\Libraries\Request;
 use App\Libraries\Response;
@@ -128,6 +130,19 @@ $router->post('/admin/wallets/deposits/review', [AdminWalletsController::class, 
 // Withdrawals (legacy – kept for backward compat)
 $router->get('/admin/wallets/withdrawals', [AdminWalletsController::class, 'withdrawals']);
 $router->post('/admin/wallets/withdrawals/review', [AdminWalletsController::class, 'reviewWithdrawal']);
+
+// =====================================================================
+// ADMIN – Dedicated Deposit Management
+// =====================================================================
+$router->get('/admin/deposits',                   [AdminDepositsController::class, 'index']);
+$router->get('/admin/deposits/detail',            [AdminDepositsController::class, 'detail']);
+$router->post('/admin/deposits/review',           [AdminDepositsController::class, 'review']);
+$router->post('/admin/deposits/bulk-credit',      [AdminDepositsController::class, 'bulkCredit']);
+$router->post('/admin/deposits/bulk-flag',        [AdminDepositsController::class, 'bulkFlag']);
+$router->get('/admin/deposits/reports',           [AdminDepositsController::class, 'reports']);
+$router->get('/admin/deposits/export',            [AdminDepositsController::class, 'export']);
+$router->get('/admin/deposits/gateways',          [AdminDepositsController::class, 'gateways']);
+$router->post('/admin/deposits/gateways/update',  [AdminDepositsController::class, 'updateGateway']);
 
 // =====================================================================
 // ADMIN – Dedicated Withdrawal Management
@@ -288,6 +303,17 @@ $router->get('/user/wallet/addresses',         [UserWalletController::class, 'ad
 $router->post('/user/wallet/addresses/add',    [UserWalletController::class, 'addAddress']);
 $router->post('/user/wallet/addresses/revoke', [UserWalletController::class, 'revokeAddress']);
 $router->get('/user/wallet/balance',           [UserWalletController::class, 'balance']);
+
+// =====================================================================
+// USER – Dedicated Deposit System
+// =====================================================================
+$router->get('/user/deposit',                [UserDepositController::class, 'index']);
+$router->get('/user/deposit/fiat',           [UserDepositController::class, 'fiat']);
+$router->post('/user/deposit/submit-crypto', [UserDepositController::class, 'submitCrypto']);
+$router->post('/user/deposit/submit-fiat',   [UserDepositController::class, 'submitFiat']);
+$router->post('/user/deposit/cancel',        [UserDepositController::class, 'cancel']);
+$router->get('/user/deposit/report',         [UserDepositController::class, 'report']);
+$router->get('/user/deposit/address-info',   [UserDepositController::class, 'addressInfo']);
 
 // =====================================================================
 // USER – Dedicated Withdrawal System

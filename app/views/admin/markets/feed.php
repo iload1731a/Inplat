@@ -86,7 +86,7 @@ $pollSubs    = count(array_filter($subscriptions, fn($s) => ($s['feed_mode'] ?? 
                     </td>
                     <td class="text-end">
                         <button class="btn btn-xs btn-outline-light"
-                                onclick="openEditFeed(<?= e(json_encode($sub)) ?>)">Edit</button>
+                                onclick="openEditFeed(<?= json_encode($sub) ?>)">Edit</button>
                     </td>
                 </tr>
             <?php endforeach; ?>

@@ -75,7 +75,7 @@ $csrf      = \App\Libraries\Csrf::token();
                         </div>
                     </td>
                     <td class="text-end">
-                        <button class="btn btn-xs btn-outline-light me-1" onclick="openEditProvider(<?= e(json_encode($p)) ?>)">Edit</button>
+                        <button class="btn btn-xs btn-outline-light me-1" onclick="openEditProvider(<?= json_encode($p) ?>)">Edit</button>
                         <a href="/admin/markets/mappings?provider_id=<?= (int)$p['id'] ?>" class="btn btn-xs btn-outline-info">Mappings</a>
                     </td>
                 </tr>

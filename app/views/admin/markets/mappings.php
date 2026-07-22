@@ -59,7 +59,7 @@ $csrf     = \App\Libraries\Csrf::token();
                     </td>
                     <td class="text-end">
                         <button class="btn btn-xs btn-outline-light me-1"
-                                onclick="openEditMapping(<?= e(json_encode($m)) ?>)">Edit</button>
+                                onclick="openEditMapping(<?= json_encode($m) ?>)">Edit</button>
                         <button class="btn btn-xs btn-outline-danger"
                                 onclick="deleteMapping(<?= (int)$m['id'] ?>)">Del</button>
                     </td>

@@ -695,6 +695,9 @@ final class MarketsRepository
         if (!in_array($interval, $allowedIntervals, true)) {
             $interval = '1h';
         }
+        // $intervalMap values are static SQL expressions defined entirely in code.
+        // $interval is validated against $allowedIntervals before being used as a key,
+        // so $bucketExpr is always one of the fixed expressions below — no user input reaches the query.
         $intervalMap = [
             '1m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/60)*60',
             '5m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/300)*300',

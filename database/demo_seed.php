@@ -26,10 +26,21 @@ require APP_BASE_PATH . '/vendor/autoload.php';
 
 \App\Libraries\Env::load(APP_BASE_PATH . '/.env');
 
+function appUrl(string $path = ''): string
+{
+    $base = rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000'), '/');
+
+    if ($path === '') {
+        return $base;
+    }
+
+    return $base . '/' . ltrim($path, '/');
+}
+
 $dbConfigPath = APP_BASE_PATH . '/storage/config/database.php';
 if (!is_file($dbConfigPath)) {
     fwrite(STDERR, "Error: storage/config/database.php not found.\n");
-    $installUrl = rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000'), '/') . '/install/step1';
+    $installUrl = appUrl('/install/step1');
     fwrite(STDERR, "Run the installer first: {$installUrl}\n");
     exit(1);
 }
@@ -216,18 +227,19 @@ echo <<<EOT
 
 EOT;
 
-$appUrl = rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000'), '/');
+$adminUrl = appUrl('/admin/dashboard');
+$userUrl = appUrl('/dashboard');
 
 echo <<<EOT
 
   Demo Admin
-    URL      : {$appUrl}/admin/dashboard
+    URL      : {$adminUrl}
     Email    : admin@demo.test
     Password : Demo@1234
     Role     : demo_admin (view-only)
 
   Demo User
-    URL      : {$appUrl}/dashboard
+    URL      : {$userUrl}
     Email    : user@demo.test
     Password : Demo@1234
     Role     : demo_user (view-only)

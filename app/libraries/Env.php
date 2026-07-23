@@ -47,7 +47,11 @@ final class Env
                 $value = substr($value, 1, -1);
             }
 
-            if (array_key_exists($name, $_ENV) || array_key_exists($name, $_SERVER) || getenv($name, true) !== false) {
+            if (array_key_exists($name, $_ENV) || array_key_exists($name, $_SERVER)) {
+                continue;
+            }
+
+            if (getenv($name, true) !== false) {
                 continue;
             }
 

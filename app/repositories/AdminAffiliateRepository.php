@@ -271,7 +271,7 @@ final class AdminAffiliateRepository
 
     public function markCommissionsPaid(array $ids): int
     {
-        $ids = array_filter(array_map('intval', $ids));
+        $ids = array_values(array_filter(array_map('intval', $ids), fn(int $id) => $id > 0));
         if ($ids === []) {
             return 0;
         }
@@ -281,7 +281,7 @@ final class AdminAffiliateRepository
              SET status = 'paid', paid_at = NOW()
              WHERE id IN ({$ph}) AND status = 'pending'"
         );
-        $stmt->execute(array_values($ids));
+        $stmt->execute($ids);
         return $stmt->rowCount();
     }
 
@@ -379,7 +379,7 @@ final class AdminAffiliateRepository
 
     public function bulkPayouts(array $ids, string $status, int $adminId): int
     {
-        $ids = array_filter(array_map('intval', $ids));
+        $ids = array_values(array_filter(array_map('intval', $ids), fn(int $id) => $id > 0));
         if ($ids === []) {
             return 0;
         }
@@ -389,7 +389,7 @@ final class AdminAffiliateRepository
              SET status = ?, processed_by = ?, processed_at = NOW()
              WHERE id IN ({$ph}) AND status IN ('pending','approved')"
         );
-        $stmt->execute(array_merge([$status, $adminId], array_values($ids)));
+        $stmt->execute(array_merge([$status, $adminId], $ids));
         return $stmt->rowCount();
     }
 

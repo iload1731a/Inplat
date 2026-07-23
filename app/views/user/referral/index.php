@@ -227,7 +227,7 @@ $('#btnCopyRefLink').on('click', function () {
     const val = $('#refLink').val();
     navigator.clipboard.writeText(val)
         .then(() => Swal.fire({ icon: 'success', title: 'Copied!', timer: 900, showConfirmButton: false }))
-        .catch(() => { $('#refLink')[0].select(); document.execCommand('copy'); });
+        .catch(() => Swal.fire({ icon: 'error', title: 'Copy failed', text: 'Please copy the link manually.', timer: 2000, showConfirmButton: false }));
 });
 
 const earnLabels = <?= $earnLabels ?: '[]' ?>;

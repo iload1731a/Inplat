@@ -30,7 +30,7 @@ final class ReferralRepository
 
     public function generateCode(int $userId): string
     {
-        $code = strtoupper(substr(md5((string)$userId . uniqid('', true)), 0, 8));
+        $code = strtoupper(substr(bin2hex(random_bytes(6)), 0, 8));
         $stmt = Database::connection()->prepare(
             'UPDATE users SET referral_code = :code WHERE id = :uid'
         );

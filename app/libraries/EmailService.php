@@ -132,6 +132,127 @@ final class EmailService
     // Internal helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Send a test email using a specific SMTP configuration row.
+     * Returns ['ok' => bool, 'message' => string].
+     */
+    public function sendSmtpTest(array $config, string $toEmail): array
+    {
+        $host    = trim((string)($config['host'] ?? ''));
+        $port    = (int)($config['port'] ?? 587);
+        $enc     = strtolower(trim((string)($config['encryption'] ?? 'tls')));
+        $user    = trim((string)($config['username'] ?? ''));
+        $pass    = trim((string)($config['password'] ?? ''));
+        $from    = trim((string)($config['from_email'] ?? ''));
+        $fromName = trim((string)($config['from_name'] ?? 'Trading Platform'));
+
+        if ($host === '') {
+            return ['ok' => false, 'message' => 'SMTP host is not configured.'];
+        }
+
+        // Build SMTP prefix for stream_socket_client
+        $prefix = match($enc) {
+            'ssl'          => 'ssl://',
+            'tls', 'starttls' => '',
+            default        => '',
+        };
+
+        $errno  = 0;
+        $errstr = '';
+        $socket = @stream_socket_client(
+            $prefix . $host . ':' . $port,
+            $errno,
+            $errstr,
+            10,
+            STREAM_CLIENT_CONNECT
+        );
+
+        if ($socket === false) {
+            return ['ok' => false, 'message' => "Connection failed: $errstr ($errno)"];
+        }
+
+        try {
+            $read = fgets($socket, 512);
+            if (substr($read, 0, 3) !== '220') {
+                return ['ok' => false, 'message' => "Unexpected greeting: $read"];
+            }
+
+            $domain = $this->fromHost();
+            fwrite($socket, "EHLO $domain\r\n");
+            $ehloResp = '';
+            while (true) {
+                $line = fgets($socket, 512);
+                if ($line === false) { break; }
+                $ehloResp .= $line;
+                if (isset($line[3]) && $line[3] === ' ') { break; }
+            }
+
+            // STARTTLS upgrade if needed
+            if (in_array($enc, ['tls', 'starttls'], true)) {
+                fwrite($socket, "STARTTLS\r\n");
+                $tlsResp = fgets($socket, 512);
+                if (substr($tlsResp, 0, 3) !== '220') {
+                    return ['ok' => false, 'message' => "STARTTLS failed: $tlsResp"];
+                }
+                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                fwrite($socket, "EHLO $domain\r\n");
+                while (true) {
+                    $line = fgets($socket, 512);
+                    if ($line === false) { break; }
+                    if (isset($line[3]) && $line[3] === ' ') { break; }
+                }
+            }
+
+            // AUTH LOGIN
+            if ($user !== '') {
+                fwrite($socket, "AUTH LOGIN\r\n");
+                $authResp = fgets($socket, 512);
+                if (substr($authResp, 0, 3) !== '334') {
+                    return ['ok' => false, 'message' => "AUTH failed: $authResp"];
+                }
+                fwrite($socket, base64_encode($user) . "\r\n");
+                fgets($socket, 512); // 334 prompt
+                fwrite($socket, base64_encode($pass) . "\r\n");
+                $authOk = fgets($socket, 512);
+                if (substr($authOk, 0, 3) !== '235') {
+                    return ['ok' => false, 'message' => "Authentication failed: $authOk"];
+                }
+            }
+
+            // MAIL FROM
+            fwrite($socket, "MAIL FROM:<$from>\r\n");
+            $mfResp = fgets($socket, 512);
+            if (substr($mfResp, 0, 3) !== '250') {
+                return ['ok' => false, 'message' => "MAIL FROM rejected: $mfResp"];
+            }
+
+            // RCPT TO
+            fwrite($socket, "RCPT TO:<$toEmail>\r\n");
+            $rtResp = fgets($socket, 512);
+            if (substr($rtResp, 0, 3) !== '250') {
+                return ['ok' => false, 'message' => "RCPT TO rejected: $rtResp"];
+            }
+
+            // DATA
+            fwrite($socket, "DATA\r\n");
+            fgets($socket, 512); // 354
+
+            $headers = "From: $fromName <$from>\r\nTo: $toEmail\r\nSubject: SMTP Test Email\r\nContent-Type: text/plain\r\n\r\n";
+            $body    = "This is a test email sent from the Trading Platform SMTP Configuration.\r\nDate: " . date('r') . "\r\n";
+            fwrite($socket, $headers . $body . "\r\n.\r\n");
+            $dataResp = fgets($socket, 512);
+            if (substr($dataResp, 0, 3) !== '250') {
+                return ['ok' => false, 'message' => "Message delivery failed: $dataResp"];
+            }
+
+            fwrite($socket, "QUIT\r\n");
+        } finally {
+            fclose($socket);
+        }
+
+        return ['ok' => true, 'message' => 'Test email sent successfully to ' . $toEmail];
+    }
+
     private function fromHost(): string
     {
         $url  = (string)config('app.url', 'http://localhost');

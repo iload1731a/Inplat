@@ -46,6 +46,7 @@
                 'logs'           => ['/admin/logs',              '<i class="fas fa-history me-1"></i>Logs'],
                 'system'         => ['/admin/system',            '<i class="fas fa-cog me-1"></i>System'],
                 'settings'       => ['/admin/settings',          '<i class="fas fa-sliders-h me-1"></i>Settings'],
+                'settings-hub'   => ['/admin/settings/hub',      '<i class="fas fa-layer-group me-1"></i>Config Hub'],
             ],
         ];
         foreach ($groups as $groupName => $items):

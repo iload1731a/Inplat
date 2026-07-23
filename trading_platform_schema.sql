@@ -2348,3 +2348,245 @@ INSERT INTO homepage_sections (section_key, section_title, is_enabled, sort_orde
     ('blog_preview',  'Latest Blog Posts',              1, 8),
     ('cta',           'Call to Action',                 1, 9),
     ('partners',      'Partners & Logos',               0, 10);
+
+-- ============================================================================
+-- SECTION 20: SYSTEM SETTINGS, LOCALIZATION, THEMES & APPLICATION CONFIG
+-- ============================================================================
+
+-- Languages supported by the platform
+CREATE TABLE languages (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    code            VARCHAR(10) NOT NULL UNIQUE COMMENT 'ISO 639-1 e.g. en, fr, ar',
+    name            VARCHAR(100) NOT NULL COMMENT 'English display name',
+    native_name     VARCHAR(100) NOT NULL COMMENT 'Name in native script',
+    flag_code       VARCHAR(10) NULL COMMENT 'Country code for flag icon e.g. us, fr',
+    is_rtl          TINYINT(1) NOT NULL DEFAULT 0,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    is_default      TINYINT(1) NOT NULL DEFAULT 0,
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Platform UI languages';
+
+INSERT INTO languages (code, name, native_name, flag_code, is_rtl, is_active, is_default, sort_order) VALUES
+    ('en', 'English',    'English',    'us', 0, 1, 1, 1),
+    ('fr', 'French',     'Français',   'fr', 0, 1, 0, 2),
+    ('de', 'German',     'Deutsch',    'de', 0, 1, 0, 3),
+    ('es', 'Spanish',    'Español',    'es', 0, 1, 0, 4),
+    ('pt', 'Portuguese', 'Português',  'pt', 0, 1, 0, 5),
+    ('ru', 'Russian',    'Русский',    'ru', 0, 1, 0, 6),
+    ('zh', 'Chinese',    '中文',        'cn', 0, 1, 0, 7),
+    ('ja', 'Japanese',   '日本語',      'jp', 0, 1, 0, 8),
+    ('ko', 'Korean',     '한국어',      'kr', 0, 1, 0, 9),
+    ('ar', 'Arabic',     'العربية',    'sa', 1, 1, 0, 10),
+    ('tr', 'Turkish',    'Türkçe',     'tr', 0, 1, 0, 11),
+    ('vi', 'Vietnamese', 'Tiếng Việt', 'vn', 0, 1, 0, 12);
+
+-- UI theme configurations
+CREATE TABLE app_themes (
+    id                  SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(100) NOT NULL,
+    slug                VARCHAR(100) NOT NULL UNIQUE,
+    color_scheme        ENUM('dark','light','auto') NOT NULL DEFAULT 'dark',
+    primary_color       VARCHAR(20) NOT NULL DEFAULT '#3b82f6',
+    secondary_color     VARCHAR(20) NOT NULL DEFAULT '#64748b',
+    accent_color        VARCHAR(20) NOT NULL DEFAULT '#f59e0b',
+    success_color       VARCHAR(20) NOT NULL DEFAULT '#10b981',
+    danger_color        VARCHAR(20) NOT NULL DEFAULT '#ef4444',
+    bg_color            VARCHAR(20) NOT NULL DEFAULT '#0f172a',
+    surface_color       VARCHAR(20) NOT NULL DEFAULT '#1e293b',
+    font_family         VARCHAR(100) NOT NULL DEFAULT 'Inter, system-ui, sans-serif',
+    font_size_base      VARCHAR(10) NOT NULL DEFAULT '16px',
+    border_radius       VARCHAR(10) NOT NULL DEFAULT '0.5rem',
+    custom_css          TEXT NULL,
+    logo_url            VARCHAR(500) NULL,
+    favicon_url         VARCHAR(500) NULL,
+    is_active           TINYINT(1) NOT NULL DEFAULT 1,
+    is_default          TINYINT(1) NOT NULL DEFAULT 0,
+    created_by          BIGINT UNSIGNED NULL,
+    created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='UI theme presets and active theme configuration';
+
+INSERT INTO app_themes (name, slug, color_scheme, primary_color, secondary_color, accent_color, success_color, danger_color, bg_color, surface_color, is_active, is_default) VALUES
+    ('Dark Pro',      'dark-pro',      'dark',  '#3b82f6', '#64748b', '#f59e0b', '#10b981', '#ef4444', '#0f172a', '#1e293b', 1, 1),
+    ('Dark Green',    'dark-green',    'dark',  '#10b981', '#374151', '#f59e0b', '#3b82f6', '#ef4444', '#0a1628', '#111827', 1, 0),
+    ('Dark Purple',   'dark-purple',   'dark',  '#8b5cf6', '#374151', '#f59e0b', '#10b981', '#ef4444', '#0c0a1e', '#1a1a2e', 1, 0),
+    ('Light Classic', 'light-classic', 'light', '#2563eb', '#6b7280', '#d97706', '#059669', '#dc2626', '#f8fafc', '#ffffff', 1, 0);
+
+-- SMTP email server configuration (multiple profiles)
+CREATE TABLE smtp_configs (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL COMMENT 'Label e.g. Primary, Transactional',
+    host            VARCHAR(255) NOT NULL,
+    port            SMALLINT UNSIGNED NOT NULL DEFAULT 587,
+    encryption      ENUM('none','ssl','tls','starttls') NOT NULL DEFAULT 'tls',
+    username        VARCHAR(255) NULL,
+    password        VARCHAR(500) NULL COMMENT 'Stored encrypted at application layer',
+    from_email      VARCHAR(255) NOT NULL,
+    from_name       VARCHAR(150) NOT NULL DEFAULT 'Trading Platform',
+    reply_to        VARCHAR(255) NULL,
+    max_per_minute  SMALLINT UNSIGNED NOT NULL DEFAULT 60,
+    is_active       TINYINT(1) NOT NULL DEFAULT 0,
+    is_default      TINYINT(1) NOT NULL DEFAULT 0,
+    last_tested_at  DATETIME NULL,
+    last_test_ok    TINYINT(1) NULL,
+    last_test_error VARCHAR(500) NULL,
+    created_by      BIGINT UNSIGNED NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='SMTP server profiles for outgoing email';
+
+-- SMS gateway configurations
+CREATE TABLE sms_configs (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    provider        ENUM('twilio','nexmo','aws_sns','msg91','custom') NOT NULL DEFAULT 'twilio',
+    account_sid     VARCHAR(255) NULL,
+    auth_token      VARCHAR(500) NULL COMMENT 'Stored encrypted',
+    api_key         VARCHAR(500) NULL,
+    api_secret      VARCHAR(500) NULL COMMENT 'Stored encrypted',
+    from_number     VARCHAR(20) NULL,
+    sender_id       VARCHAR(20) NULL,
+    api_endpoint    VARCHAR(500) NULL COMMENT 'Custom provider endpoint',
+    webhook_secret  VARCHAR(255) NULL,
+    is_active       TINYINT(1) NOT NULL DEFAULT 0,
+    is_default      TINYINT(1) NOT NULL DEFAULT 0,
+    max_per_minute  SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+    created_by      BIGINT UNSIGNED NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='SMS gateway provider configurations';
+
+-- Third-party API integrations (payment gateways, KYC, analytics, etc.)
+CREATE TABLE api_integrations (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    provider        VARCHAR(80) NOT NULL COMMENT 'e.g. stripe, plaid, sumsub, google_analytics',
+    category        ENUM('payment','kyc','analytics','trading','social','other') NOT NULL DEFAULT 'other',
+    api_key         VARCHAR(500) NULL COMMENT 'Encrypted at app layer',
+    api_secret      VARCHAR(500) NULL COMMENT 'Encrypted at app layer',
+    webhook_secret  VARCHAR(255) NULL,
+    extra_config    JSON NULL COMMENT 'Provider-specific extra fields',
+    sandbox_mode    TINYINT(1) NOT NULL DEFAULT 1,
+    is_active       TINYINT(1) NOT NULL DEFAULT 0,
+    notes           TEXT NULL,
+    created_by      BIGINT UNSIGNED NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_provider (provider)
+) ENGINE=InnoDB COMMENT='Third-party API integration credentials and settings';
+
+-- Backup operation logs
+CREATE TABLE backup_logs (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    backup_type     ENUM('full','database','files','config') NOT NULL DEFAULT 'full',
+    trigger_type    ENUM('manual','scheduled','auto') NOT NULL DEFAULT 'manual',
+    status          ENUM('running','completed','failed','deleted') NOT NULL DEFAULT 'running',
+    file_path       VARCHAR(500) NULL,
+    file_size_bytes BIGINT UNSIGNED NULL,
+    duration_seconds INT UNSIGNED NULL,
+    error_message   TEXT NULL,
+    notes           VARCHAR(255) NULL,
+    created_by      BIGINT UNSIGNED NULL,
+    started_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at    DATETIME NULL,
+    INDEX idx_backup_status  (status),
+    INDEX idx_backup_started (started_at)
+) ENGINE=InnoDB COMMENT='Backup operation audit log';
+
+-- Cache flush/invalidation log
+CREATE TABLE cache_logs (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cache_type      VARCHAR(50) NOT NULL COMMENT 'e.g. all, settings, users, prices',
+    flushed_by      BIGINT UNSIGNED NULL,
+    flushed_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    items_cleared   INT UNSIGNED NULL,
+    notes           VARCHAR(255) NULL,
+    INDEX idx_cache_flushed (flushed_at)
+) ENGINE=InnoDB COMMENT='Cache flush operation log';
+
+-- Extend system_settings with full platform configuration groups
+INSERT IGNORE INTO system_settings (setting_key, setting_value, value_type, category, description, is_public) VALUES
+-- General
+('site_name',               'Trading Platform',       'string',  'general',   'Platform display name',                      1),
+('site_tagline',            'Trade Smarter. Trade Better.', 'string', 'general', 'Site tagline/sub-headline',                1),
+('site_url',                '',                       'string',  'general',   'Canonical site URL (https://...)',            1),
+('support_email',           '',                       'string',  'general',   'Public support email address',               1),
+('support_url',             '/tickets',               'string',  'general',   'Support portal URL',                         1),
+('terms_url',               '/terms',                 'string',  'general',   'Terms of service URL',                       1),
+('privacy_url',             '/privacy',               'string',  'general',   'Privacy policy URL',                         1),
+('cookie_consent_enabled',  'true',                   'boolean', 'general',   'Show cookie consent banner',                 1),
+-- Company
+('company_name',            '',                       'string',  'company',   'Legal company name',                         0),
+('company_registration',    '',                       'string',  'company',   'Company registration / tax number',          0),
+('company_address',         '',                       'string',  'company',   'Registered address',                         0),
+('company_city',            '',                       'string',  'company',   'City',                                       0),
+('company_country',         '',                       'string',  'company',   'Country',                                    0),
+('company_postal_code',     '',                       'string',  'company',   'Postal/ZIP code',                            0),
+('company_phone',           '',                       'string',  'company',   'Main office phone',                          0),
+('company_email',           '',                       'string',  'company',   'Official company email',                     0),
+('company_vat_number',      '',                       'string',  'company',   'VAT / GST number',                           0),
+-- Branding
+('logo_url',                '',                       'string',  'branding',  'Main logo image URL',                        1),
+('logo_dark_url',           '',                       'string',  'branding',  'Dark-mode logo URL',                         1),
+('favicon_url',             '',                       'string',  'branding',  'Favicon URL (.ico or .png)',                  1),
+('og_image_url',            '',                       'string',  'branding',  'Default Open Graph share image URL',         1),
+('primary_color',           '#3b82f6',                'string',  'branding',  'Primary brand color (hex)',                  1),
+('accent_color',            '#f59e0b',                'string',  'branding',  'Accent / highlight color (hex)',             1),
+-- Localization
+('default_language',        'en',                     'string',  'locale',    'Default UI language code',                   1),
+('default_timezone',        'UTC',                    'string',  'locale',    'Default server/display timezone',            1),
+('default_date_format',     'Y-m-d',                  'string',  'locale',    'PHP date format string',                     1),
+('default_time_format',     'H:i:s',                  'string',  'locale',    'PHP time format string',                     1),
+('default_currency_display','USD',                    'string',  'locale',    'Default fiat currency for UI display',       1),
+('number_decimal_separator','.',                      'string',  'locale',    'Decimal separator character',                1),
+('number_thousands_separator',',',                    'string',  'locale',    'Thousands separator character',              1),
+-- Security
+('session_lifetime_minutes','120',                    'number',  'security',  'User session lifetime in minutes',           0),
+('password_min_length',     '8',                      'number',  'security',  'Minimum password length',                   0),
+('password_require_upper',  'true',                   'boolean', 'security',  'Require uppercase letter in password',       0),
+('password_require_number', 'true',                   'boolean', 'security',  'Require number in password',                0),
+('password_require_special','false',                  'boolean', 'security',  'Require special character in password',      0),
+('two_factor_required',     'false',                  'boolean', 'security',  'Force 2FA for all users',                    0),
+('two_factor_admin_required','true',                  'boolean', 'security',  'Force 2FA for admin accounts',              0),
+('ip_whitelist_enabled',    'false',                  'boolean', 'security',  'Enable IP whitelist for admin panel',        0),
+('brute_force_lockout_mins','30',                     'number',  'security',  'Minutes to lock account after max attempts', 0),
+('cors_allowed_origins',    '*',                      'string',  'security',  'CORS allowed origins (comma-separated)',     0),
+-- Trading config
+('trading_enabled',         'true',                   'boolean', 'trading',   'Global trading on/off toggle',               1),
+('spot_trading_enabled',    'true',                   'boolean', 'trading',   'Spot trading enabled',                       1),
+('margin_trading_enabled',  'true',                   'boolean', 'trading',   'Margin trading enabled',                     1),
+('futures_trading_enabled', 'false',                  'boolean', 'trading',   'Futures trading enabled',                    1),
+('default_fee_maker',       '0.001',                  'number',  'trading',   'Default maker fee rate (0.001 = 0.1%)',      0),
+('default_fee_taker',       '0.001',                  'number',  'trading',   'Default taker fee rate',                     0),
+('max_open_orders_per_user','100',                    'number',  'trading',   'Maximum open orders per user',               0),
+('order_book_depth',        '50',                     'number',  'trading',   'Default order book depth levels to display', 1),
+('price_precision_default', '8',                      'number',  'trading',   'Default price decimal precision',            0),
+('quantity_precision_default','8',                    'number',  'trading',   'Default quantity decimal precision',         0),
+-- Wallet config
+('deposit_enabled',         'true',                   'boolean', 'wallet',    'Global deposit on/off toggle',               1),
+('withdrawal_enabled',      'true',                   'boolean', 'wallet',    'Global withdrawal on/off toggle',            1),
+('auto_approve_deposit_usd','1000',                   'number',  'wallet',    'Auto-approve deposits below this USD value', 0),
+('withdrawal_review_hours', '24',                     'number',  'wallet',    'Working hours SLA for manual withdrawal review', 0),
+('min_withdrawal_usd',      '10',                     'number',  'wallet',    'Global minimum withdrawal in USD equivalent',0),
+('daily_withdrawal_limit_usd','50000',                'number',  'wallet',    'Default daily withdrawal limit USD',         0),
+('cold_wallet_threshold_pct','80',                    'number',  'wallet',    'Percent of funds kept in cold storage',      0),
+-- Notifications
+('email_notifications_enabled','true',               'boolean', 'notifications','Send transactional emails',               0),
+('sms_notifications_enabled','false',                'boolean', 'notifications','Send SMS notifications',                  0),
+('push_notifications_enabled','false',               'boolean', 'notifications','Send push notifications',                 0),
+-- Cache
+('cache_driver',            'file',                   'string',  'cache',     'Cache driver: file, redis, memcached',       0),
+('redis_host',              '127.0.0.1',              'string',  'cache',     'Redis host',                                 0),
+('redis_port',              '6379',                   'number',  'cache',     'Redis port',                                 0),
+('redis_password',          '',                       'string',  'cache',     'Redis password (blank = none)',               0),
+('redis_database',          '0',                      'number',  'cache',     'Redis database index',                       0),
+('cache_ttl_seconds',       '300',                    'number',  'cache',     'Default cache TTL in seconds',               0),
+-- Backup
+('backup_enabled',          'false',                  'boolean', 'backup',    'Enable scheduled automatic backups',         0),
+('backup_schedule',         'daily',                  'string',  'backup',    'Backup schedule: hourly/daily/weekly',       0),
+('backup_retention_days',   '30',                     'number',  'backup',    'Days to keep backup files',                  0),
+('backup_storage_path',     'storage/backups',        'string',  'backup',    'Relative path to store backup files',        0),
+('backup_include_files',    'true',                   'boolean', 'backup',    'Include uploaded files in backup',           0),
+('backup_notify_email',     '',                       'string',  'backup',    'Email for backup completion notifications',  0);

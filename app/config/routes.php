@@ -48,6 +48,7 @@ use App\Controllers\User\ChartsController as UserChartsController;
 use App\Controllers\Admin\NotificationsController as AdminNotificationsController;
 use App\Controllers\Admin\AffiliateController as AdminAffiliateController;
 use App\Controllers\Admin\CmsController as AdminCmsController;
+use App\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Controllers\PublicCmsController;
 use App\Libraries\Request;
 use App\Libraries\Response;
@@ -320,6 +321,72 @@ $router->post('/admin/system/webhooks/delete', [AdminSystemController::class, 'd
 // =====================================================================
 $router->get('/admin/settings', [AdminManagementController::class, 'settings']);
 $router->post('/admin/settings/update', [AdminManagementController::class, 'updateSetting']);
+
+// =====================================================================
+// ADMIN – Settings Hub (new comprehensive settings module)
+// =====================================================================
+$router->get( '/admin/settings/hub',                     [AdminSettingsController::class, 'hub']);
+// General
+$router->get( '/admin/settings/general',                 [AdminSettingsController::class, 'general']);
+$router->post('/admin/settings/general',                 [AdminSettingsController::class, 'saveGeneral']);
+// Company
+$router->get( '/admin/settings/company',                 [AdminSettingsController::class, 'company']);
+$router->post('/admin/settings/company',                 [AdminSettingsController::class, 'saveCompany']);
+// Branding
+$router->get( '/admin/settings/branding',                [AdminSettingsController::class, 'branding']);
+$router->post('/admin/settings/branding',                [AdminSettingsController::class, 'saveBranding']);
+// Theme Management
+$router->get( '/admin/settings/theme',                   [AdminSettingsController::class, 'theme']);
+$router->post('/admin/settings/theme/save',              [AdminSettingsController::class, 'saveTheme']);
+$router->post('/admin/settings/theme/activate',          [AdminSettingsController::class, 'activateTheme']);
+$router->post('/admin/settings/theme/delete',            [AdminSettingsController::class, 'deleteTheme']);
+// Localization
+$router->get( '/admin/settings/localization',            [AdminSettingsController::class, 'localization']);
+$router->post('/admin/settings/localization',            [AdminSettingsController::class, 'saveLocalization']);
+// Languages
+$router->get( '/admin/settings/languages',               [AdminSettingsController::class, 'languages']);
+$router->post('/admin/settings/languages/create',        [AdminSettingsController::class, 'createLanguage']);
+$router->post('/admin/settings/languages/update',        [AdminSettingsController::class, 'updateLanguage']);
+$router->post('/admin/settings/languages/delete',        [AdminSettingsController::class, 'deleteLanguage']);
+$router->post('/admin/settings/languages/default',       [AdminSettingsController::class, 'setDefaultLanguage']);
+// SMTP
+$router->get( '/admin/settings/smtp',                    [AdminSettingsController::class, 'smtp']);
+$router->post('/admin/settings/smtp/save',               [AdminSettingsController::class, 'saveSmtp']);
+$router->post('/admin/settings/smtp/default',            [AdminSettingsController::class, 'setDefaultSmtp']);
+$router->post('/admin/settings/smtp/delete',             [AdminSettingsController::class, 'deleteSmtp']);
+$router->post('/admin/settings/smtp/test',               [AdminSettingsController::class, 'testSmtp']);
+// SMS
+$router->get( '/admin/settings/sms',                     [AdminSettingsController::class, 'sms']);
+$router->post('/admin/settings/sms/save',                [AdminSettingsController::class, 'saveSms']);
+$router->post('/admin/settings/sms/default',             [AdminSettingsController::class, 'setDefaultSms']);
+$router->post('/admin/settings/sms/delete',              [AdminSettingsController::class, 'deleteSms']);
+// API Integrations
+$router->get( '/admin/settings/api',                     [AdminSettingsController::class, 'apiIntegrations']);
+$router->post('/admin/settings/api/save',                [AdminSettingsController::class, 'saveApiIntegration']);
+$router->post('/admin/settings/api/delete',              [AdminSettingsController::class, 'deleteApiIntegration']);
+// Trading Configuration
+$router->get( '/admin/settings/trading',                 [AdminSettingsController::class, 'tradingConfig']);
+$router->post('/admin/settings/trading',                 [AdminSettingsController::class, 'saveTradingConfig']);
+// Wallet Configuration
+$router->get( '/admin/settings/wallet',                  [AdminSettingsController::class, 'walletConfig']);
+$router->post('/admin/settings/wallet',                  [AdminSettingsController::class, 'saveWalletConfig']);
+// Security Configuration
+$router->get( '/admin/settings/security',                [AdminSettingsController::class, 'securityConfig']);
+$router->post('/admin/settings/security',                [AdminSettingsController::class, 'saveSecurityConfig']);
+// Maintenance Mode
+$router->get( '/admin/settings/maintenance',             [AdminSettingsController::class, 'maintenance']);
+$router->post('/admin/settings/maintenance',             [AdminSettingsController::class, 'saveMaintenance']);
+// Backup Management
+$router->get( '/admin/settings/backup',                  [AdminSettingsController::class, 'backup']);
+$router->post('/admin/settings/backup/settings',         [AdminSettingsController::class, 'saveBackupSettings']);
+$router->post('/admin/settings/backup/run',              [AdminSettingsController::class, 'runBackup']);
+$router->post('/admin/settings/backup/delete-log',       [AdminSettingsController::class, 'deleteBackupLog']);
+// Cache Management
+$router->get( '/admin/settings/cache',                   [AdminSettingsController::class, 'cache']);
+$router->post('/admin/settings/cache/config',            [AdminSettingsController::class, 'saveCacheConfig']);
+$router->post('/admin/settings/cache/flush',             [AdminSettingsController::class, 'flushCache']);
+// System Information
+$router->get( '/admin/settings/system-info',             [AdminSettingsController::class, 'systemInfo']);
 
 // =====================================================================
 // ADMIN – Trading Engine

@@ -27,8 +27,11 @@ Demo Mode lets you explore the full platform locally **without** a CodeCanyon pu
 ### 1.1 Clone / download the project
 
 ```bash
-git clone https://github.com/your-org/inplat.git
+# If you have a git clone of the repository:
+git clone <repository-url> inplat
 cd inplat
+
+# Or simply extract the downloaded ZIP from CodeCanyon into a directory named inplat.
 ```
 
 ### 1.2 Install PHP dependencies

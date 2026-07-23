@@ -50,16 +50,32 @@ try {
 // ── Password ───────────────────────────────────────────────────────────────
 
 $demoPassword = 'Demo@1234';
+$passwordAlgo = PASSWORD_ARGON2ID;
 $passwordHash = password_hash($demoPassword, PASSWORD_ARGON2ID);
 if ($passwordHash === false) {
     // Fallback to bcrypt if argon2id is unavailable
+    $passwordAlgo = PASSWORD_BCRYPT;
     $passwordHash = password_hash($demoPassword, PASSWORD_BCRYPT);
 }
+$passwordAlgoName = $passwordAlgo === PASSWORD_ARGON2ID ? 'argon2id' : 'bcrypt';
 
 // ── Helper ─────────────────────────────────────────────────────────────────
 
 function upsertRow(PDO $pdo, string $table, array $data, string $uniqueKey): int
 {
+    // Validate table and column names to prevent SQL injection
+    $validIdentifier = static function (string $name): bool {
+        return (bool)preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name);
+    };
+
+    if (!$validIdentifier($table) || !$validIdentifier($uniqueKey)) {
+        throw new \InvalidArgumentException("Invalid table or column name.");
+    }
+    foreach (array_keys($data) as $col) {
+        if (!$validIdentifier((string)$col)) {
+            throw new \InvalidArgumentException("Invalid column name: {$col}");
+        }
+    }
     // Check existence
     $checkStmt = $pdo->prepare("SELECT id FROM `{$table}` WHERE `{$uniqueKey}` = :val LIMIT 1");
     $checkStmt->execute(['val' => $data[$uniqueKey]]);
@@ -154,11 +170,11 @@ if ($existingUserId > 0) {
 } else {
     $uuid = sprintf(
         '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-        mt_rand(0, 0xffff),
-        mt_rand(0, 0x0fff) | 0x4000,
-        mt_rand(0, 0x3fff) | 0x8000,
-        mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        random_int(0, 0xffff), random_int(0, 0xffff),
+        random_int(0, 0xffff),
+        random_int(0, 0x0fff) | 0x4000,
+        random_int(0, 0x3fff) | 0x8000,
+        random_int(0, 0xffff), random_int(0, 0xffff), random_int(0, 0xffff)
     );
 
     $pdo->prepare(
@@ -167,12 +183,13 @@ if ($existingUserId > 0) {
              first_name, last_name, account_type, status, kyc_status, kyc_level,
              referral_code, created_at, updated_at)
          VALUES
-            (:uuid, 'demo_user', 'user@demo.test', NOW(), :password_hash, 'argon2id',
+            (:uuid, 'demo_user', 'user@demo.test', NOW(), :password_hash, :password_algo,
              'Demo', 'User', 'individual', 'active', 'unverified', 0,
              'DEMO01', NOW(), NOW())"
     )->execute([
         'uuid'          => $uuid,
         'password_hash' => $passwordHash,
+        'password_algo' => $passwordAlgoName,
     ]);
     $demoUserId = (int)$pdo->lastInsertId();
 

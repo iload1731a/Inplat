@@ -6,6 +6,10 @@ namespace App\Libraries;
 
 final class LicenseGuard
 {
+    public const TYPE_CODECANYON = 'codecanyon';
+    public const TYPE_THIRD_PARTY = 'third_party';
+    public const TYPE_OWNER = 'owner_self';
+
     private const GCM_IV_SIZE = 12;
     private const GCM_TAG_SIZE = 16;
     private const MIN_ENCRYPTED_PAYLOAD_SIZE = self::GCM_IV_SIZE + self::GCM_TAG_SIZE + 1;
@@ -34,7 +38,12 @@ final class LicenseGuard
 
             $json = file_get_contents($licensePath);
             $license = is_string($json) ? json_decode($json, true) : null;
-            if (!is_array($license) || !isset($license['code'], $license['domain'], $license['signature'])) {
+            if (!is_array($license)) {
+                self::deny();
+            }
+
+            $type = self::normalizeLicenseType((string)($license['type'] ?? self::TYPE_CODECANYON));
+            if (!self::isSupportedLicenseType($type)) {
                 self::deny();
             }
 
@@ -43,13 +52,7 @@ final class LicenseGuard
                 self::deny();
             }
 
-            $code = self::decrypt((string)$license['code']);
-            if (!self::isValidPurchaseCode($code)) {
-                self::deny();
-            }
-
-            $signature = self::signature($code, $domain);
-            if (!hash_equals((string)$license['signature'], $signature)) {
+            if (!self::verifyLicenseByType($type, $license, $domain)) {
                 self::deny();
             }
         } catch (\Throwable) {
@@ -76,6 +79,7 @@ final class LicenseGuard
     public static function pack(string $purchaseCode, string $domain): array
     {
         return [
+            'type' => self::TYPE_CODECANYON,
             'code' => self::encrypt($purchaseCode),
             'domain' => $domain,
             'signature' => self::signature($purchaseCode, $domain),
@@ -85,6 +89,40 @@ final class LicenseGuard
     public static function purchaseCodeHash(string $purchaseCode): string
     {
         return hash('sha256', $purchaseCode);
+    }
+
+    public static function packThirdParty(string $providerName, string $licenseKey, string $domain): array
+    {
+        $providerName = self::normalizeBuyerName($providerName);
+        $domain = self::normalizeDomain($domain);
+        $licenseKeyHash = hash('sha256', trim($licenseKey));
+        $signature = self::signatureForParts([self::TYPE_THIRD_PARTY, $domain, $providerName, $licenseKeyHash]);
+
+        return [
+            'type' => self::TYPE_THIRD_PARTY,
+            'provider_name' => $providerName,
+            'license_key_hash' => $licenseKeyHash,
+            'domain' => $domain,
+            'signature' => $signature,
+        ];
+    }
+
+    public static function packOwner(string $ownerName, string $ownerEmail, string $domain): array
+    {
+        $ownerName = self::normalizeBuyerName($ownerName);
+        $ownerEmail = strtolower(trim($ownerEmail));
+        $domain = self::normalizeDomain($domain);
+        $ownerIdentityHash = hash('sha256', $ownerName . '|' . $ownerEmail);
+        $signature = self::signatureForParts([self::TYPE_OWNER, $domain, $ownerIdentityHash]);
+
+        return [
+            'type' => self::TYPE_OWNER,
+            'owner_name' => $ownerName,
+            'owner_email' => $ownerEmail,
+            'owner_identity_hash' => $ownerIdentityHash,
+            'domain' => $domain,
+            'signature' => $signature,
+        ];
     }
 
     public static function normalizeDomain(string $domain): string
@@ -107,6 +145,39 @@ final class LicenseGuard
     public static function normalizeBuyerName(string $name): string
     {
         return (string)preg_replace('/\s+/', ' ', trim($name));
+    }
+
+    public static function isSupportedLicenseType(string $type): bool
+    {
+        return in_array(self::normalizeLicenseType($type), [
+            self::TYPE_CODECANYON,
+            self::TYPE_THIRD_PARTY,
+            self::TYPE_OWNER,
+        ], true);
+    }
+
+    public static function normalizeLicenseType(string $type): string
+    {
+        $normalized = strtolower(trim($type));
+        return $normalized === '' ? self::TYPE_CODECANYON : $normalized;
+    }
+
+    public static function isValidThirdPartyLicenseKey(string $licenseKey): bool
+    {
+        return (bool)preg_match('/^[A-Za-z0-9._:\-]{8,200}$/', trim($licenseKey));
+    }
+
+    public static function ownerLicenseEnabled(): bool
+    {
+        return (bool)config('app.owner_license_enabled');
+    }
+
+    public static function validateOwnerInstallToken(string $token): bool
+    {
+        $expected = trim((string)config('app.owner_install_token'));
+        $provided = trim($token);
+
+        return $expected !== '' && $provided !== '' && hash_equals($expected, $provided);
     }
 
     private static function encrypt(string $value): string
@@ -147,6 +218,17 @@ final class LicenseGuard
         return hash_hmac('sha256', $purchaseCode . '|' . $domain, $secret);
     }
 
+    private static function signatureForParts(array $parts): string
+    {
+        $secret = self::secret();
+        if ($secret === '') {
+            throw new \RuntimeException('License secret is missing.');
+        }
+
+        $normalized = array_map(static fn (mixed $value): string => trim((string)$value), $parts);
+        return hash_hmac('sha256', implode('|', $normalized), $secret);
+    }
+
     private static function key(): string
     {
         $secret = self::secret();
@@ -181,6 +263,72 @@ final class LicenseGuard
         }
         
         return '';
+    }
+
+    private static function verifyLicenseByType(string $type, array $license, string $domain): bool
+    {
+        return match ($type) {
+            self::TYPE_CODECANYON => self::verifyCodecanyonLicense($license, $domain),
+            self::TYPE_THIRD_PARTY => self::verifyThirdPartyLicense($license, $domain),
+            self::TYPE_OWNER => self::verifyOwnerLicense($license, $domain),
+            default => false,
+        };
+    }
+
+    private static function verifyCodecanyonLicense(array $license, string $domain): bool
+    {
+        if (!isset($license['code'], $license['signature'])) {
+            return false;
+        }
+
+        $code = self::decrypt((string)$license['code']);
+        if (!self::isValidPurchaseCode($code)) {
+            return false;
+        }
+
+        $signature = self::signature($code, $domain);
+        return hash_equals((string)$license['signature'], $signature);
+    }
+
+    private static function verifyThirdPartyLicense(array $license, string $domain): bool
+    {
+        if (!isset($license['provider_name'], $license['license_key_hash'], $license['signature'])) {
+            return false;
+        }
+
+        $provider = self::normalizeBuyerName((string)$license['provider_name']);
+        $hash = trim((string)$license['license_key_hash']);
+        if ($provider === '' || $hash === '') {
+            return false;
+        }
+
+        $expected = self::signatureForParts([self::TYPE_THIRD_PARTY, $domain, $provider, $hash]);
+        return hash_equals((string)$license['signature'], $expected);
+    }
+
+    private static function verifyOwnerLicense(array $license, string $domain): bool
+    {
+        if (!self::ownerLicenseEnabled()) {
+            return false;
+        }
+
+        if (!isset($license['owner_name'], $license['owner_email'], $license['owner_identity_hash'], $license['signature'])) {
+            return false;
+        }
+
+        $ownerName = self::normalizeBuyerName((string)$license['owner_name']);
+        $ownerEmail = strtolower(trim((string)$license['owner_email']));
+        if ($ownerName === '' || filter_var($ownerEmail, FILTER_VALIDATE_EMAIL) === false) {
+            return false;
+        }
+
+        $ownerIdentityHash = hash('sha256', $ownerName . '|' . $ownerEmail);
+        if (!hash_equals((string)$license['owner_identity_hash'], $ownerIdentityHash)) {
+            return false;
+        }
+
+        $expected = self::signatureForParts([self::TYPE_OWNER, $domain, $ownerIdentityHash]);
+        return hash_equals((string)$license['signature'], $expected);
     }
 
     private static function deny(): never

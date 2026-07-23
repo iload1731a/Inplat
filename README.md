@@ -1,6 +1,6 @@
 # Inplat — Professional Trading Platform
 
-A full-featured, self-hosted trading platform built with PHP 8.3, MySQL 8, Bootstrap 5 and a clean MVC architecture. Ships with a 5-step web installer, a complete admin panel, a full-featured user dashboard, and an optional **Demo Mode** so you can evaluate the platform locally without a CodeCanyon license.
+A full-featured, self-hosted trading platform built with PHP 8.3, MySQL 8, Bootstrap 5 and a clean MVC architecture. Ships with a 5-step web installer, a complete admin panel, a full-featured user dashboard, and an optional **Demo Mode** so you can evaluate the platform locally without a paid license.
 
 ---
 
@@ -32,7 +32,7 @@ A full-featured, self-hosted trading platform built with PHP 8.3, MySQL 8, Boots
 
 ### Installer
 - 5-step web wizard: requirements check → database config → SQL import → admin creation → lock
-- License activation with CodeCanyon buyer/purchase-code capture and domain-bound validation
+- License activation supports CodeCanyon, third-party provider keys, or owner license token flow
 - **Demo Mode** — skip license entirely for local evaluation (see [Quick Start](#quick-start-demo))
 
 ### Authentication
@@ -153,4 +153,10 @@ export RECAPTCHA_SECRET_KEY=your_secret_key
 
 ## License
 
-Inplat is distributed via CodeCanyon under the Regular / Extended License. A valid purchase code is required for production deployments. For local evaluation, use Demo Mode (see above).
+Supported installation license sources:
+
+- CodeCanyon (buyer + purchase code)
+- Third-party provider (provider name + external key)
+- Owner license (owner mode + owner token)
+
+For local evaluation, use Demo Mode (see above). For owner-token CLI installation, see `INSTALLATION.md`.

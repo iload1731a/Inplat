@@ -3,7 +3,7 @@
 This guide covers three scenarios:
 
 1. **[Demo Installation](#1-demo-installation)** — run locally or on a hosted demo domain without a license for evaluation
-2. **[Standard Installation](#2-standard-installation)** — production/staging with a CodeCanyon license
+2. **[Standard Installation](#2-standard-installation)** — production/staging with CodeCanyon, third-party, or owner license
 3. **[Production Hardening](#3-production-hardening)** — post-install checklist
 
 ---
@@ -22,7 +22,7 @@ This guide covers three scenarios:
 
 ## 1. Demo Installation
 
-Demo Mode lets you explore the full platform locally or on a hosted demo domain **without** a CodeCanyon purchase code. A demo banner is displayed on every page to indicate restricted mode.
+Demo Mode lets you explore the full platform locally or on a hosted demo domain **without** a paid license. A demo banner is displayed on every page to indicate restricted mode.
 
 ### 1.1 Clone / download the project
 
@@ -208,7 +208,7 @@ Open `https://yourdomain.com/install/step1` and complete all five steps:
 | Step | Action |
 |------|--------|
 | Step 1 | Pass requirements check |
-| Step 2 | Enter database credentials **and** your CodeCanyon buyer name, email, purchase code and licensed domain |
+| Step 2 | Enter database credentials and choose one license source: CodeCanyon, Third-Party Provider, or Owner License |
 | Step 3 | Import the SQL schema |
 | Step 4 | Create the super-admin account |
 | Step 5 | Finish and lock the installer |
@@ -235,6 +235,38 @@ RECAPTCHA_ENABLED=true
 RECAPTCHA_SITE_KEY=your_site_key
 RECAPTCHA_SECRET_KEY=your_secret_key
 ```
+
+### 2.8 Owner-only full install script (no CodeCanyon key)
+
+For owner deployments, you can run a full CLI install using an owner token instead of CodeCanyon fields.
+
+1) Enable owner mode in `.env`:
+
+```dotenv
+OWNER_LICENSE_ENABLED=true
+OWNER_INSTALL_TOKEN=your_private_owner_token
+```
+
+2) Run the owner installer:
+
+```bash
+php install/owner_install.php \
+  --database=trading_platform \
+  --username=inplat_user \
+  --password='db_password_here' \
+  --admin-username=admin \
+  --admin-email=admin@yourdomain.com \
+  --admin-password='StrongAdminPass123!' \
+  --owner-name='Platform Owner' \
+  --owner-email='owner@yourdomain.com' \
+  --domain=yourdomain.com \
+  --owner-token=your_private_owner_token
+```
+
+This script writes:
+- `storage/config/database.php`
+- `storage/config/license.json` (type: `owner_self`)
+- `storage/installed.lock`
 
 ---
 

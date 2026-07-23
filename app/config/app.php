@@ -12,6 +12,8 @@ return [
     'installed_lock' => app_path('storage/installed.lock'),
     'license_file' => app_path('storage/config/license.json'),
     'license_secret_file' => app_path('storage/config/license.key'),
+    'owner_license_enabled' => filter_var($_ENV['OWNER_LICENSE_ENABLED'] ?? false, FILTER_VALIDATE_BOOL),
+    'owner_install_token' => trim((string)($_ENV['OWNER_INSTALL_TOKEN'] ?? '')),
     'log_file' => app_path('storage/logs/app.log'),
     'session_name' => 'inplat_session',
     'trusted_proxies' => array_values(array_filter(array_map('trim', explode(',', (string)($_ENV['TRUSTED_PROXIES'] ?? ''))))),

@@ -39,6 +39,7 @@ final class InstallerController extends BaseController
             'title' => 'Installer - Database & License',
             'detectedDomain' => $domain,
             'demoMode' => (bool)config('app.demo_mode'),
+            'ownerLicenseEnabled' => LicenseGuard::ownerLicenseEnabled(),
         ]);
     }
 
@@ -57,27 +58,27 @@ final class InstallerController extends BaseController
             'username' => (string)$request->input('username', 'root'),
             'password' => (string)$request->input('password', ''),
         ];
+        $licenseType = LicenseGuard::normalizeLicenseType((string)$request->input('license_type', LicenseGuard::TYPE_CODECANYON));
         $license = [
+            'type' => $licenseType,
             'buyer_name' => LicenseGuard::normalizeBuyerName((string)$request->input('buyer_name', '')),
             'buyer_email' => trim((string)$request->input('buyer_email', '')),
             'purchase_code' => trim((string)$request->input('purchase_code', '')),
+            'provider_name' => LicenseGuard::normalizeBuyerName((string)$request->input('provider_name', '')),
+            'third_party_license_key' => trim((string)$request->input('third_party_license_key', '')),
+            'owner_name' => LicenseGuard::normalizeBuyerName((string)$request->input('owner_name', '')),
+            'owner_email' => trim((string)$request->input('owner_email', '')),
+            'owner_install_token' => (string)$request->input('owner_install_token', ''),
             'domain' => LicenseGuard::normalizeDomain((string)$request->input('domain', (string)($_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? ''))),
         ];
 
         if (!$demoMode) {
-            if ($license['buyer_name'] === '' || $license['buyer_email'] === '' || $license['purchase_code'] === '' || $license['domain'] === '') {
-                Response::json(['ok' => false, 'message' => 'License fields are required.'], 422);
+            if (!LicenseGuard::isSupportedLicenseType($licenseType)) {
+                Response::json(['ok' => false, 'message' => 'Unsupported license source selected.'], 422);
             }
 
-            if (filter_var($license['buyer_email'], FILTER_VALIDATE_EMAIL) === false) {
-                Response::json(['ok' => false, 'message' => 'License email is invalid.'], 422);
-            }
-            if (!LicenseGuard::isValidBuyerName($license['buyer_name'])) {
-                Response::json(['ok' => false, 'message' => 'License buyer name is invalid.'], 422);
-            }
-
-            if (!LicenseGuard::isValidPurchaseCode($license['purchase_code'])) {
-                Response::json(['ok' => false, 'message' => 'Invalid CodeCanyon purchase code format.'], 422);
+            if ($license['domain'] === '') {
+                Response::json(['ok' => false, 'message' => 'Licensed domain is required.'], 422);
             }
         }
 
@@ -107,10 +108,12 @@ final class InstallerController extends BaseController
         if (!$demoMode) {
             LicenseGuard::ensureSecretFile();
 
-            $licensePayload = LicenseGuard::pack($license['purchase_code'], $license['domain']);
-            $licensePayload['buyer_name'] = $license['buyer_name'];
-            $licensePayload['buyer_email'] = $license['buyer_email'];
-            $licensePayload['purchase_code_hash'] = LicenseGuard::purchaseCodeHash($license['purchase_code']);
+            try {
+                $licensePayload = $this->buildLicensePayload($licenseType, $license);
+            } catch (Throwable $e) {
+                Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+            }
+
             $licenseContent = json_encode($licensePayload, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $licenseConfigPath = (string)config('app.license_file');
             if (!is_string($licenseContent) || file_put_contents($licenseConfigPath, $licenseContent, LOCK_EX) === false) {
@@ -307,20 +310,50 @@ final class InstallerController extends BaseController
             throw new \RuntimeException('Invalid license configuration format.');
         }
 
-        $required = ['buyer_name', 'buyer_email', 'purchase_code_hash', 'domain'];
-        foreach ($required as $field) {
-            if (!array_key_exists($field, $license) || trim((string)$license[$field]) === '') {
-                throw new \RuntimeException('License configuration is incomplete.');
-            }
+        $licenseType = LicenseGuard::normalizeLicenseType((string)($license['type'] ?? LicenseGuard::TYPE_CODECANYON));
+        if (!LicenseGuard::isSupportedLicenseType($licenseType)) {
+            throw new \RuntimeException('Unsupported license type in configuration.');
         }
 
         $values = [
-            'license_buyer_name' => (string)$license['buyer_name'],
-            'license_buyer_email' => (string)$license['buyer_email'],
-            'license_purchase_code_hash' => (string)$license['purchase_code_hash'],
+            'license_type' => $licenseType,
             'license_domain' => (string)$license['domain'],
             'license_verified_at' => date('Y-m-d H:i:s'),
         ];
+
+        if ($licenseType === LicenseGuard::TYPE_CODECANYON) {
+            $required = ['buyer_name', 'buyer_email', 'purchase_code_hash', 'domain'];
+            foreach ($required as $field) {
+                if (!array_key_exists($field, $license) || trim((string)$license[$field]) === '') {
+                    throw new \RuntimeException('CodeCanyon license configuration is incomplete.');
+                }
+            }
+
+            $values['license_buyer_name'] = (string)$license['buyer_name'];
+            $values['license_buyer_email'] = (string)$license['buyer_email'];
+            $values['license_purchase_code_hash'] = (string)$license['purchase_code_hash'];
+        } elseif ($licenseType === LicenseGuard::TYPE_THIRD_PARTY) {
+            $required = ['provider_name', 'license_key_hash', 'domain'];
+            foreach ($required as $field) {
+                if (!array_key_exists($field, $license) || trim((string)$license[$field]) === '') {
+                    throw new \RuntimeException('Third-party license configuration is incomplete.');
+                }
+            }
+
+            $values['license_provider_name'] = (string)$license['provider_name'];
+            $values['license_key_hash'] = (string)$license['license_key_hash'];
+        } elseif ($licenseType === LicenseGuard::TYPE_OWNER) {
+            $required = ['owner_name', 'owner_email', 'owner_identity_hash', 'domain'];
+            foreach ($required as $field) {
+                if (!array_key_exists($field, $license) || trim((string)$license[$field]) === '') {
+                    throw new \RuntimeException('Owner license configuration is incomplete.');
+                }
+            }
+
+            $values['license_owner_name'] = (string)$license['owner_name'];
+            $values['license_owner_email'] = (string)$license['owner_email'];
+            $values['license_owner_identity_hash'] = (string)$license['owner_identity_hash'];
+        }
 
         $stmt = $pdo->prepare('INSERT INTO system_settings (setting_key, setting_value, value_type, category, description, is_public, updated_at)
             VALUES (:setting_key, :setting_value, :value_type, :category, :description, 0, NOW()) AS incoming
@@ -332,8 +365,93 @@ final class InstallerController extends BaseController
                 'setting_value' => $value,
                 'value_type' => 'string',
                 'category' => 'license',
-                'description' => 'CodeCanyon license metadata',
+                'description' => 'License metadata',
             ]);
         }
+    }
+
+    private function buildLicensePayload(string $licenseType, array $license): array
+    {
+        return match ($licenseType) {
+            LicenseGuard::TYPE_CODECANYON => $this->buildCodecanyonPayload($license),
+            LicenseGuard::TYPE_THIRD_PARTY => $this->buildThirdPartyPayload($license),
+            LicenseGuard::TYPE_OWNER => $this->buildOwnerPayload($license),
+            default => throw new \RuntimeException('Unsupported license type.'),
+        };
+    }
+
+    private function buildCodecanyonPayload(array $license): array
+    {
+        if ($license['buyer_name'] === '' || $license['buyer_email'] === '' || $license['purchase_code'] === '' || $license['domain'] === '') {
+            throw new \RuntimeException('CodeCanyon license fields are required.');
+        }
+
+        if (filter_var($license['buyer_email'], FILTER_VALIDATE_EMAIL) === false) {
+            throw new \RuntimeException('CodeCanyon license email is invalid.');
+        }
+
+        if (!LicenseGuard::isValidBuyerName($license['buyer_name'])) {
+            throw new \RuntimeException('CodeCanyon buyer name is invalid.');
+        }
+
+        if (!LicenseGuard::isValidPurchaseCode($license['purchase_code'])) {
+            throw new \RuntimeException('Invalid CodeCanyon purchase code format.');
+        }
+
+        $payload = LicenseGuard::pack($license['purchase_code'], $license['domain']);
+        $payload['buyer_name'] = $license['buyer_name'];
+        $payload['buyer_email'] = $license['buyer_email'];
+        $payload['purchase_code_hash'] = LicenseGuard::purchaseCodeHash($license['purchase_code']);
+        return $payload;
+    }
+
+    private function buildThirdPartyPayload(array $license): array
+    {
+        if ($license['provider_name'] === '' || $license['third_party_license_key'] === '' || $license['domain'] === '') {
+            throw new \RuntimeException('Third-party license fields are required.');
+        }
+
+        if (!LicenseGuard::isValidBuyerName($license['provider_name'])) {
+            throw new \RuntimeException('Third-party provider name is invalid.');
+        }
+
+        if (!LicenseGuard::isValidThirdPartyLicenseKey($license['third_party_license_key'])) {
+            throw new \RuntimeException('Third-party license key format is invalid.');
+        }
+
+        return LicenseGuard::packThirdParty(
+            $license['provider_name'],
+            $license['third_party_license_key'],
+            $license['domain']
+        );
+    }
+
+    private function buildOwnerPayload(array $license): array
+    {
+        if (!LicenseGuard::ownerLicenseEnabled()) {
+            throw new \RuntimeException('Owner license mode is disabled.');
+        }
+
+        if ($license['owner_name'] === '' || $license['owner_email'] === '' || $license['owner_install_token'] === '' || $license['domain'] === '') {
+            throw new \RuntimeException('Owner license fields are required.');
+        }
+
+        if (filter_var($license['owner_email'], FILTER_VALIDATE_EMAIL) === false) {
+            throw new \RuntimeException('Owner email is invalid.');
+        }
+
+        if (!LicenseGuard::isValidBuyerName($license['owner_name'])) {
+            throw new \RuntimeException('Owner name is invalid.');
+        }
+
+        if (!LicenseGuard::validateOwnerInstallToken($license['owner_install_token'])) {
+            throw new \RuntimeException('Owner install token is invalid.');
+        }
+
+        return LicenseGuard::packOwner(
+            $license['owner_name'],
+            $license['owner_email'],
+            $license['domain']
+        );
     }
 }

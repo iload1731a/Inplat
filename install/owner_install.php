@@ -18,6 +18,9 @@ if (PHP_SAPI !== 'cli') {
     exit(1);
 }
 
+// Note: SQL import parsing mirrors the installer's simple parser and is intended
+// for the bundled trading_platform_schema.sql format.
+
 if (!LicenseGuard::ownerLicenseEnabled()) {
     fwrite(STDERR, "Owner install mode is disabled. Set OWNER_LICENSE_ENABLED=true in your environment.\n");
     exit(1);

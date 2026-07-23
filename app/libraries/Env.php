@@ -13,7 +13,7 @@ final class Env
         }
 
         $lines = file($path, FILE_IGNORE_NEW_LINES);
-        if (!is_array($lines)) {
+        if ($lines === false) {
             return;
         }
 
@@ -36,7 +36,7 @@ final class Env
             $name = trim(substr($line, 0, $separator));
             $value = trim(substr($line, $separator + 1));
 
-            if ($name === '' || preg_match('/^[A-Z0-9_]+$/i', $name) !== 1) {
+            if ($name === '' || preg_match('/^[a-zA-Z0-9_]+$/', $name) !== 1) {
                 continue;
             }
 
@@ -47,7 +47,7 @@ final class Env
                 $value = substr($value, 1, -1);
             }
 
-            if (array_key_exists($name, $_ENV) || getenv($name) !== false) {
+            if (array_key_exists($name, $_ENV) || array_key_exists($name, $_SERVER) || getenv($name, true) !== false) {
                 continue;
             }
 

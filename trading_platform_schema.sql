@@ -1786,3 +1786,83 @@ INSERT INTO kyc_requirements (kyc_level, document_type, display_name, descriptio
 (2, 'drivers_license',  'Driver''s License',    'Valid driver''s license with photo',                   3),
 (3, 'proof_of_address', 'Proof of Address',     'Utility bill or bank statement (< 3 months old)',      1),
 (3, 'corporate_doc',    'Corporate Document',   'For business accounts: registration certificate',      2);
+
+-- ============================================================================
+-- SECTION: SUPPORT TICKET SYSTEM EXTENSIONS
+-- ============================================================================
+
+CREATE TABLE ticket_categories (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(80)  NOT NULL,
+    slug            VARCHAR(80)  NOT NULL UNIQUE,
+    description     VARCHAR(255) NULL,
+    icon            VARCHAR(60)  NOT NULL DEFAULT 'fa-tag',
+    color           VARCHAR(20)  NOT NULL DEFAULT 'secondary',
+    sla_hours       SMALLINT UNSIGNED NOT NULL DEFAULT 24,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Configurable support ticket categories';
+
+CREATE TABLE ticket_attachments (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ticket_id       BIGINT UNSIGNED NOT NULL,
+    message_id      BIGINT UNSIGNED NULL,
+    uploader_type   ENUM('user','admin') NOT NULL DEFAULT 'user',
+    uploader_id     BIGINT UNSIGNED NOT NULL,
+    original_name   VARCHAR(255) NOT NULL,
+    stored_name     VARCHAR(255) NOT NULL,
+    file_url        VARCHAR(500) NOT NULL,
+    mime_type       VARCHAR(120) NOT NULL,
+    file_size       INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='File attachments for support tickets';
+
+CREATE TABLE ticket_internal_notes (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ticket_id       BIGINT UNSIGNED NOT NULL,
+    admin_id        BIGINT UNSIGNED NOT NULL,
+    note            TEXT NOT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_id)  REFERENCES admin_users(id)    ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Internal admin-only notes on tickets';
+
+CREATE TABLE ticket_tags (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(60) NOT NULL UNIQUE,
+    color           VARCHAR(20) NOT NULL DEFAULT 'secondary',
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Tags for classifying support tickets';
+
+CREATE TABLE ticket_tag_map (
+    ticket_id       BIGINT UNSIGNED NOT NULL,
+    tag_id          INT UNSIGNED NOT NULL,
+    PRIMARY KEY (ticket_id, tag_id),
+    FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id)    REFERENCES ticket_tags(id)     ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Many-to-many mapping between tickets and tags';
+
+CREATE TABLE ticket_csat_ratings (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ticket_id       BIGINT UNSIGNED NOT NULL UNIQUE,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    rating          TINYINT UNSIGNED NOT NULL COMMENT '1=very bad, 2=bad, 3=neutral, 4=good, 5=excellent',
+    comment         TEXT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id)   REFERENCES users(id)           ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Customer satisfaction ratings after ticket resolution';
+
+-- Seed default ticket categories
+INSERT INTO ticket_categories (name, slug, description, icon, color, sla_hours, sort_order) VALUES
+('Account Issues',       'account',    'Login, 2FA, profile, and account access problems',   'fa-user-circle',  'info',    24, 1),
+('Deposits',             'deposit',    'Crypto and fiat deposit questions and issues',        'fa-arrow-down',   'success', 12, 2),
+('Withdrawals',          'withdrawal', 'Withdrawal requests, delays, and failures',           'fa-arrow-up',     'warning', 12, 3),
+('Trading',              'trading',    'Order placement, execution, and trading questions',   'fa-chart-line',   'primary', 48, 4),
+('KYC Verification',     'kyc',        'Identity verification, document review questions',    'fa-id-card',      'warning', 24, 5),
+('Technical Issues',     'technical',  'Platform bugs, errors, and performance issues',       'fa-tools',        'danger',  8,  6),
+('Fees & Limits',        'fees',       'Fee structure, trading limits, and tier questions',   'fa-percent',      'info',    48, 7),
+('General Enquiry',      'general',    'General questions not covered by other categories',   'fa-question-circle','secondary',72,8);

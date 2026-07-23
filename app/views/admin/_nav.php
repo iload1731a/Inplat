@@ -37,7 +37,7 @@
             ],
             'Operations' => [
                 'risk'           => ['/admin/risk',        '<i class="fas fa-shield-alt me-1"></i>Risk'],
-                'support'        => ['/admin/support',     '<i class="fas fa-headset me-1"></i>Support'],
+                'tickets'        => ['/admin/tickets',     '<i class="fas fa-headset me-1"></i>Support'],
                 'communications' => ['/admin/communications', '<i class="fas fa-bell me-1"></i>Comms'],
                 'content'        => ['/admin/content',     '<i class="fas fa-file-alt me-1"></i>CMS'],
                 'logs'           => ['/admin/logs',        '<i class="fas fa-history me-1"></i>Logs'],

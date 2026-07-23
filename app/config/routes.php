@@ -253,8 +253,24 @@ $router->post('/admin/communications/notify', [AdminManagementController::class,
 $router->post('/admin/communications/template', [AdminManagementController::class, 'saveEmailTemplate']);
 
 // =====================================================================
-// ADMIN – Support Tickets
+// ADMIN – Support Tickets (dedicated controller)
 // =====================================================================
+$router->get('/admin/tickets',                         [\App\Controllers\Admin\TicketsController::class, 'index']);
+$router->get('/admin/tickets/list',                    [\App\Controllers\Admin\TicketsController::class, 'list']);
+$router->get('/admin/tickets/detail',                  [\App\Controllers\Admin\TicketsController::class, 'detail']);
+$router->post('/admin/tickets/update',                 [\App\Controllers\Admin\TicketsController::class, 'update']);
+$router->post('/admin/tickets/reply',                  [\App\Controllers\Admin\TicketsController::class, 'reply']);
+$router->post('/admin/tickets/note',                   [\App\Controllers\Admin\TicketsController::class, 'note']);
+$router->post('/admin/tickets/bulk',                   [\App\Controllers\Admin\TicketsController::class, 'bulk']);
+$router->get('/admin/tickets/categories',              [\App\Controllers\Admin\TicketsController::class, 'categories']);
+$router->post('/admin/tickets/categories/create',      [\App\Controllers\Admin\TicketsController::class, 'createCategory']);
+$router->post('/admin/tickets/categories/update',      [\App\Controllers\Admin\TicketsController::class, 'updateCategory']);
+$router->post('/admin/tickets/categories/delete',      [\App\Controllers\Admin\TicketsController::class, 'deleteCategory']);
+$router->get('/admin/tickets/analytics',               [\App\Controllers\Admin\TicketsController::class, 'analytics']);
+$router->get('/admin/tickets/export',                  [\App\Controllers\Admin\TicketsController::class, 'export']);
+$router->post('/admin/tickets/tags/create',            [\App\Controllers\Admin\TicketsController::class, 'createTag']);
+$router->post('/admin/tickets/tags/update',            [\App\Controllers\Admin\TicketsController::class, 'updateTags']);
+// Legacy redirect (keep old /admin/support route working)
 $router->get('/admin/support', [AdminManagementController::class, 'support']);
 $router->post('/admin/support/update', [AdminManagementController::class, 'updateSupportTicket']);
 $router->post('/admin/support/reply', [AdminManagementController::class, 'replySupportTicket']);
@@ -459,6 +475,8 @@ $router->get('/user/tickets/create',  [UserTicketsController::class, 'create']);
 $router->post('/user/tickets',        [UserTicketsController::class, 'store']);
 $router->get('/user/tickets/view',    [UserTicketsController::class, 'show']);
 $router->post('/user/tickets/reply',  [UserTicketsController::class, 'reply']);
+$router->post('/user/tickets/close',  [UserTicketsController::class, 'close']);
+$router->post('/user/tickets/rate',   [UserTicketsController::class, 'rate']);
 
 // =====================================================================
 // USER – Referral

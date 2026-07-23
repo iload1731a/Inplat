@@ -119,7 +119,7 @@ $days           = (int)($days ?? 30);
 <script>
 // Volume chart
 (function(){
-    const raw  = <?= json_encode($daily, JSON_THROW_ON_ERROR) ?>;
+    const raw  = <?= json_encode($daily) ?: '[]' ?>;
     const days  = raw.map(r => r.day);
     const newT  = raw.map(r => parseInt(r.new_tickets)||0);
     const urgent = raw.map(r => parseInt(r.urgent_count)||0);
@@ -139,7 +139,7 @@ $days           = (int)($days ?? 30);
 
 // CSAT trend line
 (function(){
-    const raw  = <?= json_encode($csatTrend, JSON_THROW_ON_ERROR) ?>;
+    const raw  = <?= json_encode($csatTrend) ?: '[]' ?>;
     if (!raw.length) { document.getElementById('csatChart').innerHTML = '<div class="text-secondary text-center py-4">No CSAT data yet</div>'; return; }
     new ApexCharts(document.getElementById('csatChart'), {
         chart: { type:'line', height:200, background:'transparent', toolbar:{show:false} },
@@ -157,7 +157,7 @@ $days           = (int)($days ?? 30);
 
 // Category donut
 (function(){
-    const raw = <?= json_encode($categoryVolume, JSON_THROW_ON_ERROR) ?>;
+    const raw = <?= json_encode($categoryVolume) ?: '[]' ?>;
     if (!raw.length) return;
     new ApexCharts(document.getElementById('catChart'), {
         chart: { type:'bar', height:220, background:'transparent', toolbar:{show:false} },

@@ -208,7 +208,11 @@ final class TicketsController extends AdminBaseController
         $this->requireCsrf($request);
 
         $action   = trim((string)$request->input('action', ''));
-        $ids      = (array)$request->input('ids', []);
+        // IDs may arrive as a comma-separated string (from the hidden bulk input) or as an array
+        $rawIds   = $request->input('ids', '');
+        $ids      = is_array($rawIds)
+            ? $rawIds
+            : array_filter(explode(',', (string)$rawIds));
         $assignTo = (int)$request->input('assign_to', 0);
 
         try {

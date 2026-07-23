@@ -164,7 +164,7 @@ $csatTotal     = (int)($csat['total_ratings'] ?? 0);
 <script>
 // 30-day volume chart
 (function(){
-    const raw = <?= json_encode($daily, JSON_THROW_ON_ERROR) ?>;
+    const raw = <?= json_encode($daily) ?: '[]' ?>;
     const dates = raw.map(r => r.date_label);
     const newT  = raw.map(r => parseInt(r.new_tickets)||0);
     new ApexCharts(document.getElementById('volumeChart'), {
@@ -180,7 +180,7 @@ $csatTotal     = (int)($csat['total_ratings'] ?? 0);
 
 // Category donut
 (function(){
-    const raw = <?= json_encode($categories, JSON_THROW_ON_ERROR) ?>;
+    const raw = <?= json_encode($categories) ?: '[]' ?>;
     if (!raw.length) return;
     new ApexCharts(document.getElementById('catChart'), {
         chart: { type:'donut', height:240, background:'transparent' },

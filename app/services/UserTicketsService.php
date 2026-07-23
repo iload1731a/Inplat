@@ -161,7 +161,7 @@ final class UserTicketsService
 
     private function storeFile(int $ticketId, int $userId, array $file): string
     {
-        $mimeType = mime_content_type((string)($file['tmp_name'] ?? ''));
+        $mimeType = @mime_content_type((string)($file['tmp_name'] ?? ''));
         if ($mimeType === false) {
             $mimeType = (string)($file['type'] ?? 'application/octet-stream');
         }
@@ -178,7 +178,7 @@ final class UserTicketsService
         }
 
         $ext        = strtolower(pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
-        $storedName = 'ticket_' . $ticketId . '_u' . $userId . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $storedName = 'ticket_' . $ticketId . '_u' . $userId . '_' . hrtime(true) . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         $target     = $uploadDir . $storedName;
 
         if (!move_uploaded_file((string)($file['tmp_name'] ?? ''), $target)) {

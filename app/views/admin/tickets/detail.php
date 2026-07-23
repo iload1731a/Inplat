@@ -257,7 +257,8 @@ $stColor = match((string)($ticket['status'] ?? 'open')) {
                         <i class="fas fa-file me-1"></i>
                         <span class="text-truncate"><?= e((string)($att['original_name'] ?? 'file')) ?></span>
                         <span class="text-secondary ms-1" style="font-size:.6rem">
-                            <?= round((int)($att['file_size'] ?? 0) / 1024, 1) ?>KB
+                            <?php $sz = (int)($att['file_size'] ?? 0);
+                            echo $sz < 1048576 ? round($sz / 1024, 1) . 'KB' : round($sz / 1048576, 1) . 'MB'; ?>
                         </span>
                     </a>
                 <?php endforeach; ?>

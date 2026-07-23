@@ -49,7 +49,7 @@ $icons  = ['fa-tag','fa-user-circle','fa-arrow-down','fa-arrow-up','fa-chart-lin
                     <td><?= (int)($cat['sort_order'] ?? 0) ?></td>
                     <td>
                         <button class="btn btn-xs btn-outline-warning me-1"
-                                onclick="editCat(<?= htmlspecialchars(json_encode($cat), ENT_QUOTES) ?>)">
+                                onclick="editCat(<?= json_encode($cat, JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS) ?>)">
                             <i class="fas fa-edit"></i>
                         </button>
                         <?php if ((int)($cat['total_tickets'] ?? 0) === 0): ?>

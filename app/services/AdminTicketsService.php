@@ -184,7 +184,7 @@ final class AdminTicketsService
 
     private function saveAttachment(int $ticketId, int $uploaderId, string $uploaderType, array $file, ?int $msgId): string
     {
-        $mimeType = mime_content_type((string)($file['tmp_name'] ?? ''));
+        $mimeType = @mime_content_type((string)($file['tmp_name'] ?? ''));
         if ($mimeType === false) {
             $mimeType = (string)($file['type'] ?? 'application/octet-stream');
         }
@@ -201,7 +201,7 @@ final class AdminTicketsService
         }
 
         $ext        = strtolower(pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
-        $storedName = 'ticket_' . $ticketId . '_' . $uploaderId . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $storedName = 'ticket_' . $ticketId . '_' . $uploaderId . '_' . hrtime(true) . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         $target     = $uploadDir . $storedName;
 
         if (!move_uploaded_file((string)($file['tmp_name'] ?? ''), $target)) {

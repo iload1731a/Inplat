@@ -402,8 +402,9 @@ final class AdminTicketsRepository
                  original_name, stored_name, file_url, mime_type, file_size, created_at)
              VALUES (:tid, :mid, :utype, :uid, :oname, :sname, :url, :mime, :size, NOW())"
         );
-        $stmt->bindValue(':tid',   $data['ticket_id'],      PDO::PARAM_INT);
-        $stmt->bindValue(':mid',   $data['message_id'] ?? null, $data['message_id'] !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        $stmt->bindValue(':tid',   $data['ticket_id'],    PDO::PARAM_INT);
+        $mid = $data['message_id'] ?? null;
+        $stmt->bindValue(':mid',   $mid, $mid !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
         $stmt->bindValue(':utype', $data['uploader_type']);
         $stmt->bindValue(':uid',   $data['uploader_id'],    PDO::PARAM_INT);
         $stmt->bindValue(':oname', $data['original_name']);

@@ -46,7 +46,7 @@
 
             <div id="ownerFields" class="license-fields d-none">
                 <div class="alert alert-info">
-                    Owner license is intended for platform owner deployments. This option appears only when owner mode is enabled. If it is missing, set <code>OWNER_LICENSE_ENABLED=true</code> and <code>OWNER_INSTALL_TOKEN</code> in <code>.env</code> before opening the installer.
+                    Owner license is intended for platform owner deployments. This option appears only when owner mode is enabled. If it is missing, set <code>OWNER_LICENSE_ENABLED=true</code> and an <code>OWNER_INSTALL_TOKEN</code> value in <code>.env</code> before opening the installer.
                 </div>
                 <div class="mb-3"><label class="form-label">Owner Name</label><input class="form-control" name="owner_name"></div>
                 <div class="mb-3"><label class="form-label">Owner Email</label><input class="form-control" type="email" name="owner_email"></div>

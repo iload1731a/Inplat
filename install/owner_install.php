@@ -186,8 +186,17 @@ echo "Admin login: " . rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000
 
 function splitSqlStatements(string $sql): array
 {
-    $sql = preg_replace('~/\*.*?\*/~s', '', $sql);
-    $sql = preg_replace('/^\s*(--|#).*$\R?/m', '', (string)$sql);
+    $withoutBlockComments = preg_replace('~/\*.*?\*/~s', '', $sql);
+    if (!is_string($withoutBlockComments)) {
+        throw new RuntimeException('Failed to sanitize SQL schema comments.');
+    }
+
+    $withoutLineComments = preg_replace('/^\s*(--|#).*$\R?/m', '', $withoutBlockComments);
+    if (!is_string($withoutLineComments)) {
+        throw new RuntimeException('Failed to sanitize SQL schema line comments.');
+    }
+
+    $sql = $withoutLineComments;
 
     $statements = [];
     $buffer = '';

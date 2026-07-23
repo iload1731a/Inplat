@@ -144,6 +144,11 @@ final class LicenseGuard
         return (bool)preg_match('/^[\pL\pN .\'\-]{2,120}$/u', $name);
     }
 
+    public static function isValidIdentityName(string $name): bool
+    {
+        return self::isValidBuyerName($name);
+    }
+
     public static function normalizeBuyerName(string $name): string
     {
         return (string)preg_replace('/\s+/', ' ', trim($name));
@@ -176,7 +181,7 @@ final class LicenseGuard
             return false;
         }
 
-        return (bool)preg_match('/^[A-Za-z0-9._:\-]+$/', trim($licenseKey));
+        return (bool)preg_match('/^[A-Za-z0-9._\-]+$/', trim($licenseKey));
     }
 
     public static function ownerLicenseEnabled(): bool

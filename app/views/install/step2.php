@@ -46,7 +46,7 @@
 
             <div id="ownerFields" class="license-fields d-none">
                 <div class="alert alert-info">
-                    Owner license is intended for platform owner deployments. Set <code>OWNER_LICENSE_ENABLED=true</code> and <code>OWNER_INSTALL_TOKEN</code> in server/.env before using this option.
+                    Owner license is intended for platform owner deployments. Set <code>OWNER_LICENSE_ENABLED=true</code> and <code>OWNER_INSTALL_TOKEN</code> in <code>.env</code> before using this option.
                 </div>
                 <div class="mb-3"><label class="form-label">Owner Name</label><input class="form-control" name="owner_name"></div>
                 <div class="mb-3"><label class="form-label">Owner Email</label><input class="form-control" type="email" name="owner_email"></div>

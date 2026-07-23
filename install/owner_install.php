@@ -54,7 +54,7 @@ if (!LicenseGuard::validateOwnerInstallToken((string)$options['owner-token'])) {
 $ownerName = LicenseGuard::normalizeIdentityName((string)$options['owner-name']);
 $ownerEmail = strtolower(trim((string)$options['owner-email']));
 $domain = LicenseGuard::normalizeDomain((string)$options['domain']);
-if ($ownerName === '' || !LicenseGuard::isValidBuyerName($ownerName)) {
+if ($ownerName === '' || !LicenseGuard::isValidIdentityName($ownerName)) {
     fwrite(STDERR, "Owner name is invalid.\n");
     exit(1);
 }
@@ -231,7 +231,8 @@ function splitSqlStatements(string $sql): array
 function assertSchemaStatementAllowed(string $statement): void
 {
     $normalized = ltrim($statement);
-    $prefix = strtoupper((string)strtok($normalized, " \n\t\r"));
+    $parts = preg_split('/\s+/', $normalized, 2);
+    $prefix = strtoupper((string)($parts[0] ?? ''));
     $allowed = ['SET', 'CREATE', 'USE', 'INSERT'];
     $disallowedPattern = '/\\b(DROP|DELETE|TRUNCATE|RENAME|GRANT|REVOKE)\\b/i';
 

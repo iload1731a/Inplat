@@ -411,7 +411,7 @@ final class InstallerController extends BaseController
             throw new \RuntimeException('Third-party license fields are required.');
         }
 
-        if (!LicenseGuard::isValidBuyerName($license['provider_name'])) {
+        if (!LicenseGuard::isValidIdentityName($license['provider_name'])) {
             throw new \RuntimeException('Third-party provider name is invalid.');
         }
 
@@ -440,7 +440,7 @@ final class InstallerController extends BaseController
             throw new \RuntimeException('Owner email is invalid.');
         }
 
-        if (!LicenseGuard::isValidBuyerName($license['owner_name'])) {
+        if (!LicenseGuard::isValidIdentityName($license['owner_name'])) {
             throw new \RuntimeException('Owner name is invalid.');
         }
 

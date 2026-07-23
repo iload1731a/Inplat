@@ -356,7 +356,7 @@ final class InstallerController extends BaseController
         }
 
         $stmt = $pdo->prepare('INSERT INTO system_settings (setting_key, setting_value, value_type, category, description, is_public, updated_at)
-            VALUES (:setting_key, :setting_value, :value_type, :category, :description, 0, NOW()) AS incoming
+            VALUES (:setting_key, :setting_value, :value_type, :category, :description, :is_public, NOW()) AS incoming
             ON DUPLICATE KEY UPDATE setting_value = incoming.setting_value, value_type = incoming.value_type, category = incoming.category, description = incoming.description, updated_at = NOW()');
 
         foreach ($values as $key => $value) {
@@ -366,6 +366,7 @@ final class InstallerController extends BaseController
                 'value_type' => 'string',
                 'category' => 'license',
                 'description' => 'License metadata',
+                'is_public' => false,
             ]);
         }
     }

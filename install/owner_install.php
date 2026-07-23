@@ -128,8 +128,8 @@ try {
     $pdo = Database::connection();
     $pdo->beginTransaction();
 
-    $roleStmt = $pdo->prepare('INSERT IGNORE INTO roles (name, description, is_system_role, created_at, updated_at) VALUES (:name, :description, 1, NOW(), NOW())');
-    $roleStmt->execute(['name' => 'super_admin', 'description' => 'System Super Administrator']);
+    $roleStmt = $pdo->prepare('INSERT IGNORE INTO roles (name, description, is_system_role, created_at, updated_at) VALUES (:name, :description, :is_system_role, NOW(), NOW())');
+    $roleStmt->execute(['name' => 'super_admin', 'description' => 'System Super Administrator', 'is_system_role' => true]);
 
     $roleIdStmt = $pdo->prepare('SELECT id FROM roles WHERE name = :name LIMIT 1');
     $roleIdStmt->execute(['name' => 'super_admin']);
@@ -253,7 +253,7 @@ function persistOwnerLicenseSettings(PDO $pdo, array $licensePayload): void
     ];
 
     $stmt = $pdo->prepare('INSERT INTO system_settings (setting_key, setting_value, value_type, category, description, is_public, updated_at)
-        VALUES (:setting_key, :setting_value, :value_type, :category, :description, 0, NOW()) AS incoming
+        VALUES (:setting_key, :setting_value, :value_type, :category, :description, :is_public, NOW()) AS incoming
         ON DUPLICATE KEY UPDATE setting_value = incoming.setting_value, value_type = incoming.value_type, category = incoming.category, description = incoming.description, updated_at = NOW()');
 
     foreach ($values as $key => $value) {
@@ -263,6 +263,7 @@ function persistOwnerLicenseSettings(PDO $pdo, array $licensePayload): void
             'value_type' => 'string',
             'category' => 'license',
             'description' => 'License metadata',
+            'is_public' => false,
         ]);
     }
 }

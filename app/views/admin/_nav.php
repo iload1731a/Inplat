@@ -36,13 +36,14 @@
                 'finance'         => ['/admin/finance',         '<i class="fas fa-dollar-sign me-1"></i>Finance'],
             ],
             'Operations' => [
-                'risk'           => ['/admin/risk',        '<i class="fas fa-shield-alt me-1"></i>Risk'],
-                'tickets'        => ['/admin/tickets',     '<i class="fas fa-headset me-1"></i>Support'],
-                'communications' => ['/admin/communications', '<i class="fas fa-bell me-1"></i>Comms'],
-                'content'        => ['/admin/content',     '<i class="fas fa-file-alt me-1"></i>CMS'],
-                'logs'           => ['/admin/logs',        '<i class="fas fa-history me-1"></i>Logs'],
-                'system'         => ['/admin/system',      '<i class="fas fa-cog me-1"></i>System'],
-                'settings'       => ['/admin/settings',    '<i class="fas fa-sliders-h me-1"></i>Settings'],
+                'risk'           => ['/admin/risk',              '<i class="fas fa-shield-alt me-1"></i>Risk'],
+                'tickets'        => ['/admin/tickets',           '<i class="fas fa-headset me-1"></i>Support'],
+                'notifications'  => ['/admin/notifications',     '<i class="fas fa-bell me-1"></i>Notifications'],
+                'communications' => ['/admin/communications',    '<i class="fas fa-paper-plane me-1"></i>Comms'],
+                'content'        => ['/admin/content',           '<i class="fas fa-file-alt me-1"></i>CMS'],
+                'logs'           => ['/admin/logs',              '<i class="fas fa-history me-1"></i>Logs'],
+                'system'         => ['/admin/system',            '<i class="fas fa-cog me-1"></i>System'],
+                'settings'       => ['/admin/settings',          '<i class="fas fa-sliders-h me-1"></i>Settings'],
             ],
         ];
         foreach ($groups as $groupName => $items):

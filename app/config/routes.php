@@ -45,6 +45,7 @@ use App\Controllers\User\WithdrawalController as UserWithdrawalController;
 use App\Controllers\User\TradingController as UserTradingController;
 use App\Controllers\User\MarketsController as UserMarketsController;
 use App\Controllers\User\ChartsController as UserChartsController;
+use App\Controllers\Admin\NotificationsController as AdminNotificationsController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -462,10 +463,19 @@ $router->post('/user/positions/add-margin',[UserPositionsController::class, 'add
 // =====================================================================
 // USER – Notifications
 // =====================================================================
-$router->get('/user/notifications',          [UserNotificationsController::class, 'index']);
-$router->post('/user/notifications/read',    [UserNotificationsController::class, 'markRead']);
-$router->post('/user/notifications/read-all',[UserNotificationsController::class, 'markAllRead']);
-$router->post('/user/notifications/delete',  [UserNotificationsController::class, 'delete']);
+$router->get('/user/notifications',                     [UserNotificationsController::class, 'index']);
+$router->get('/user/notifications/preferences',         [UserNotificationsController::class, 'preferences']);
+$router->post('/user/notifications/preferences',        [UserNotificationsController::class, 'savePreferences']);
+$router->get('/user/notifications/history',             [UserNotificationsController::class, 'history']);
+$router->post('/user/notifications/read',               [UserNotificationsController::class, 'markRead']);
+$router->post('/user/notifications/read-all',           [UserNotificationsController::class, 'markAllRead']);
+$router->post('/user/notifications/read-type',          [UserNotificationsController::class, 'markTypeRead']);
+$router->post('/user/notifications/delete',             [UserNotificationsController::class, 'delete']);
+$router->post('/user/notifications/delete-read',        [UserNotificationsController::class, 'deleteAllRead']);
+$router->get('/user/notifications/poll',                [UserNotificationsController::class, 'poll']);
+$router->post('/user/notifications/announcement-read',  [UserNotificationsController::class, 'announcementRead']);
+$router->post('/user/notifications/push-register',      [UserNotificationsController::class, 'pushRegister']);
+$router->post('/user/notifications/push-deregister',    [UserNotificationsController::class, 'pushDeregister']);
 
 // =====================================================================
 // USER – Support Tickets
@@ -561,6 +571,23 @@ $router->post('/admin/signals/providers/toggle',     [\App\Controllers\Admin\Sig
 $router->post('/admin/signals/providers/recalc',     [\App\Controllers\Admin\SignalsController::class, 'recalcPerformance']);
 $router->get('/admin/signals/alerts',                [\App\Controllers\Admin\SignalsController::class, 'alerts']);
 $router->get('/admin/signals/performance',           [\App\Controllers\Admin\SignalsController::class, 'performance']);
+
+// =====================================================================
+// ADMIN – Notification Center
+// =====================================================================
+$router->get('/admin/notifications',                              [AdminNotificationsController::class, 'index']);
+$router->get('/admin/notifications/history',                      [AdminNotificationsController::class, 'history']);
+$router->get('/admin/notifications/export',                       [AdminNotificationsController::class, 'export']);
+$router->get('/admin/notifications/broadcast',                    [AdminNotificationsController::class, 'broadcast']);
+$router->post('/admin/notifications/broadcast',                   [AdminNotificationsController::class, 'broadcast']);
+$router->get('/admin/notifications/announcements',                [AdminNotificationsController::class, 'announcements']);
+$router->post('/admin/notifications/announcements/create',        [AdminNotificationsController::class, 'createAnnouncement']);
+$router->post('/admin/notifications/announcements/update',        [AdminNotificationsController::class, 'updateAnnouncement']);
+$router->post('/admin/notifications/announcements/delete',        [AdminNotificationsController::class, 'deleteAnnouncement']);
+$router->post('/admin/notifications/announcements/toggle',        [AdminNotificationsController::class, 'toggleAnnouncement']);
+$router->get('/admin/notifications/templates',                    [AdminNotificationsController::class, 'templates']);
+$router->post('/admin/notifications/templates/save',              [AdminNotificationsController::class, 'saveTemplate']);
+$router->post('/admin/notifications/templates/delete',            [AdminNotificationsController::class, 'deleteTemplate']);
 
 // =====================================================================
 // INSTALLER

@@ -1866,3 +1866,72 @@ INSERT INTO ticket_categories (name, slug, description, icon, color, sla_hours, 
 ('Technical Issues',     'technical',  'Platform bugs, errors, and performance issues',       'fa-tools',        'danger',  8,  6),
 ('Fees & Limits',        'fees',       'Fee structure, trading limits, and tier questions',   'fa-percent',      'info',    48, 7),
 ('General Enquiry',      'general',    'General questions not covered by other categories',   'fa-question-circle','secondary',72,8);
+
+-- ============================================================================
+-- SECTION 20: NOTIFICATION CENTER AND REAL-TIME ALERT SYSTEM
+-- ============================================================================
+
+-- Add action_url to notifications if column is missing
+ALTER TABLE notifications
+    ADD COLUMN IF NOT EXISTS action_url VARCHAR(500) NULL AFTER message,
+    ADD COLUMN IF NOT EXISTS metadata   JSON         NULL AFTER action_url;
+
+-- Notification dispatch log: every send attempt (in_app insert, email, sms, push) is logged here
+CREATE TABLE notification_log (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    notification_id BIGINT UNSIGNED NULL,                    -- NULL for broadcast/email-only rows
+    user_id         BIGINT UNSIGNED NOT NULL,
+    type            VARCHAR(50) NOT NULL,
+    channel         ENUM('in_app','email','sms','push') NOT NULL DEFAULT 'in_app',
+    title           VARCHAR(191) NOT NULL,
+    status          ENUM('pending','sent','failed','skipped') NOT NULL DEFAULT 'pending',
+    error_message   VARCHAR(500) NULL,
+    sent_at         DATETIME NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_nlog_user   (user_id, created_at),
+    INDEX idx_nlog_status (status),
+    FOREIGN KEY (notification_id) REFERENCES notifications(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id)         REFERENCES users(id)         ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Audit trail for all notification dispatch attempts';
+
+-- Per-user, per-type notification preferences
+CREATE TABLE notification_preferences (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    category        VARCHAR(50) NOT NULL,  -- order_filled, deposit, withdrawal, security, kyc, trade, announcement, system
+    notify_in_app   TINYINT(1) NOT NULL DEFAULT 1,
+    notify_email    TINYINT(1) NOT NULL DEFAULT 1,
+    notify_push     TINYINT(1) NOT NULL DEFAULT 0,
+    notify_sms      TINYINT(1) NOT NULL DEFAULT 0,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_pref_user_cat (user_id, category),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='User notification channel preferences per category';
+
+-- Track which announcements a user has read
+CREATE TABLE announcement_reads (
+    user_id         BIGINT UNSIGNED NOT NULL,
+    announcement_id BIGINT UNSIGNED NOT NULL,
+    read_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, announcement_id),
+    FOREIGN KEY (user_id)         REFERENCES users(id)         ON DELETE CASCADE,
+    FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Tracks per-user read state for system announcements';
+
+-- Broadcast notification campaigns: one row per admin send action
+CREATE TABLE notification_broadcasts (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_id        BIGINT UNSIGNED NOT NULL,
+    audience        VARCHAR(50) NOT NULL DEFAULT 'all',  -- all, active, kyc_approved, etc.
+    channel         ENUM('in_app','email','sms','push') NOT NULL DEFAULT 'in_app',
+    type            VARCHAR(50) NOT NULL DEFAULT 'admin_notice',
+    title           VARCHAR(191) NOT NULL,
+    message         TEXT NOT NULL,
+    recipient_count INT UNSIGNED NOT NULL DEFAULT 0,
+    sent_count      INT UNSIGNED NOT NULL DEFAULT 0,
+    failed_count    INT UNSIGNED NOT NULL DEFAULT 0,
+    status          ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at    DATETIME NULL,
+    FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Admin broadcast notification campaigns';

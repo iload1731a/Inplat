@@ -2,7 +2,7 @@
 
 This guide covers three scenarios:
 
-1. **[Demo Installation](#1-demo-installation)** — run locally without a license for evaluation
+1. **[Demo Installation](#1-demo-installation)** — run locally or on a hosted demo domain without a license for evaluation
 2. **[Standard Installation](#2-standard-installation)** — production/staging with a CodeCanyon license
 3. **[Production Hardening](#3-production-hardening)** — post-install checklist
 
@@ -22,7 +22,7 @@ This guide covers three scenarios:
 
 ## 1. Demo Installation
 
-Demo Mode lets you explore the full platform locally **without** a CodeCanyon purchase code. A demo banner is displayed on every page to indicate restricted mode.
+Demo Mode lets you explore the full platform locally or on a hosted demo domain **without** a CodeCanyon purchase code. A demo banner is displayed on every page to indicate restricted mode.
 
 ### 1.1 Clone / download the project
 
@@ -40,20 +40,27 @@ cd inplat
 composer dump-autoload
 ```
 
-### 1.3 Enable Demo Mode
+### 1.3 Create the environment file
 
-Set the `DEMO_MODE` environment variable before starting PHP:
+Copy the example environment file and update it for your machine or demo server:
 
 ```bash
-# Linux / macOS
-export DEMO_MODE=true
-
-# Windows PowerShell
-$env:DEMO_MODE = "true"
-
-# Windows CMD
-set DEMO_MODE=true
+cp .env.example .env
 ```
+
+Recommended values:
+
+```dotenv
+APP_URL=http://127.0.0.1:8000
+DEMO_MODE=true
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=trading_platform
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+For a public demo, set `APP_URL=https://demo.yourdomain.com` and use that host in your web server config.
 
 ### 1.4 Start the built-in PHP development server
 
@@ -63,7 +70,7 @@ php -S 127.0.0.1:8000 -t public
 
 ### 1.5 Run the installer
 
-Open `http://127.0.0.1:8000/install/step1` in your browser and follow the steps:
+Open `APP_URL/install/step1` in your browser and follow the steps:
 
 | Step | What happens |
 |------|-------------|
@@ -87,8 +94,8 @@ The seeder prints the created credentials on success.
 
 | Role | URL | Email | Password |
 |------|-----|-------|----------|
-| Demo Admin | `http://127.0.0.1:8000/admin/dashboard` | `admin@demo.test` | `Demo@1234` |
-| Demo User | `http://127.0.0.1:8000/dashboard` | `user@demo.test` | `Demo@1234` |
+| Demo Admin | `APP_URL/admin/dashboard` | `admin@demo.test` | `Demo@1234` |
+| Demo User | `APP_URL/dashboard` | `user@demo.test` | `Demo@1234` |
 
 > **Note:** Demo accounts can **view** all panels but cannot perform write operations (approve withdrawals, modify settings, place trades, etc.).
 
@@ -152,14 +159,49 @@ chmod -R 755 /var/www/inplat
 chmod -R 750 /var/www/inplat/storage
 ```
 
-### 2.3 Install PHP dependencies
+Make sure these remain writable by the web server user:
+
+- `/var/www/inplat/storage/`
+- `/var/www/inplat/storage/config/`
+- `/var/www/inplat/storage/logs/`
+- `/var/www/inplat/storage/uploads/`
+
+### 2.3 Create the environment file
+
+```bash
+cd /var/www/inplat
+cp .env.example .env
+```
+
+Update at least these values:
+
+```dotenv
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
+DEMO_MODE=false
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=trading_platform
+DB_USERNAME=inplat_user
+DB_PASSWORD=strong_password_here
+```
+
+For a hosted client demo, set:
+
+```dotenv
+APP_URL=https://demo.yourdomain.com
+DEMO_MODE=true
+```
+
+### 2.4 Install PHP dependencies
 
 ```bash
 cd /var/www/inplat
 composer dump-autoload --optimize
 ```
 
-### 2.4 Run the installer
+### 2.5 Run the installer
 
 Open `https://yourdomain.com/install/step1` and complete all five steps:
 
@@ -171,9 +213,22 @@ Open `https://yourdomain.com/install/step1` and complete all five steps:
 | Step 4 | Create the super-admin account |
 | Step 5 | Finish and lock the installer |
 
-### 2.5 Optional: Google reCAPTCHA
+### 2.6 Seed demo users for hosted evaluation
 
-Set these environment variables (e.g. in your `.env` file or server config):
+If this server is a client-facing demo instance, seed the bundled read-only accounts:
+
+```bash
+php database/demo_seed.php
+```
+
+They will be available at:
+
+- `APP_URL/admin/dashboard`
+- `APP_URL/dashboard`
+
+### 2.7 Optional: Google reCAPTCHA
+
+Set these environment variables in `.env` or server config:
 
 ```bash
 RECAPTCHA_ENABLED=true
@@ -212,7 +267,7 @@ chmod 600 /var/www/inplat/storage/config/license.json
 chmod 600 /var/www/inplat/storage/config/license.key
 ```
 
-### 3.4 Remove the installer after use
+### 3.4 Remove or block the installer after use
 
 Once installed, delete or restrict the `install/` directory:
 
@@ -220,7 +275,7 @@ Once installed, delete or restrict the `install/` directory:
 rm -rf /var/www/inplat/install
 ```
 
-Alternatively, keep the directory but block web access at the server level.
+Alternatively, keep the directory but block web access at the server level so clients cannot reopen the installer.
 
 ### 3.5 PHP configuration recommendations
 

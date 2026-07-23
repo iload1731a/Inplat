@@ -22,10 +22,15 @@ declare(strict_types=1);
 
 define('APP_BASE_PATH', dirname(__DIR__));
 
+require APP_BASE_PATH . '/vendor/autoload.php';
+
+\App\Libraries\Env::load(APP_BASE_PATH . '/.env');
+
 $dbConfigPath = APP_BASE_PATH . '/storage/config/database.php';
 if (!is_file($dbConfigPath)) {
     fwrite(STDERR, "Error: storage/config/database.php not found.\n");
-    fwrite(STDERR, "Run the installer first: http://127.0.0.1:8000/install/step1\n");
+    $installUrl = rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000'), '/') . '/install/step1';
+    fwrite(STDERR, "Run the installer first: {$installUrl}\n");
     exit(1);
 }
 
@@ -209,19 +214,25 @@ echo <<<EOT
   Demo seeding complete!
 ════════════════════════════════════════════════════════════
 
+EOT;
+
+$appUrl = rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000'), '/');
+
+echo <<<EOT
+
   Demo Admin
-    URL      : http://127.0.0.1:8000/admin/dashboard
+    URL      : {$appUrl}/admin/dashboard
     Email    : admin@demo.test
     Password : Demo@1234
     Role     : demo_admin (view-only)
 
   Demo User
-    URL      : http://127.0.0.1:8000/dashboard
+    URL      : {$appUrl}/dashboard
     Email    : user@demo.test
     Password : Demo@1234
     Role     : demo_user (view-only)
 
-  ⚠  These accounts are for local evaluation only.
+  ⚠  These accounts are for evaluation only.
      Do NOT use them in a production environment.
 ════════════════════════════════════════════════════════════
 

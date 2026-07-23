@@ -81,7 +81,7 @@ A full-featured, self-hosted trading platform built with PHP 8.3, MySQL 8, Boots
 
 ## Quick Start (Demo)
 
-Run a full demo locally **without** a CodeCanyon license in under two minutes.
+Run a full demo locally or on a public demo domain **without** a CodeCanyon license.
 
 > See **[INSTALLATION.md](INSTALLATION.md)** for the complete guide.
 
@@ -89,14 +89,24 @@ Run a full demo locally **without** a CodeCanyon license in under two minutes.
 # 1. Install PHP dependencies
 composer dump-autoload
 
-# 2. Enable Demo Mode (skips license validation)
-export DEMO_MODE=true
+# 2. Create environment file
+cp .env.example .env
 
-# 3. Start the built-in PHP server
+# 3. Edit .env for your host/domain
+# APP_URL=https://demo.yourdomain.com
+# DEMO_MODE=true
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=trading_platform
+# DB_USERNAME=inplat_user
+# DB_PASSWORD=change_me
+
+# 4. Start the built-in PHP server for local demo
 php -S 127.0.0.1:8000 -t public
 ```
 
-Open `http://127.0.0.1:8000/install/step1` and follow the 5-step installer.  
+For a hosted demo, point your domain to `/public`, then open `https://your-demo-domain/install/step1`.  
+For a local demo, open `http://127.0.0.1:8000/install/step1`.  
 At **Step 2** the license section will be replaced with a "Demo Mode Active" notice.
 
 After installation, seed the demo accounts:
@@ -123,6 +133,7 @@ php database/demo_seed.php
 See **[INSTALLATION.md](INSTALLATION.md)** for step-by-step instructions covering:
 - Server requirements
 - Apache / Nginx vhost configuration
+- `.env` / hosted demo configuration
 - Standard installation with CodeCanyon license
 - Production hardening checklist
 

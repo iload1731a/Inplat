@@ -6,6 +6,8 @@ define('INPLAT_START', microtime(true));
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+\App\Libraries\Env::load(dirname(__DIR__) . '/.env');
+
 date_default_timezone_set((string)config('app.timezone', 'UTC'));
 
 \App\Libraries\Session::start();

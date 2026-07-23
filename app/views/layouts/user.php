@@ -169,6 +169,7 @@ $csrfToken    = \App\Libraries\Csrf::token();
     </style>
 </head>
 <body>
+<?php require app_path('app/views/partials/demo_banner.php'); ?>
 <div id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div id="wrapper">
     <!-- ===== Sidebar ===== -->

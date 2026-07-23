@@ -1,72 +1,145 @@
-# Inplat
+# Inplat — Professional Trading Platform
 
-Professional Trading Platform foundation generated around the provided MySQL schema.
+A full-featured, self-hosted trading platform built with PHP 8.3, MySQL 8, Bootstrap 5 and a clean MVC architecture. Ships with a 5-step web installer, a complete admin panel, a full-featured user dashboard, and an optional **Demo Mode** so you can evaluate the platform locally without a CodeCanyon license.
+
+---
+
+## Table of Contents
+
+- [Stack](#stack)
+- [Feature Overview](#feature-overview)
+- [Quick Start (Demo)](#quick-start-demo)
+- [Full Installation](#full-installation)
+- [Demo Credentials](#demo-credentials)
+- [Optional: Google reCAPTCHA](#optional-google-recaptcha)
+- [License](#license)
+
+---
 
 ## Stack
 
-- PHP 8.3+
-- MySQL 8+
-- Bootstrap 5.3+
-- jQuery + AJAX
-- PDO + CSRF + session auth
+| Layer | Technology |
+|-------|-----------|
+| Backend | PHP 8.3+ |
+| Database | MySQL 8+ |
+| Frontend | Bootstrap 5.3+, jQuery, AJAX |
+| Data access | PDO (prepared statements) |
+| Security | CSRF tokens, bcrypt/argon2id, session auth, 2FA |
 
-## Current Delivery Scope
+---
 
-- MVC folder architecture
-- Clean routing bootstrap
-- 5-step installer:
-  1. Requirements check
-  2. Database config
-  3. SQL import from `trading_platform_schema.sql`
-  4. Admin account creation
-  5. Install finish lock
-- Authentication module pages:
-  - Login + Remember Me
-  - Register
-  - Forgot Password (token generation)
-  - Reset Password
-  - Email Verification notice + verification route
-  - 2FA challenge flow
-  - Session management (revoke remembered sessions)
-- Admin dashboard + admin operations page:
-  - KPI cards and charts
-  - User status, KYC queue, payments queue, support tickets, settings preview
-- Admin management modules:
-  - Users: user list, detail, KYC review, balance adjustment
-  - Finance: deposits queue, withdrawals review
-  - Trading: trading pair config, fee tiers, halt/resolve trading, live order overview
-  - Risk & Compliance: risk flag triage, SAR cases, IP blacklist, sanctioned countries
-  - Communications: bulk notifications, email templates
-  - Support: ticket management, admin replies
-  - Settings: system settings editor
-- User dashboard + trading workspace page:
-  - Portfolio overview
-  - Market overview, orders, positions, wallets, notifications, API keys, tickets
-- User Staking page:
-  - Active pool listing with APY, lock period, capacity
-  - User stakes overview and reward payout history
-- User Convert page:
-  - Supported currency directory
-  - Quote history and conversion transaction log
-- Installer license activation:
-  - CodeCanyon buyer details + purchase code capture
-  - Domain-bound encrypted local license validation
+## Feature Overview
 
-## Local run
+### Installer
+- 5-step web wizard: requirements check → database config → SQL import → admin creation → lock
+- License activation with CodeCanyon buyer/purchase-code capture and domain-bound validation
+- **Demo Mode** — skip license entirely for local evaluation (see [Quick Start](#quick-start-demo))
+
+### Authentication
+- Login with Remember Me, Register, Forgot / Reset Password
+- Email verification flow, 2FA challenge (TOTP), session revocation
+- Optional Google reCAPTCHA on all auth forms
+
+### Admin Panel
+| Module | Highlights |
+|--------|-----------|
+| Dashboard | KPI cards, growth/revenue trend charts, order-status pie, activity timeline, latest trades/logins/deposits/withdrawals |
+| User Management | User list, detail, ban/unban, 2FA reset, session revoke, balance adjustment |
+| KYC / Compliance | KYC queue, review workflow, risk assessments, AML audit log |
+| Finance | Deposits queue, withdrawals review and approval |
+| Trading Engine | Pair config, fee tiers, halt/resume trading, live order overview |
+| Risk & Compliance | Risk flag triage, SAR cases, IP blacklist, sanctioned countries |
+| Markets | Asset/market management, pair imports |
+| Charts | Market analytics administration |
+| Signals | Trading signal providers, publish signals, manage subscriptions |
+| Roles & Permissions | Create roles, assign granular permissions per module |
+| Wallets | Platform-wide wallet overview, manual adjustments |
+| Support Tickets | Ticket management, admin replies, internal notes, CSAT ratings |
+| Notifications | Bulk notifications, email templates, announcement broadcasts |
+| Referral & Affiliate | Multi-level referral tiers, affiliate payouts, commission management |
+| CMS / Website Builder | Pages, blog, FAQs, testimonials, pricing plans, homepage sections, SEO |
+| Settings | SMTP, SMS, API integrations, maintenance mode, feature flags, cache, backups |
+| Logs | Admin activity log, system audit trail |
+
+### User Panel
+| Module | Highlights |
+|--------|-----------|
+| Dashboard | Portfolio overview, market snapshot |
+| Trading | Full trading workspace (orders, positions, charts) |
+| Charts | Advanced charting with saved templates and indicator preferences |
+| Wallets | Deposit, withdraw, transaction history |
+| Staking | Pool listing with APY/lock-period, active stakes, reward history |
+| Convert | Currency converter with quote history |
+| KYC | Document upload and status tracking |
+| Notifications | Notification centre, preference management |
+| Support Tickets | Submit and track tickets |
+| Referral | Referral link, tier progress, reward history |
+| API Keys | Create/revoke API keys with permission scopes |
+| Profile & Security | Profile editor, password change, 2FA setup, session management |
+
+---
+
+## Quick Start (Demo)
+
+Run a full demo locally **without** a CodeCanyon license in under two minutes.
+
+> See **[INSTALLATION.md](INSTALLATION.md)** for the complete guide.
 
 ```bash
+# 1. Install PHP dependencies
 composer dump-autoload
+
+# 2. Enable Demo Mode (skips license validation)
+export DEMO_MODE=true
+
+# 3. Start the built-in PHP server
 php -S 127.0.0.1:8000 -t public
 ```
 
-Open `http://127.0.0.1:8000/install/step1`.
+Open `http://127.0.0.1:8000/install/step1` and follow the 5-step installer.  
+At **Step 2** the license section will be replaced with a "Demo Mode Active" notice.
 
-## Optional Google reCAPTCHA (Auth Forms)
+After installation, seed the demo accounts:
 
-Set environment variables before running PHP:
+```bash
+php database/demo_seed.php
+```
+
+---
+
+## Demo Credentials
+
+| Role | URL | Email | Password |
+|------|-----|-------|----------|
+| Demo Admin | `/admin/dashboard` | `admin@demo.test` | `Demo@1234` |
+| Demo User | `/dashboard` | `user@demo.test` | `Demo@1234` |
+
+> **Demo accounts are read-only.** Write operations (approve withdrawals, modify settings, place trades, etc.) display a "Demo Mode – action disabled" notice.
+
+---
+
+## Full Installation
+
+See **[INSTALLATION.md](INSTALLATION.md)** for step-by-step instructions covering:
+- Server requirements
+- Apache / Nginx vhost configuration
+- Standard installation with CodeCanyon license
+- Production hardening checklist
+
+---
+
+## Optional: Google reCAPTCHA
+
+Set environment variables before starting the PHP process:
 
 ```bash
 export RECAPTCHA_ENABLED=true
 export RECAPTCHA_SITE_KEY=your_site_key
 export RECAPTCHA_SECRET_KEY=your_secret_key
 ```
+
+---
+
+## License
+
+Inplat is distributed via CodeCanyon under the Regular / Extended License. A valid purchase code is required for production deployments. For local evaluation, use Demo Mode (see above).

@@ -17,6 +17,7 @@
     </style>
 </head>
 <body>
+<?php require app_path('app/views/partials/demo_banner.php'); ?>
 <?php
 $authUserId = (int)(\App\Libraries\Session::get('auth.user_id') ?? 0);
 $authAdminId = (int)(\App\Libraries\Session::get('auth.admin_id') ?? 0);

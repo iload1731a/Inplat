@@ -16,6 +16,11 @@ final class LicenseGuard
             return;
         }
 
+        // Demo mode bypasses all license checks for local evaluation.
+        if ((bool)config('app.demo_mode')) {
+            return;
+        }
+
         $lockPath = (string)config('app.installed_lock');
         if (!is_file($lockPath)) {
             return;

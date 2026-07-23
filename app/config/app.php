@@ -18,4 +18,5 @@ return [
     'recaptcha_enabled' => filter_var($_ENV['RECAPTCHA_ENABLED'] ?? false, FILTER_VALIDATE_BOOL),
     'recaptcha_site_key' => trim((string)($_ENV['RECAPTCHA_SITE_KEY'] ?? '')),
     'recaptcha_secret_key' => trim((string)($_ENV['RECAPTCHA_SECRET_KEY'] ?? '')),
+    'demo_mode' => filter_var($_ENV['DEMO_MODE'] ?? false, FILTER_VALIDATE_BOOL),
 ];

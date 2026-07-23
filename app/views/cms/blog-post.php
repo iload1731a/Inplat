@@ -63,9 +63,9 @@ if ($post === []) { http_response_code(404); exit; }
 
             <hr class="border-secondary mb-4">
 
-            <!-- Content -->
+            <!-- Content: trusted admin-managed HTML stored by authenticated admins -->
             <div class="blog-content" style="line-height:1.8;color:rgba(255,255,255,.87)">
-                <?= (string)($post['content'] ?? '') ?>
+                <?= /* trusted admin-managed HTML */ (string)($post['content'] ?? '') ?>
             </div>
 
             <?php if ($post['tags'] ?? ''): ?>

@@ -40,15 +40,6 @@ final class CmsRepository
         $whereClause = $where !== [] ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $pdo = Database::connection();
-        $count = (int)$pdo->prepare("SELECT COUNT(*) FROM media_library m $whereClause")->execute($params)
-            ? (function () use ($pdo, $whereClause, $params) {
-                $s = $pdo->prepare("SELECT COUNT(*) FROM media_library m $whereClause");
-                $s->execute($params);
-                return (int)$s->fetchColumn();
-            })()
-            : 0;
-
-        // Re-execute properly
         $s = $pdo->prepare("SELECT COUNT(*) FROM media_library m $whereClause");
         $s->execute($params);
         $total = (int)$s->fetchColumn();

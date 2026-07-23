@@ -13,7 +13,7 @@ if ($page === []) { http_response_code(404); exit; }
         <div class="mb-4">
             <?php if ((string)($sec['section_type'] ?? '') === 'text'): ?>
                 <div class="glass rounded-4 p-5 cms-content">
-                    <?= (string)($data['content'] ?? '') ?>
+                    <?= /* trusted admin-managed HTML */ (string)($data['content'] ?? '') ?>
                 </div>
             <?php elseif ((string)($sec['section_type'] ?? '') === 'hero'): ?>
                 <div class="glass rounded-4 p-5 text-center">
@@ -31,7 +31,7 @@ if ($page === []) { http_response_code(404); exit; }
                 </div>
             <?php else: ?>
                 <div class="glass rounded-4 p-4 cms-content">
-                    <?= (string)($data['content'] ?? '') ?>
+                    <?= /* trusted admin-managed HTML */ (string)($data['content'] ?? '') ?>
                 </div>
             <?php endif; ?>
         </div>

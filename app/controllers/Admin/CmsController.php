@@ -299,7 +299,7 @@ final class CmsController extends AdminBaseController
             if ($name === '') {
                 throw new InvalidArgumentException('Category name is required.');
             }
-            $data['slug'] = $data['slug'] !== '' ? $data['slug'] : strtolower(preg_replace('/[^a-z0-9]/i', '-', $name) ?? $name);
+            $data['slug'] = $data['slug'] !== '' ? $data['slug'] : $svc->normalizeSlug($name);
             $id   = (int)($data['id'] ?? 0);
             if ($id > 0) {
                 $repo->updateBlogCategory($id, $data);

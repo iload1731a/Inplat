@@ -648,7 +648,7 @@ final class CmsService
     // HELPERS
     // =========================================================================
 
-    private function normalizeSlug(string $slug, string $fallback): string
+    public function normalizeSlug(string $slug, string $fallback = ''): string
     {
         if ($slug === '') {
             $slug = $fallback;

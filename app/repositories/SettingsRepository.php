@@ -659,7 +659,7 @@ final class SettingsRepository
         $stats = [];
 
         // User counts
-        $row = $pdo->query("SELECT COUNT(*) AS total, SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) AS active, SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS today FROM users")->fetch();
+        $row = $pdo->query("SELECT COUNT(*) AS total, SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) AS active, SUM(CASE WHEN created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY THEN 1 ELSE 0 END) AS today FROM users")->fetch();
         $stats['users_total']   = (int)($row['total'] ?? 0);
         $stats['users_active']  = (int)($row['active'] ?? 0);
         $stats['users_today']   = (int)($row['today'] ?? 0);

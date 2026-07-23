@@ -150,11 +150,13 @@ final class EmailService
             return ['ok' => false, 'message' => 'SMTP host is not configured.'];
         }
 
-        // Build SMTP prefix for stream_socket_client
+        // Build SMTP prefix for stream_socket_client.
+        // 'ssl'/'tls' = implicit TLS (connect directly over SSL/TLS).
+        // 'starttls' = plain TCP connection then upgrade via STARTTLS command.
         $prefix = match($enc) {
-            'ssl'          => 'ssl://',
-            'tls', 'starttls' => '',
-            default        => '',
+            'ssl', 'tls' => 'ssl://',
+            'starttls'   => '',
+            default      => '',
         };
 
         $errno  = 0;
@@ -187,14 +189,19 @@ final class EmailService
                 if (isset($line[3]) && $line[3] === ' ') { break; }
             }
 
-            // STARTTLS upgrade if needed
-            if (in_array($enc, ['tls', 'starttls'], true)) {
+            // STARTTLS upgrade only when encryption mode is explicitly 'starttls'
+            if ($enc === 'starttls') {
                 fwrite($socket, "STARTTLS\r\n");
                 $tlsResp = fgets($socket, 512);
                 if (substr($tlsResp, 0, 3) !== '220') {
                     return ['ok' => false, 'message' => "STARTTLS failed: $tlsResp"];
                 }
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                // Enforce TLS 1.2+ to prevent downgrade attacks
+                $cryptoMethod = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+                if (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT')) {
+                    $cryptoMethod |= STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+                }
+                stream_socket_enable_crypto($socket, true, $cryptoMethod);
                 fwrite($socket, "EHLO $domain\r\n");
                 while (true) {
                     $line = fgets($socket, 512);

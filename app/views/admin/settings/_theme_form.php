@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
-// Shared theme form fields — included in both create and edit modals
-// Note: $_th is intentionally unused here; values are populated via JS in edit mode.
+// Shared theme form fields — included in both create and edit modals.
+// Edit-mode field values are populated dynamically by JS.
 ?>
 <div class="row g-3">
     <div class="col-md-6">

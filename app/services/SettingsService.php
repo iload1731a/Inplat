@@ -226,7 +226,14 @@ final class SettingsService
 
     public function createLanguage(int $adminId, array $payload): int
     {
-        $code = strtolower(trim((string)($payload['code'] ?? '')));
+        // Normalize BCP 47: lowercase language part, uppercase region part (e.g. zh-CN)
+        $rawCode = trim((string)($payload['code'] ?? ''));
+        if (strpos($rawCode, '-') !== false) {
+            [$lang, $region] = explode('-', $rawCode, 2);
+            $code = strtolower($lang) . '-' . strtoupper($region);
+        } else {
+            $code = strtolower($rawCode);
+        }
         if ($code === '' || !preg_match('/^[a-z]{2,5}(-[A-Z]{2})?$/', $code)) {
             throw new InvalidArgumentException('Invalid language code (e.g. en, fr, zh-CN).');
         }
@@ -617,9 +624,10 @@ final class SettingsService
             throw new RuntimeException('Database name not configured in environment.');
         }
 
-        // Pass password via MYSQL_PWD env variable to avoid exposure in process list
+        // Pass password via MYSQL_PWD env variable to avoid exposure in process list.
+        // No 2>&1: stderr captured separately via pipe[2] to avoid writing error text into backup file.
         $cmd = sprintf(
-            'mysqldump -h %s -P %s -u %s %s | gzip > %s 2>&1',
+            'mysqldump -h %s -P %s -u %s %s | gzip > %s',
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($user),
@@ -656,7 +664,9 @@ final class SettingsService
         $returnCode = proc_close($proc);
 
         if ($returnCode !== 0) {
-            throw new RuntimeException('mysqldump failed (exit ' . $returnCode . '): ' . trim($stderr));
+            // Log full error server-side; surface only a generic message to callers
+            error_log('mysqldump failed (exit ' . $returnCode . '): ' . trim($stderr));
+            throw new RuntimeException('Database backup failed. Check server logs for details.');
         }
         return true;
     }

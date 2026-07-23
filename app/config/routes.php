@@ -46,6 +46,7 @@ use App\Controllers\User\TradingController as UserTradingController;
 use App\Controllers\User\MarketsController as UserMarketsController;
 use App\Controllers\User\ChartsController as UserChartsController;
 use App\Controllers\Admin\NotificationsController as AdminNotificationsController;
+use App\Controllers\Admin\AffiliateController as AdminAffiliateController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -489,11 +490,6 @@ $router->post('/user/tickets/close',  [UserTicketsController::class, 'close']);
 $router->post('/user/tickets/rate',   [UserTicketsController::class, 'rate']);
 
 // =====================================================================
-// USER – Referral
-// =====================================================================
-$router->get('/user/referral', [UserReferralController::class, 'index']);
-
-// =====================================================================
 // USER – Portfolio Analytics
 // =====================================================================
 $router->get('/user/portfolio',            [UserPortfolioController::class, 'index']);
@@ -588,6 +584,36 @@ $router->post('/admin/notifications/announcements/toggle',        [AdminNotifica
 $router->get('/admin/notifications/templates',                    [AdminNotificationsController::class, 'templates']);
 $router->post('/admin/notifications/templates/save',              [AdminNotificationsController::class, 'saveTemplate']);
 $router->post('/admin/notifications/templates/delete',            [AdminNotificationsController::class, 'deleteTemplate']);
+
+// =====================================================================
+// =====================================================================
+// USER – Referral Program (expanded)
+// =====================================================================
+$router->get('/user/referral',              [UserReferralController::class, 'index']);
+$router->get('/user/referral/referrals',    [UserReferralController::class, 'referrals']);
+$router->get('/user/referral/network',      [UserReferralController::class, 'network']);
+$router->get('/user/referral/commissions',  [UserReferralController::class, 'commissions']);
+$router->get('/user/referral/rewards',      [UserReferralController::class, 'rewards']);
+$router->get('/user/referral/withdraw',     [UserReferralController::class, 'withdraw']);
+$router->post('/user/referral/withdraw',    [UserReferralController::class, 'requestWithdraw']);
+
+// =====================================================================
+// ADMIN – Affiliate Program & Commission Engine
+// =====================================================================
+$router->get('/admin/affiliate',                         [AdminAffiliateController::class, 'index']);
+$router->get('/admin/affiliate/affiliates',              [AdminAffiliateController::class, 'affiliates']);
+$router->get('/admin/affiliate/commissions',             [AdminAffiliateController::class, 'commissions']);
+$router->post('/admin/affiliate/commissions/mark-paid',  [AdminAffiliateController::class, 'markPaid']);
+$router->get('/admin/affiliate/commissions/export',      [AdminAffiliateController::class, 'exportCommissions']);
+$router->get('/admin/affiliate/payouts',                 [AdminAffiliateController::class, 'payouts']);
+$router->post('/admin/affiliate/payouts/process',        [AdminAffiliateController::class, 'processPayout']);
+$router->post('/admin/affiliate/payouts/bulk',           [AdminAffiliateController::class, 'bulkPayouts']);
+$router->get('/admin/affiliate/payouts/export',          [AdminAffiliateController::class, 'exportPayouts']);
+$router->get('/admin/affiliate/tiers',                   [AdminAffiliateController::class, 'tiers']);
+$router->post('/admin/affiliate/tiers',                  [AdminAffiliateController::class, 'saveTiers']);
+$router->get('/admin/affiliate/settings',                [AdminAffiliateController::class, 'settings']);
+$router->post('/admin/affiliate/settings',               [AdminAffiliateController::class, 'saveSettings']);
+$router->get('/admin/affiliate/reports',                 [AdminAffiliateController::class, 'reports']);
 
 // =====================================================================
 // INSTALLER

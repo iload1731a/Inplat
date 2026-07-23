@@ -36,6 +36,7 @@
                 'finance'         => ['/admin/finance',         '<i class="fas fa-dollar-sign me-1"></i>Finance'],
             ],
             'Operations' => [
+                'affiliate'      => ['/admin/affiliate',         '<i class="fas fa-network-wired me-1"></i>Affiliate'],
                 'risk'           => ['/admin/risk',              '<i class="fas fa-shield-alt me-1"></i>Risk'],
                 'tickets'        => ['/admin/tickets',           '<i class="fas fa-headset me-1"></i>Support'],
                 'notifications'  => ['/admin/notifications',     '<i class="fas fa-bell me-1"></i>Notifications'],

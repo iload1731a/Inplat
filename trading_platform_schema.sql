@@ -1935,3 +1935,111 @@ CREATE TABLE notification_broadcasts (
     completed_at    DATETIME NULL,
     FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='Admin broadcast notification campaigns';
+
+-- ============================================================================
+-- SECTION 18: REFERRAL SYSTEM, AFFILIATE PROGRAM & COMMISSION ENGINE
+-- ============================================================================
+
+-- ALTER referrals table to support multi-level and status tracking
+ALTER TABLE referrals
+    ADD COLUMN level           TINYINT UNSIGNED NOT NULL DEFAULT 1     AFTER referee_id,
+    ADD COLUMN status          ENUM('pending','qualified','active')
+                               NOT NULL DEFAULT 'pending'             AFTER level,
+    ADD COLUMN qualified_at    DATETIME NULL                           AFTER status,
+    ADD COLUMN total_earned    DECIMAL(36,18) NOT NULL DEFAULT 0       AFTER qualified_at,
+    ADD INDEX  idx_ref_referrer (referrer_id),
+    ADD INDEX  idx_ref_level    (level),
+    ADD INDEX  idx_ref_status   (status);
+
+-- ALTER affiliate_commissions to denormalize referrer + add metadata
+ALTER TABLE affiliate_commissions
+    ADD COLUMN referrer_id      BIGINT UNSIGNED NOT NULL DEFAULT 0     AFTER id,
+    ADD COLUMN referred_id      BIGINT UNSIGNED NOT NULL DEFAULT 0     AFTER referrer_id,
+    ADD COLUMN commission_type  ENUM('trade','signup_bonus','reward','manual')
+                                NOT NULL DEFAULT 'trade'               AFTER amount,
+    ADD COLUMN commission_rate  DECIMAL(6,4) NOT NULL DEFAULT 0        AFTER commission_type,
+    ADD COLUMN level            TINYINT UNSIGNED NOT NULL DEFAULT 1    AFTER commission_rate,
+    ADD INDEX  idx_ac_referrer  (referrer_id),
+    ADD INDEX  idx_ac_referred  (referred_id),
+    ADD INDEX  idx_ac_status    (status),
+    ADD INDEX  idx_ac_created   (created_at);
+
+-- Multi-level commission tier configuration
+CREATE TABLE referral_tiers (
+    id              TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    level           TINYINT UNSIGNED NOT NULL UNIQUE,
+    label           VARCHAR(50) NOT NULL DEFAULT '',
+    commission_rate DECIMAL(6,4) NOT NULL DEFAULT 0.0000,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    min_referred    SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Min direct referrals to unlock this tier',
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Multi-level affiliate commission rates per referral depth';
+
+INSERT INTO referral_tiers (level, label, commission_rate, is_active, min_referred) VALUES
+    (1, 'Level 1 (Direct)', 20.0000, 1, 0),
+    (2, 'Level 2',          10.0000, 1, 5),
+    (3, 'Level 3',           5.0000, 1, 10);
+
+-- Referral milestone and signup rewards
+CREATE TABLE referral_rewards (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    reward_type     ENUM('signup_bonus','milestone','trading_volume','manual') NOT NULL DEFAULT 'signup_bonus',
+    currency_id     SMALLINT UNSIGNED NOT NULL,
+    amount          DECIMAL(36,18) NOT NULL,
+    description     VARCHAR(255) NULL,
+    status          ENUM('pending','credited','cancelled') NOT NULL DEFAULT 'pending',
+    credited_at     DATETIME NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_rr_user   (user_id),
+    INDEX idx_rr_status (status),
+    FOREIGN KEY (user_id)     REFERENCES users(id)      ON DELETE CASCADE,
+    FOREIGN KEY (currency_id) REFERENCES currencies(id)
+) ENGINE=InnoDB COMMENT='Referral rewards (signup bonuses, milestones, trading rewards)';
+
+-- Affiliate commission payout requests
+CREATE TABLE affiliate_payouts (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    currency_id     SMALLINT UNSIGNED NOT NULL,
+    amount          DECIMAL(36,18) NOT NULL,
+    status          ENUM('pending','approved','rejected','paid') NOT NULL DEFAULT 'pending',
+    wallet_address  VARCHAR(255) NULL,
+    network         VARCHAR(50) NULL,
+    notes           TEXT NULL,
+    admin_notes     TEXT NULL,
+    processed_by    BIGINT UNSIGNED NULL,
+    processed_at    DATETIME NULL,
+    paid_at         DATETIME NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ap_user   (user_id),
+    INDEX idx_ap_status (status),
+    INDEX idx_ap_created(created_at),
+    FOREIGN KEY (user_id)     REFERENCES users(id)       ON DELETE CASCADE,
+    FOREIGN KEY (currency_id) REFERENCES currencies(id)
+) ENGINE=InnoDB COMMENT='Affiliate commission payout withdrawal requests';
+
+-- Global affiliate program settings (key-value store)
+CREATE TABLE affiliate_program_settings (
+    setting_key     VARCHAR(80) NOT NULL PRIMARY KEY,
+    setting_value   TEXT NULL,
+    description     VARCHAR(255) NULL,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Global affiliate program configuration settings';
+
+INSERT INTO affiliate_program_settings (setting_key, setting_value, description) VALUES
+    ('program_enabled',         '1',    'Master toggle for the affiliate program'),
+    ('signup_bonus_enabled',    '1',    'Award signup bonus when a referral registers'),
+    ('signup_bonus_amount',     '5',    'Signup bonus amount in USD equivalent'),
+    ('signup_bonus_currency',   'USDT', 'Currency code for signup bonus'),
+    ('min_payout_amount',       '10',   'Minimum commission balance to request payout'),
+    ('payout_auto_approve',     '0',    'Auto-approve payout requests under threshold'),
+    ('payout_auto_threshold',   '100',  'Auto-approve threshold amount'),
+    ('cookie_days',             '30',   'Referral cookie validity in days'),
+    ('qualification_trades',    '1',    'Number of trades required to qualify a referral'),
+    ('qualification_volume',    '0',    'Minimum trade volume (USD) to qualify a referral'),
+    ('max_levels',              '3',    'Maximum referral depth levels'),
+    ('commission_on',           'fee',  'Calculate commission on: fee or volume'),
+    ('terms_url',               '',     'URL to affiliate program terms page');

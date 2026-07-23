@@ -2511,7 +2511,7 @@ INSERT IGNORE INTO system_settings (setting_key, setting_value, value_type, cate
 -- General
 ('site_name',               'Trading Platform',       'string',  'general',   'Platform display name',                      1),
 ('site_tagline',            'Trade Smarter. Trade Better.', 'string', 'general', 'Site tagline/sub-headline',                1),
-('site_url',                '',                       'string',  'general',   'Canonical site URL (https://...)',            1),
+('site_url',                'http://localhost',        'string',  'general',   'Canonical site URL (https://...)',            1),
 ('support_email',           '',                       'string',  'general',   'Public support email address',               1),
 ('support_url',             '/tickets',               'string',  'general',   'Support portal URL',                         1),
 ('terms_url',               '/terms',                 'string',  'general',   'Terms of service URL',                       1),

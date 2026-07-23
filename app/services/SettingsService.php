@@ -510,12 +510,13 @@ final class SettingsService
         ];
     }
 
-    public function saveMaintenanceMode(int $adminId, bool $enable, string $message = ''): void
+    public function saveMaintenanceMode(int $adminId, bool $enable, string $message = '', string $eta = ''): void
     {
         $this->repo->upsert('maintenance_mode', $enable ? 'true' : 'false', 'boolean', 'general', $adminId);
         if ($message !== '') {
             $this->repo->upsert('maintenance_message', $message, 'string', 'general', $adminId);
         }
+        $this->repo->upsert('maintenance_eta', $eta, 'string', 'general', $adminId);
         $this->mgmtRepo->logAdminAction($adminId, $enable ? 'enable_maintenance' : 'disable_maintenance', 'system_settings', null, null, [], RequestContext::ipAddress());
     }
 
@@ -616,23 +617,46 @@ final class SettingsService
             throw new RuntimeException('Database name not configured in environment.');
         }
 
-        $passPart = $pass !== '' ? '-p' . escapeshellarg($pass) : '';
+        // Pass password via MYSQL_PWD env variable to avoid exposure in process list
         $cmd = sprintf(
-            'mysqldump -h %s -P %s -u %s %s %s | gzip > %s 2>&1',
+            'mysqldump -h %s -P %s -u %s %s | gzip > %s 2>&1',
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($user),
-            $passPart,
             escapeshellarg($db),
             escapeshellarg($targetFile)
         );
 
-        $output     = [];
-        $returnCode = 0;
-        exec($cmd, $output, $returnCode);
+        $env = $_ENV;
+        if ($pass !== '') {
+            $env['MYSQL_PWD'] = $pass;
+        }
+
+        // Use proc_open to pass env variables cleanly without exposing credentials in shell args
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $envPairs = [];
+        foreach ($env as $k => $v) {
+            if (is_string($v) || is_numeric($v)) {
+                $envPairs[] = $k . '=' . $v;
+            }
+        }
+
+        $proc = proc_open($cmd, $descriptors, $pipes, null, $envPairs);
+        if ($proc === false) {
+            throw new RuntimeException('Failed to start mysqldump process.');
+        }
+        fclose($pipes[0]);
+        $stderr     = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $returnCode = proc_close($proc);
 
         if ($returnCode !== 0) {
-            throw new RuntimeException('mysqldump failed (exit ' . $returnCode . '): ' . implode(' ', $output));
+            throw new RuntimeException('mysqldump failed (exit ' . $returnCode . '): ' . trim($stderr));
         }
         return true;
     }

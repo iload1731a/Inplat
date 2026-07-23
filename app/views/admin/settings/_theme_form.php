@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 // Shared theme form fields — included in both create and edit modals
-$tf = fn(string $k, string $d = '') => e((string)($_th[$k] ?? $d));
+// Note: $_th is intentionally unused here; values are populated via JS in edit mode.
 ?>
 <div class="row g-3">
     <div class="col-md-6">

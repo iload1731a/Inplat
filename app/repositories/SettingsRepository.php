@@ -685,13 +685,22 @@ final class SettingsRepository
         $row = $pdo->query("SELECT COUNT(*) AS cnt FROM withdrawals WHERE status = 'pending'")->fetch();
         $stats['withdrawals_pending'] = (int)($row['cnt'] ?? 0);
 
-        // DB size (information_schema)
-        $dbName = $pdo->query("SELECT DATABASE()")->fetchColumn();
-        $row = $pdo->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb FROM information_schema.TABLES WHERE table_schema = '" . $pdo->quote((string)$dbName) . "'")->fetch();
+        // DB size (information_schema) — use prepared statements to avoid injection
+        $dbName = (string)$pdo->query('SELECT DATABASE()')->fetchColumn();
+        $stmt = $pdo->prepare(
+            'SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
+             FROM information_schema.TABLES WHERE table_schema = ?'
+        );
+        $stmt->execute([$dbName]);
+        $row = $stmt->fetch();
         $stats['db_size_mb'] = (float)($row['size_mb'] ?? 0);
 
         // Table count
-        $row = $pdo->query("SELECT COUNT(*) AS cnt FROM information_schema.TABLES WHERE table_schema = '" . $pdo->quote((string)$dbName) . "'")->fetch();
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*) AS cnt FROM information_schema.TABLES WHERE table_schema = ?'
+        );
+        $stmt->execute([$dbName]);
+        $row = $stmt->fetch();
         $stats['db_tables'] = (int)($row['cnt'] ?? 0);
 
         return $stats;

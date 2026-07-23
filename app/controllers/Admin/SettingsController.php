@@ -534,8 +534,9 @@ final class SettingsController extends AdminBaseController
         $this->requireCsrf($request);
         $enable  = in_array(strtolower((string)$request->input('maintenance_mode', 'false')), ['1','true','on','yes'], true);
         $message = trim((string)$request->input('maintenance_message', ''));
+        $eta     = trim((string)$request->input('maintenance_eta', ''));
         try {
-            $this->svc()->saveMaintenanceMode($this->adminId(), $enable, $message);
+            $this->svc()->saveMaintenanceMode($this->adminId(), $enable, $message, $eta);
         } catch (Throwable $e) {
             Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
         }

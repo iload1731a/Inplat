@@ -51,7 +51,7 @@ if (!LicenseGuard::validateOwnerInstallToken((string)$options['owner-token'])) {
     exit(1);
 }
 
-$ownerName = LicenseGuard::normalizeBuyerName((string)$options['owner-name']);
+$ownerName = LicenseGuard::normalizeIdentityName((string)$options['owner-name']);
 $ownerEmail = strtolower(trim((string)$options['owner-email']));
 $domain = LicenseGuard::normalizeDomain((string)$options['domain']);
 if ($ownerName === '' || !LicenseGuard::isValidBuyerName($ownerName)) {
@@ -118,7 +118,7 @@ if ($sql === false) {
 }
 
 try {
-    $pdo = Database::serverConnection((array)config('database'));
+    $pdo = Database::serverConnection($db);
 
     foreach (splitSqlStatements($sql) as $statement) {
         assertSchemaStatementAllowed($statement);
@@ -138,7 +138,8 @@ try {
         throw new RuntimeException('Unable to resolve super_admin role id.');
     }
 
-    $adminPasswordHash = password_hash((string)$options['admin-password'], password_algo());
+    $passwordAlgo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
+    $adminPasswordHash = password_hash((string)$options['admin-password'], $passwordAlgo);
     if ($adminPasswordHash === false) {
         throw new RuntimeException('Unable to hash admin password.');
     }
@@ -176,6 +177,9 @@ echo "Admin login: " . rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000
 
 function splitSqlStatements(string $sql): array
 {
+    $sql = preg_replace('~/\*.*?\*/~s', '', $sql) ?? $sql;
+    $sql = preg_replace('/^\s*(--|#).*$\R?/m', '', $sql) ?? $sql;
+
     $statements = [];
     $buffer = '';
     $inSingle = false;

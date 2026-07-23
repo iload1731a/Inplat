@@ -13,6 +13,8 @@ final class LicenseGuard
     private const GCM_IV_SIZE = 12;
     private const GCM_TAG_SIZE = 16;
     private const MIN_ENCRYPTED_PAYLOAD_SIZE = self::GCM_IV_SIZE + self::GCM_TAG_SIZE + 1;
+    private const MIN_THIRD_PARTY_LICENSE_KEY_LENGTH = 8;
+    private const MAX_THIRD_PARTY_LICENSE_KEY_LENGTH = 200;
 
     public static function assertValidForRequest(string $requestPath): void
     {
@@ -93,7 +95,7 @@ final class LicenseGuard
 
     public static function packThirdParty(string $providerName, string $licenseKey, string $domain): array
     {
-        $providerName = self::normalizeBuyerName($providerName);
+        $providerName = self::normalizeIdentityName($providerName);
         $domain = self::normalizeDomain($domain);
         $licenseKeyHash = hash('sha256', trim($licenseKey));
         $signature = self::signatureForParts([self::TYPE_THIRD_PARTY, $domain, $providerName, $licenseKeyHash]);
@@ -109,7 +111,7 @@ final class LicenseGuard
 
     public static function packOwner(string $ownerName, string $ownerEmail, string $domain): array
     {
-        $ownerName = self::normalizeBuyerName($ownerName);
+        $ownerName = self::normalizeIdentityName($ownerName);
         $ownerEmail = strtolower(trim($ownerEmail));
         $domain = self::normalizeDomain($domain);
         $ownerIdentityHash = hash('sha256', $ownerName . '|' . $ownerEmail);
@@ -147,6 +149,11 @@ final class LicenseGuard
         return (string)preg_replace('/\s+/', ' ', trim($name));
     }
 
+    public static function normalizeIdentityName(string $name): string
+    {
+        return self::normalizeBuyerName($name);
+    }
+
     public static function isSupportedLicenseType(string $type): bool
     {
         return in_array(self::normalizeLicenseType($type), [
@@ -164,7 +171,12 @@ final class LicenseGuard
 
     public static function isValidThirdPartyLicenseKey(string $licenseKey): bool
     {
-        return (bool)preg_match('/^[A-Za-z0-9._:\-]{8,200}$/', trim($licenseKey));
+        $length = strlen(trim($licenseKey));
+        if ($length < self::MIN_THIRD_PARTY_LICENSE_KEY_LENGTH || $length > self::MAX_THIRD_PARTY_LICENSE_KEY_LENGTH) {
+            return false;
+        }
+
+        return (bool)preg_match('/^[A-Za-z0-9._:\-]+$/', trim($licenseKey));
     }
 
     public static function ownerLicenseEnabled(): bool
@@ -296,7 +308,7 @@ final class LicenseGuard
             return false;
         }
 
-        $provider = self::normalizeBuyerName((string)$license['provider_name']);
+        $provider = self::normalizeIdentityName((string)$license['provider_name']);
         $hash = trim((string)$license['license_key_hash']);
         if ($provider === '' || $hash === '') {
             return false;
@@ -316,7 +328,7 @@ final class LicenseGuard
             return false;
         }
 
-        $ownerName = self::normalizeBuyerName((string)$license['owner_name']);
+        $ownerName = self::normalizeIdentityName((string)$license['owner_name']);
         $ownerEmail = strtolower(trim((string)$license['owner_email']));
         if ($ownerName === '' || filter_var($ownerEmail, FILTER_VALIDATE_EMAIL) === false) {
             return false;

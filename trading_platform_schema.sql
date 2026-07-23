@@ -2043,3 +2043,308 @@ INSERT INTO affiliate_program_settings (setting_key, setting_value, description)
     ('max_levels',              '3',    'Maximum referral depth levels'),
     ('commission_on',           'fee',  'Calculate commission on: fee or volume'),
     ('terms_url',               '',     'URL to affiliate program terms page');
+
+-- =============================================================================
+-- CMS, WEBSITE BUILDER, BLOG AND SEO MANAGEMENT SYSTEM
+-- =============================================================================
+
+-- Media library for all uploaded assets
+CREATE TABLE media_library (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    filename        VARCHAR(255) NOT NULL,
+    original_name   VARCHAR(255) NOT NULL,
+    file_path       VARCHAR(500) NOT NULL,
+    file_url        VARCHAR(500) NOT NULL,
+    mime_type       VARCHAR(100) NOT NULL,
+    file_size       INT UNSIGNED NOT NULL DEFAULT 0,
+    width           SMALLINT UNSIGNED NULL,
+    height          SMALLINT UNSIGNED NULL,
+    alt_text        VARCHAR(255) NULL DEFAULT '',
+    caption         VARCHAR(500) NULL DEFAULT '',
+    folder          VARCHAR(100) NOT NULL DEFAULT 'general',
+    uploaded_by     BIGINT UNSIGNED NOT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ml_folder   (folder),
+    INDEX idx_ml_uploader (uploaded_by),
+    INDEX idx_ml_mime     (mime_type)
+) ENGINE=InnoDB COMMENT='Central media library for all uploaded files and images';
+
+-- CMS dynamic pages (landing pages, static pages, custom pages)
+CREATE TABLE cms_pages (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    title           VARCHAR(255) NOT NULL,
+    slug            VARCHAR(255) NOT NULL UNIQUE,
+    page_type       ENUM('landing','static','custom','homepage') NOT NULL DEFAULT 'static',
+    status          ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
+    content         LONGTEXT NULL,
+    excerpt         TEXT NULL,
+    featured_image  VARCHAR(500) NULL,
+    meta_title      VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    meta_keywords   VARCHAR(500) NULL,
+    og_title        VARCHAR(255) NULL,
+    og_description  TEXT NULL,
+    og_image        VARCHAR(500) NULL,
+    canonical_url   VARCHAR(500) NULL,
+    no_index        TINYINT(1) NOT NULL DEFAULT 0,
+    layout          VARCHAR(50) NOT NULL DEFAULT 'default',
+    template        VARCHAR(50) NOT NULL DEFAULT 'page',
+    sort_order      INT UNSIGNED NOT NULL DEFAULT 0,
+    parent_id       BIGINT UNSIGNED NULL,
+    created_by      BIGINT UNSIGNED NOT NULL,
+    updated_by      BIGINT UNSIGNED NULL,
+    published_at    DATETIME NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at      DATETIME NULL,
+    INDEX idx_cp_slug    (slug),
+    INDEX idx_cp_status  (status),
+    INDEX idx_cp_type    (page_type),
+    INDEX idx_cp_parent  (parent_id)
+) ENGINE=InnoDB COMMENT='Dynamic CMS pages including landing pages and custom pages';
+
+-- Page builder sections (visual block-based builder)
+CREATE TABLE page_builder_sections (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    page_id         BIGINT UNSIGNED NOT NULL,
+    section_type    VARCHAR(50) NOT NULL,
+    section_data    JSON NOT NULL,
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_visible      TINYINT(1) NOT NULL DEFAULT 1,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_pbs_page (page_id),
+    FOREIGN KEY (page_id) REFERENCES cms_pages(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Individual visual sections for the page builder';
+
+-- Blog/News categories
+CREATE TABLE blog_categories (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    slug            VARCHAR(100) NOT NULL UNIQUE,
+    description     TEXT NULL,
+    parent_id       SMALLINT UNSIGNED NULL,
+    meta_title      VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    featured_image  VARCHAR(500) NULL,
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    post_count      INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Blog and news article categories';
+
+INSERT INTO blog_categories (name, slug, description, sort_order) VALUES
+    ('Market Analysis', 'market-analysis', 'Technical and fundamental market analysis', 1),
+    ('Trading Tips',    'trading-tips',    'Tips and strategies for traders',           2),
+    ('Platform News',   'platform-news',   'Platform updates and announcements',        3),
+    ('Education',       'education',       'Educational content for traders',           4),
+    ('Crypto News',     'crypto-news',     'Cryptocurrency market news',                5);
+
+-- Blog and News posts
+CREATE TABLE blog_posts (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    title           VARCHAR(255) NOT NULL,
+    slug            VARCHAR(255) NOT NULL UNIQUE,
+    post_type       ENUM('blog','news','tutorial','guide') NOT NULL DEFAULT 'blog',
+    category_id     SMALLINT UNSIGNED NULL,
+    author_id       BIGINT UNSIGNED NOT NULL,
+    status          ENUM('draft','published','archived','scheduled') NOT NULL DEFAULT 'draft',
+    content         LONGTEXT NULL,
+    excerpt         TEXT NULL,
+    featured_image  VARCHAR(500) NULL,
+    tags            VARCHAR(500) NULL,
+    reading_time    TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Minutes',
+    view_count      INT UNSIGNED NOT NULL DEFAULT 0,
+    is_featured     TINYINT(1) NOT NULL DEFAULT 0,
+    is_pinned       TINYINT(1) NOT NULL DEFAULT 0,
+    allow_comments  TINYINT(1) NOT NULL DEFAULT 1,
+    meta_title      VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    meta_keywords   VARCHAR(500) NULL,
+    og_title        VARCHAR(255) NULL,
+    og_description  TEXT NULL,
+    og_image        VARCHAR(500) NULL,
+    canonical_url   VARCHAR(500) NULL,
+    scheduled_at    DATETIME NULL,
+    published_at    DATETIME NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at      DATETIME NULL,
+    INDEX idx_bp_slug      (slug),
+    INDEX idx_bp_status    (status),
+    INDEX idx_bp_type      (post_type),
+    INDEX idx_bp_category  (category_id),
+    INDEX idx_bp_author    (author_id),
+    INDEX idx_bp_published (published_at),
+    INDEX idx_bp_featured  (is_featured)
+) ENGINE=InnoDB COMMENT='Blog articles, news posts, tutorials and guides';
+
+-- FAQ items grouped by category
+CREATE TABLE faq_categories (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    slug            VARCHAR(100) NOT NULL UNIQUE,
+    description     VARCHAR(255) NULL,
+    icon            VARCHAR(50) NULL DEFAULT 'fa-question-circle',
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='FAQ categories';
+
+INSERT INTO faq_categories (name, slug, icon, sort_order) VALUES
+    ('Getting Started',  'getting-started',  'fa-rocket',       1),
+    ('Trading',          'trading',          'fa-chart-line',   2),
+    ('Deposits',         'deposits',         'fa-arrow-down',   3),
+    ('Withdrawals',      'withdrawals',      'fa-arrow-up',     4),
+    ('Verification',     'verification',     'fa-id-card',      5),
+    ('Security',         'security',         'fa-shield-alt',   6),
+    ('Fees',             'fees',             'fa-percent',      7),
+    ('Account',          'account',          'fa-user-circle',  8);
+
+CREATE TABLE faqs (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    category_id     SMALLINT UNSIGNED NULL,
+    question        VARCHAR(500) NOT NULL,
+    answer          TEXT NOT NULL,
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    view_count      INT UNSIGNED NOT NULL DEFAULT 0,
+    helpful_yes     INT UNSIGNED NOT NULL DEFAULT 0,
+    helpful_no      INT UNSIGNED NOT NULL DEFAULT 0,
+    created_by      BIGINT UNSIGNED NOT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_faq_category (category_id),
+    INDEX idx_faq_active   (is_active),
+    FOREIGN KEY (category_id) REFERENCES faq_categories(id) ON DELETE SET NULL
+) ENGINE=InnoDB COMMENT='Frequently asked questions';
+
+-- User testimonials
+CREATE TABLE testimonials (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    title           VARCHAR(150) NULL,
+    company         VARCHAR(150) NULL,
+    avatar          VARCHAR(500) NULL,
+    content         TEXT NOT NULL,
+    rating          TINYINT UNSIGNED NOT NULL DEFAULT 5,
+    platform        VARCHAR(50) NULL COMMENT 'Source platform (trustpilot, google, etc)',
+    is_featured     TINYINT(1) NOT NULL DEFAULT 0,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    created_by      BIGINT UNSIGNED NOT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Customer testimonials and reviews';
+
+-- Platform features/USP sections
+CREATE TABLE platform_features (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    section         VARCHAR(50) NOT NULL DEFAULT 'home' COMMENT 'Which page/section this belongs to',
+    icon            VARCHAR(100) NOT NULL DEFAULT 'fa-star',
+    title           VARCHAR(150) NOT NULL,
+    description     TEXT NOT NULL,
+    badge           VARCHAR(50) NULL,
+    badge_color     VARCHAR(20) NULL DEFAULT 'primary',
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    created_by      BIGINT UNSIGNED NOT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Platform feature highlights for landing/home pages';
+
+-- Pricing plans
+CREATE TABLE pricing_plans (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    slug            VARCHAR(100) NOT NULL UNIQUE,
+    description     TEXT NULL,
+    price_monthly   DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    price_yearly    DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    currency        VARCHAR(10) NOT NULL DEFAULT 'USD',
+    features        JSON NULL COMMENT 'Array of feature strings',
+    badge           VARCHAR(50) NULL COMMENT 'e.g. Most Popular',
+    badge_color     VARCHAR(20) NULL DEFAULT 'warning',
+    is_featured     TINYINT(1) NOT NULL DEFAULT 0,
+    is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    cta_text        VARCHAR(100) NOT NULL DEFAULT 'Get Started',
+    cta_url         VARCHAR(255) NOT NULL DEFAULT '/register',
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Pricing plan tiers displayed on the website';
+
+INSERT INTO pricing_plans (name, slug, description, price_monthly, price_yearly, features, badge, is_featured, sort_order) VALUES
+    ('Starter',     'starter',     'Perfect for beginners',    0.00,   0.00,   '["Basic trading access","Spot trading","Standard charts","Email support"]',          NULL,          0, 1),
+    ('Pro',         'pro',         'For active traders',      29.99, 299.00,   '["Everything in Starter","Advanced charts","Signals access","Priority support","API access"]', 'Most Popular', 1, 2),
+    ('Enterprise',  'enterprise',  'For institutions',       199.00,1990.00,   '["Everything in Pro","OTC desk access","Dedicated manager","Custom integrations","SLA guarantee"]', 'Enterprise', 0, 3);
+
+-- Contact form submissions
+CREATE TABLE contact_messages (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(150) NOT NULL,
+    email           VARCHAR(255) NOT NULL,
+    subject         VARCHAR(255) NULL,
+    department      VARCHAR(50) NULL DEFAULT 'general',
+    message         TEXT NOT NULL,
+    ip_address      VARCHAR(45) NOT NULL DEFAULT '',
+    user_agent      VARCHAR(255) NULL,
+    status          ENUM('unread','read','replied','spam') NOT NULL DEFAULT 'unread',
+    replied_by      BIGINT UNSIGNED NULL,
+    replied_at      DATETIME NULL,
+    reply_message   TEXT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_cm_status  (status),
+    INDEX idx_cm_email   (email),
+    INDEX idx_cm_created (created_at)
+) ENGINE=InnoDB COMMENT='Public contact form submissions';
+
+-- SEO settings per page type or global
+CREATE TABLE seo_settings (
+    id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    context         VARCHAR(100) NOT NULL UNIQUE COMMENT 'e.g. global, home, blog, trading',
+    meta_title      VARCHAR(255) NULL,
+    meta_description TEXT NULL,
+    meta_keywords   VARCHAR(500) NULL,
+    og_title        VARCHAR(255) NULL,
+    og_description  TEXT NULL,
+    og_image        VARCHAR(500) NULL,
+    twitter_card    VARCHAR(50) NULL DEFAULT 'summary_large_image',
+    robots          VARCHAR(100) NULL DEFAULT 'index,follow',
+    canonical_base  VARCHAR(255) NULL,
+    schema_markup   TEXT NULL COMMENT 'JSON-LD schema',
+    custom_head     TEXT NULL COMMENT 'Custom head tags',
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='SEO metadata settings per context/page type';
+
+INSERT INTO seo_settings (context, meta_title, meta_description, robots) VALUES
+    ('global',   'Professional Trading Platform',       'Trade crypto with professional tools, advanced charts, and real-time data.',        'index,follow'),
+    ('home',     'Home | Trading Platform',             'Start trading crypto today with our professional trading platform.',                 'index,follow'),
+    ('blog',     'Blog | Trading Insights',             'Latest trading insights, market analysis, and platform news.',                      'index,follow'),
+    ('trading',  'Trading | Advanced Charts',           'Trade with advanced charts, indicators, and real-time market data.',                'noindex,follow'),
+    ('faq',      'FAQ | Help Center',                   'Frequently asked questions about our trading platform.',                            'index,follow'),
+    ('contact',  'Contact Us | Trading Platform',       'Get in touch with our support team.',                                               'index,follow');
+
+-- Homepage builder: configurable section blocks
+CREATE TABLE homepage_sections (
+    id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    section_key     VARCHAR(50) NOT NULL UNIQUE,
+    section_title   VARCHAR(150) NOT NULL,
+    section_data    JSON NULL,
+    is_enabled      TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Homepage section configuration for the website builder';
+
+INSERT INTO homepage_sections (section_key, section_title, is_enabled, sort_order) VALUES
+    ('hero',          'Hero / Banner Section',          1, 1),
+    ('stats',         'Platform Statistics',            1, 2),
+    ('features',      'Platform Features',              1, 3),
+    ('markets',       'Live Markets Ticker',            1, 4),
+    ('how_it_works',  'How It Works Steps',             1, 5),
+    ('testimonials',  'Customer Testimonials',          1, 6),
+    ('pricing',       'Pricing Plans',                  1, 7),
+    ('blog_preview',  'Latest Blog Posts',              1, 8),
+    ('cta',           'Call to Action',                 1, 9),
+    ('partners',      'Partners & Logos',               0, 10);

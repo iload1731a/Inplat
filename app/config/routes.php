@@ -47,6 +47,8 @@ use App\Controllers\User\MarketsController as UserMarketsController;
 use App\Controllers\User\ChartsController as UserChartsController;
 use App\Controllers\Admin\NotificationsController as AdminNotificationsController;
 use App\Controllers\Admin\AffiliateController as AdminAffiliateController;
+use App\Controllers\Admin\CmsController as AdminCmsController;
+use App\Controllers\PublicCmsController;
 use App\Libraries\Request;
 use App\Libraries\Response;
 use App\Libraries\Router;
@@ -614,6 +616,70 @@ $router->post('/admin/affiliate/tiers',                  [AdminAffiliateControll
 $router->get('/admin/affiliate/settings',                [AdminAffiliateController::class, 'settings']);
 $router->post('/admin/affiliate/settings',               [AdminAffiliateController::class, 'saveSettings']);
 $router->get('/admin/affiliate/reports',                 [AdminAffiliateController::class, 'reports']);
+
+// =====================================================================
+// ADMIN – CMS, Website Builder, Blog and SEO
+// =====================================================================
+$router->get('/admin/cms',                              [AdminCmsController::class, 'index']);
+$router->get('/admin/cms/media',                        [AdminCmsController::class, 'media']);
+$router->post('/admin/cms/media/upload',                [AdminCmsController::class, 'mediaUpload']);
+$router->post('/admin/cms/media/update',                [AdminCmsController::class, 'mediaUpdate']);
+$router->post('/admin/cms/media/delete',                [AdminCmsController::class, 'mediaDelete']);
+$router->get('/admin/cms/pages',                        [AdminCmsController::class, 'pages']);
+$router->get('/admin/cms/pages/create',                 [AdminCmsController::class, 'pageCreate']);
+$router->post('/admin/cms/pages/create',                [AdminCmsController::class, 'pageCreate']);
+$router->get('/admin/cms/pages/edit',                   [AdminCmsController::class, 'pageEdit']);
+$router->post('/admin/cms/pages/update',                [AdminCmsController::class, 'pageUpdate']);
+$router->post('/admin/cms/pages/delete',                [AdminCmsController::class, 'pageDelete']);
+$router->get('/admin/cms/homepage',                     [AdminCmsController::class, 'homepage']);
+$router->post('/admin/cms/homepage/section/save',       [AdminCmsController::class, 'saveHomepageSection']);
+$router->post('/admin/cms/homepage/reorder',            [AdminCmsController::class, 'reorderHomepage']);
+$router->get('/admin/cms/blog',                         [AdminCmsController::class, 'blog']);
+$router->get('/admin/cms/blog/create',                  [AdminCmsController::class, 'postCreate']);
+$router->post('/admin/cms/blog/create',                 [AdminCmsController::class, 'postCreate']);
+$router->get('/admin/cms/blog/edit',                    [AdminCmsController::class, 'postEdit']);
+$router->post('/admin/cms/blog/update',                 [AdminCmsController::class, 'postUpdate']);
+$router->post('/admin/cms/blog/delete',                 [AdminCmsController::class, 'postDelete']);
+$router->get('/admin/cms/blog/categories',              [AdminCmsController::class, 'blogCategories']);
+$router->post('/admin/cms/blog/categories/save',        [AdminCmsController::class, 'saveBlogCategory']);
+$router->post('/admin/cms/blog/categories/delete',      [AdminCmsController::class, 'deleteBlogCategory']);
+$router->get('/admin/cms/faq',                          [AdminCmsController::class, 'faq']);
+$router->post('/admin/cms/faq/category/save',           [AdminCmsController::class, 'saveFaqCategory']);
+$router->post('/admin/cms/faq/category/delete',         [AdminCmsController::class, 'deleteFaqCategory']);
+$router->post('/admin/cms/faq/save',                    [AdminCmsController::class, 'saveFaq']);
+$router->post('/admin/cms/faq/delete',                  [AdminCmsController::class, 'deleteFaq']);
+$router->get('/admin/cms/testimonials',                 [AdminCmsController::class, 'testimonials']);
+$router->post('/admin/cms/testimonials/save',           [AdminCmsController::class, 'saveTestimonial']);
+$router->post('/admin/cms/testimonials/delete',         [AdminCmsController::class, 'deleteTestimonial']);
+$router->get('/admin/cms/features',                     [AdminCmsController::class, 'features']);
+$router->post('/admin/cms/features/save',               [AdminCmsController::class, 'saveFeature']);
+$router->post('/admin/cms/features/delete',             [AdminCmsController::class, 'deleteFeature']);
+$router->get('/admin/cms/pricing',                      [AdminCmsController::class, 'pricing']);
+$router->post('/admin/cms/pricing/save',                [AdminCmsController::class, 'savePricing']);
+$router->post('/admin/cms/pricing/delete',              [AdminCmsController::class, 'deletePricing']);
+$router->get('/admin/cms/contact',                      [AdminCmsController::class, 'contact']);
+$router->get('/admin/cms/contact/view',                 [AdminCmsController::class, 'contactView']);
+$router->post('/admin/cms/contact/reply',               [AdminCmsController::class, 'contactReply']);
+$router->post('/admin/cms/contact/spam',                [AdminCmsController::class, 'contactSpam']);
+$router->post('/admin/cms/contact/delete',              [AdminCmsController::class, 'contactDelete']);
+$router->get('/admin/cms/seo',                          [AdminCmsController::class, 'seo']);
+$router->post('/admin/cms/seo/save',                    [AdminCmsController::class, 'saveSeo']);
+$router->get('/admin/cms/sitemap',                      [AdminCmsController::class, 'sitemap']);
+$router->get('/admin/cms/sitemap/download',             [AdminCmsController::class, 'sitemapDownload']);
+
+// =====================================================================
+// PUBLIC – CMS, Blog, FAQ, Contact, Sitemap
+// =====================================================================
+$router->get('/blog',                   [PublicCmsController::class, 'blog']);
+$router->get('/blog/post',              [PublicCmsController::class, 'blogPost']);
+$router->get('/news',                   [PublicCmsController::class, 'news']);
+$router->get('/news/post',              [PublicCmsController::class, 'blogPost']);
+$router->get('/faq',                    [PublicCmsController::class, 'faq']);
+$router->post('/faq/vote',              [PublicCmsController::class, 'faqVote']);
+$router->get('/contact',                [PublicCmsController::class, 'contact']);
+$router->post('/contact',               [PublicCmsController::class, 'contact']);
+$router->get('/page',                   [PublicCmsController::class, 'page']);
+$router->get('/sitemap.xml',            [PublicCmsController::class, 'sitemap']);
 
 // =====================================================================
 // INSTALLER

@@ -358,9 +358,10 @@ function updateBadge(count) {
 }
 
 // Real-time badge poll every 30s
-setInterval(() => {
+const _notifPollId = setInterval(() => {
     $.getJSON('/user/notifications/poll', res => {
         if (res.ok) updateBadge(res.unread_count);
     });
 }, 30000);
+window.addEventListener('beforeunload', () => clearInterval(_notifPollId));
 </script>

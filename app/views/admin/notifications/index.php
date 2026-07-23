@@ -240,7 +240,7 @@ $broadcastRecip   = (int)($kpis['broadcast_recipients']?? 0);
 <script>
 (function () {
     // 30-day volume chart
-    const daily = <?= json_encode(array_values($daily30 ?? []), JSON_THROW_ON_ERROR) ?>;
+    const daily = <?= json_encode(array_values($daily30 ?? []), JSON_UNESCAPED_UNICODE) ?: '[]' ?>;
     const days  = daily.map(r => r.day ?? '');
     const cnts  = daily.map(r => parseInt(r.cnt ?? 0));
 
@@ -256,7 +256,7 @@ $broadcastRecip   = (int)($kpis['broadcast_recipients']?? 0);
     }).render();
 
     // Channel donut chart
-    const ch   = <?= json_encode(array_values($channelBreakdown ?? []), JSON_THROW_ON_ERROR) ?>;
+    const ch   = <?= json_encode(array_values($channelBreakdown ?? []), JSON_UNESCAPED_UNICODE) ?: '[]' ?>;
     const chlbl = ch.map(r => r.channel ?? '');
     const chval = ch.map(r => parseInt(r.cnt ?? 0));
 

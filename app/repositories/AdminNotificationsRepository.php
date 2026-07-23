@@ -410,13 +410,13 @@ final class AdminNotificationsRepository
         switch ($audience) {
             case 'all':
                 $stmt = Database::connection()->query(
-                    "SELECT id, email, username FROM users WHERE status != 'banned'"
+                    "SELECT id, email, username FROM users WHERE status != 'banned' LIMIT 50000"
                 );
                 return $stmt->fetchAll() ?: [];
 
             case 'active':
                 $stmt = Database::connection()->query(
-                    "SELECT id, email, username FROM users WHERE status = 'active'"
+                    "SELECT id, email, username FROM users WHERE status = 'active' LIMIT 50000"
                 );
                 return $stmt->fetchAll() ?: [];
 

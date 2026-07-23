@@ -85,7 +85,11 @@ final class EmailService
         $body .= quoted_printable_encode($htmlBody) . "\r\n";
         $body .= "--{$boundary}--";
 
-        $sent = @mail($toEmail, $subject, $body, $headers);
+        $sent = mail($toEmail, $subject, $body, $headers);
+        if ($sent === false) {
+            $err = error_get_last();
+            $this->log('error', 'mail() failed for ' . $toEmail . ': ' . ($err['message'] ?? 'unknown error'));
+        }
         $this->log($sent ? 'info' : 'error', sprintf(
             'Email %s to %s subject=%s',
             $sent ? 'sent' : 'FAILED',

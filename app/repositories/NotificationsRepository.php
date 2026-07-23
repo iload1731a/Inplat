@@ -56,9 +56,8 @@ final class NotificationsRepository
 
         $countStmt = Database::connection()->prepare("SELECT COUNT(*) FROM notifications WHERE {$where}");
         foreach ($params as $k => $v) {
-            $countStmt->bindValue($k, $v, PDO::PARAM_INT === gettype($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            $countStmt->bindValue($k, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
         }
-        $countStmt->bindValue(':uid', $userId, PDO::PARAM_INT);
         $countStmt->execute();
         $total = (int)$countStmt->fetchColumn();
 
@@ -68,9 +67,8 @@ final class NotificationsRepository
              ORDER BY id DESC LIMIT :lim OFFSET :off"
         );
         foreach ($params as $k => $v) {
-            $stmt->bindValue($k, $v);
+            $stmt->bindValue($k, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
         }
-        $stmt->bindValue(':uid', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':lim', $perPage, PDO::PARAM_INT);
         $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
         $stmt->execute();

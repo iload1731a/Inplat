@@ -2356,7 +2356,7 @@ INSERT INTO homepage_sections (section_key, section_title, is_enabled, sort_orde
 -- Languages supported by the platform
 CREATE TABLE languages (
     id              SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    code            VARCHAR(10) NOT NULL UNIQUE COMMENT 'ISO 639-1 e.g. en, fr, ar',
+    code            VARCHAR(10) NOT NULL UNIQUE COMMENT 'BCP-47 language code, e.g. en, fr, zh-CN',
     name            VARCHAR(100) NOT NULL COMMENT 'English display name',
     native_name     VARCHAR(100) NOT NULL COMMENT 'Name in native script',
     flag_code       VARCHAR(10) NULL COMMENT 'Country code for flag icon e.g. us, fr',

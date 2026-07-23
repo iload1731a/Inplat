@@ -151,8 +151,8 @@ final class EmailService
         }
 
         // Build SMTP prefix for stream_socket_client.
-        // 'ssl'/'tls' = implicit TLS (connect directly over SSL/TLS).
-        // 'starttls' = plain TCP connection then upgrade via STARTTLS command.
+        // 'ssl'/'tls' = implicit TLS (direct encrypted connection, typically port 465) — use ssl:// prefix.
+        // 'starttls'  = explicit TLS upgrade (plain TCP then STARTTLS command, typically port 587) — no prefix.
         $prefix = match($enc) {
             'ssl', 'tls' => 'ssl://',
             'starttls'   => '',

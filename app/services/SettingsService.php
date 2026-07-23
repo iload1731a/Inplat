@@ -226,15 +226,14 @@ final class SettingsService
 
     public function createLanguage(int $adminId, array $payload): int
     {
-        // Normalize BCP 47: lowercase language part, uppercase region part (e.g. zh-CN)
+        // Normalize BCP-47: lowercase language subtag, optional script (title-case), uppercase region (e.g. en-US, zh-CN, zh-Hans-CN)
         $rawCode = trim((string)($payload['code'] ?? ''));
-        if (strpos($rawCode, '-') !== false) {
-            [$lang, $region] = explode('-', $rawCode, 2);
-            $code = strtolower($lang) . '-' . strtoupper($region);
-        } else {
-            $code = strtolower($rawCode);
-        }
-        if ($code === '' || !preg_match('/^[a-z]{2,5}(-[A-Z]{2})?$/', $code)) {
+        $parts   = explode('-', $rawCode, 3);
+        $code    = strtolower($parts[0]);
+        if (isset($parts[1])) { $code .= '-' . ucfirst(strtolower($parts[1])); }
+        if (isset($parts[2])) { $code .= '-' . strtoupper($parts[2]); }
+        // Supports: en, fr, zh-CN, zh-Hans-CN
+        if ($code === '' || !preg_match('/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$/', $code)) {
             throw new InvalidArgumentException('Invalid language code (e.g. en, fr, zh-CN).');
         }
         if (trim((string)($payload['name'] ?? '')) === '') {

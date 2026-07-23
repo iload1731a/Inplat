@@ -100,7 +100,13 @@ chmod($dbConfigPath, 0600);
 
 LicenseGuard::ensureSecretFile();
 $licensePayload = LicenseGuard::packOwner($ownerName, $ownerEmail, $domain);
-$licenseContent = json_encode($licensePayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+$licenseContent = '';
+try {
+    $licenseContent = json_encode($licensePayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+} catch (Throwable $e) {
+    fwrite(STDERR, "Unable to encode license payload: {$e->getMessage()}\n");
+    exit(1);
+}
 $licensePath = APP_BASE_PATH . '/storage/config/license.json';
 if (file_put_contents($licensePath, $licenseContent, LOCK_EX) === false) {
     fwrite(STDERR, "Unable to write storage/config/license.json\n");
@@ -180,8 +186,8 @@ echo "Admin login: " . rtrim((string)($_ENV['APP_URL'] ?? 'http://127.0.0.1:8000
 
 function splitSqlStatements(string $sql): array
 {
-    $sql = preg_replace('~/\*.*?\*/~s', '', $sql) ?? $sql;
-    $sql = preg_replace('/^\s*(--|#).*$\R?/m', '', $sql) ?? $sql;
+    $sql = preg_replace('~/\*.*?\*/~s', '', $sql);
+    $sql = preg_replace('/^\s*(--|#).*$\R?/m', '', (string)$sql);
 
     $statements = [];
     $buffer = '';
@@ -213,7 +219,7 @@ function splitSqlStatements(string $sql): array
 
         if ($char === ';' && !$inSingle && !$inDouble) {
             $statement = trim($buffer);
-            if ($statement !== '' && !str_starts_with($statement, '--')) {
+            if ($statement !== '') {
                 $statements[] = $statement;
             }
             $buffer = '';
@@ -224,7 +230,7 @@ function splitSqlStatements(string $sql): array
     }
 
     $tail = trim($buffer);
-    if ($tail !== '' && !str_starts_with($tail, '--')) {
+    if ($tail !== '') {
         $statements[] = $tail;
     }
 
@@ -266,7 +272,7 @@ function persistOwnerLicenseSettings(PDO $pdo, array $licensePayload): void
             'value_type' => 'string',
             'category' => 'license',
             'description' => 'License metadata',
-            'is_public' => false,
+            'is_public' => 0,
         ]);
     }
 }

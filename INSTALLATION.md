@@ -244,7 +244,7 @@ For owner deployments, you can run a full CLI install using an owner token inste
 
 ```dotenv
 OWNER_LICENSE_ENABLED=true
-OWNER_INSTALL_TOKEN=your_private_owner_token
+OWNER_INSTALL_TOKEN=your_secret_token_here
 ```
 
 2) Run the owner installer:
@@ -260,7 +260,7 @@ php install/owner_install.php \
   --owner-name='Platform Owner' \
   --owner-email='owner@yourdomain.com' \
   --domain=yourdomain.com \
-  --owner-token=your_private_owner_token
+  --owner-token=your_secret_token_here
 ```
 
 This script writes:

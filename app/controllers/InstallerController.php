@@ -366,7 +366,7 @@ final class InstallerController extends BaseController
                 'value_type' => 'string',
                 'category' => 'license',
                 'description' => 'License metadata',
-                'is_public' => false,
+                'is_public' => 0,
             ]);
         }
     }

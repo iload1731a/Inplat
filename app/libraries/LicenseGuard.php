@@ -97,7 +97,7 @@ final class LicenseGuard
     {
         $providerName = self::normalizeIdentityName($providerName);
         $domain = self::normalizeDomain($domain);
-        $licenseKeyHash = hash('sha256', trim($licenseKey));
+        $licenseKeyHash = self::thirdPartyLicenseKeyHash($licenseKey);
         $signature = self::signatureForParts([self::TYPE_THIRD_PARTY, $domain, $providerName, $licenseKeyHash]);
 
         return [
@@ -346,6 +346,16 @@ final class LicenseGuard
 
         $expected = self::signatureForParts([self::TYPE_OWNER, $domain, $ownerIdentityHash]);
         return hash_equals((string)$license['signature'], $expected);
+    }
+
+    private static function thirdPartyLicenseKeyHash(string $licenseKey): string
+    {
+        $secret = self::secret();
+        if ($secret === '') {
+            throw new \RuntimeException('License secret is missing.');
+        }
+
+        return hash_hmac('sha256', trim($licenseKey), $secret);
     }
 
     private static function deny(): never

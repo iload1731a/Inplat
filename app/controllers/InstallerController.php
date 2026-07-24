@@ -290,9 +290,8 @@ final class InstallerController extends BaseController
         $normalized = ltrim($statement);
         $prefix = strtoupper((string)strtok($normalized, " \n\t\r"));
         $allowed = ['SET', 'CREATE', 'USE', 'INSERT', 'ALTER'];
-        $disallowedPattern = '/^\s*(DROP|DELETE|TRUNCATE|RENAME|GRANT|REVOKE)\b/i';
 
-        if (!in_array($prefix, $allowed, true) || preg_match($disallowedPattern, $normalized) === 1) {
+        if (!in_array($prefix, $allowed, true)) {
             throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
         }
 
@@ -301,13 +300,84 @@ final class InstallerController extends BaseController
         }
 
         if ($prefix === 'ALTER') {
-            $isSafeAlterStart = preg_match('/^\s*ALTER\s+TABLE\s+\S+\s+ADD\b/i', $normalized) === 1;
-            $hasUnsafeAlterOperation = preg_match('/(?:^\s*ALTER\s+TABLE\s+\S+\s+|,\s*)(DROP|RENAME|TRUNCATE|DELETE|GRANT|REVOKE|MODIFY|CHANGE)\b/i', $normalized) === 1;
-
-            if (!$isSafeAlterStart || $hasUnsafeAlterOperation) {
+            $matches = [];
+            $matched = preg_match('/^\s*ALTER\s+TABLE\s+(`[^`]+`|[A-Za-z0-9_.]+)\s+(.+)$/is', $normalized, $matches) === 1;
+            if (!$matched) {
                 throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
             }
+
+            $clauses = $this->splitSqlAlterClauses($matches[2]);
+            foreach ($clauses as $clause) {
+                if (preg_match('/^\s*ADD\b/i', $clause) !== 1) {
+                    throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
+                }
+            }
         }
+    }
+
+    private function splitSqlAlterClauses(string $clauses): array
+    {
+        $parts = [];
+        $buffer = '';
+        $inSingle = false;
+        $inDouble = false;
+        $escape = false;
+        $parenDepth = 0;
+        $length = strlen($clauses);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $clauses[$i];
+
+            if ($escape) {
+                $buffer .= $char;
+                $escape = false;
+                continue;
+            }
+
+            if ($char === '\\') {
+                $buffer .= $char;
+                $escape = true;
+                continue;
+            }
+
+            if ($char === "'" && !$inDouble) {
+                $inSingle = !$inSingle;
+                $buffer .= $char;
+                continue;
+            }
+
+            if ($char === '"' && !$inSingle) {
+                $inDouble = !$inDouble;
+                $buffer .= $char;
+                continue;
+            }
+
+            if (!$inSingle && !$inDouble) {
+                if ($char === '(') {
+                    $parenDepth++;
+                } elseif ($char === ')' && $parenDepth > 0) {
+                    $parenDepth--;
+                }
+
+                if ($char === ',' && $parenDepth === 0) {
+                    $part = trim($buffer);
+                    if ($part !== '') {
+                        $parts[] = $part;
+                    }
+                    $buffer = '';
+                    continue;
+                }
+            }
+
+            $buffer .= $char;
+        }
+
+        $tail = trim($buffer);
+        if ($tail !== '') {
+            $parts[] = $tail;
+        }
+
+        return $parts;
     }
 
     private function persistLicenseSettings(PDO $pdo): void

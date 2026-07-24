@@ -29,9 +29,12 @@ final class UserRepository
 
     public function findByEmailOrUsername(string $identity): ?array
     {
-        $sql = 'SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, email_verified_at FROM users WHERE email = :identity OR username = :identity LIMIT 1';
+        $sql = 'SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, email_verified_at FROM users WHERE email = :email_identity OR username = :username_identity LIMIT 1';
         $stmt = Database::connection()->prepare($sql);
-        $stmt->execute(['identity' => $identity]);
+        $stmt->execute([
+            'email_identity' => $identity,
+            'username_identity' => $identity,
+        ]);
         $row = $stmt->fetch();
 
         return $row === false ? null : $row;
@@ -51,10 +54,13 @@ final class UserRepository
     {
         $sql = 'SELECT id, username, email, password_hash, status, two_factor_enabled, two_factor_secret, full_name, role_id
                 FROM admin_users
-                WHERE deleted_at IS NULL AND (email = :identity OR username = :identity)
+                WHERE deleted_at IS NULL AND (email = :email_identity OR username = :username_identity)
                 LIMIT 1';
         $stmt = Database::connection()->prepare($sql);
-        $stmt->execute(['identity' => $identity]);
+        $stmt->execute([
+            'email_identity' => $identity,
+            'username_identity' => $identity,
+        ]);
         $row = $stmt->fetch();
 
         return $row === false ? null : $row;
@@ -220,9 +226,10 @@ final class UserRepository
 
     public function isAdminIdentity(string $identity): bool
     {
-        $sql = "SELECT COUNT(*) FROM admin_users WHERE (email = :identity OR username = :identity) AND status = 'active' AND deleted_at IS NULL";
+        $sql = "SELECT COUNT(*) FROM admin_users WHERE (email = :email_identity OR username = :username_identity) AND status = 'active' AND deleted_at IS NULL";
         $stmt = Database::connection()->prepare($sql);
-        $stmt->bindValue(':identity', $identity);
+        $stmt->bindValue(':email_identity', $identity);
+        $stmt->bindValue(':username_identity', $identity);
         $stmt->execute();
 
         return (int)$stmt->fetchColumn() > 0;

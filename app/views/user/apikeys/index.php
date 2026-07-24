@@ -17,6 +17,10 @@ require app_path('app/views/user/_nav.php');
         Keep your API secret safe — it is only shown once during creation. Never share your API credentials with anyone.
     </div>
 
+    <div class="alert alert-info small">
+        For trading bots: create a key, enable only required permissions (Read/Trade), and ask admin to enable live market feeds so chart/ticker data stays current.
+    </div>
+
     <div class="table-responsive">
         <table id="apiKeysTable" class="table table-user table-sm">
             <thead>

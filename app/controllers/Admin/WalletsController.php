@@ -62,6 +62,21 @@ final class WalletsController extends AdminBaseController
         ]);
     }
 
+    public function lookup(Request $request): void
+    {
+        $this->bootAdmin();
+        $walletId = (int)$request->input('id', 0);
+
+        try {
+            $wallet = $this->svc()->walletLookup($walletId);
+            Response::json(['ok' => true, 'wallet' => $wallet]);
+            return;
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+            return;
+        }
+    }
+
     public function freeze(Request $request): void
     {
         $this->bootAdmin();

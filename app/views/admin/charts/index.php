@@ -14,6 +14,13 @@ $error       = (string)($error ?? '');
 <div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i><?= htmlspecialchars($error, ENT_QUOTES) ?></div>
 <?php endif; ?>
 
+<div class="alert alert-info small">
+    <strong>Go live quickly:</strong>
+    1) Configure provider API keys in <a href="/admin/markets/providers" class="alert-link">Price Data Providers</a>,
+    2) map symbols in <a href="/admin/markets/mappings" class="alert-link">Asset Mappings</a>,
+    3) enable subscriptions in <a href="/admin/markets/feed" class="alert-link">Price Feed</a>.
+</div>
+
 <!-- KPI Row -->
 <div class="row g-3 mb-4">
     <?php

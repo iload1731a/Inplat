@@ -2,6 +2,7 @@
 <?php
 $history = is_array($history ?? null) ? $history : [];
 $csrf    = \App\Libraries\Csrf::token();
+$prefillWalletId = max(0, (int)($_GET['wallet_id'] ?? 0));
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -25,7 +26,7 @@ $csrf    = \App\Libraries\Csrf::token();
                     <div class="input-group">
                         <input type="number" name="wallet_id" id="walletIdInput"
                                class="form-control bg-transparent text-light border-secondary"
-                               placeholder="Enter wallet ID" min="1" required>
+                               placeholder="Enter wallet ID" min="1" value="<?= $prefillWalletId > 0 ? (int)$prefillWalletId : '' ?>" required>
                         <button type="button" class="btn btn-outline-secondary" id="lookupWalletBtn"
                                 title="Lookup wallet">
                             <i class="fas fa-search"></i>
@@ -122,6 +123,51 @@ $csrf    = \App\Libraries\Csrf::token();
 
 <script>
 $('#adjustmentTable').DataTable({ order:[[0,'desc']], pageLength:20 });
+
+const walletIdInput = document.getElementById('walletIdInput');
+const walletLookupResult = document.getElementById('walletLookupResult');
+
+async function lookupWallet(walletId) {
+    if (!walletId || Number(walletId) < 1) {
+        walletLookupResult.className = 'mt-2 small text-danger';
+        walletLookupResult.textContent = 'Enter a valid wallet ID.';
+        return;
+    }
+
+    walletLookupResult.className = 'mt-2 small text-secondary';
+    walletLookupResult.textContent = 'Checking wallet...';
+
+    try {
+        const res = await fetch(`/admin/wallets/lookup?id=${encodeURIComponent(walletId)}`);
+        const json = await res.json();
+
+        if (!json.ok || !json.wallet) {
+            walletLookupResult.className = 'mt-2 small text-danger';
+            walletLookupResult.textContent = json.message || 'Wallet not found.';
+            return;
+        }
+
+        const w = json.wallet;
+        const frozen = Number(w.is_frozen || 0) === 1 ? ' · Frozen' : '';
+        walletLookupResult.className = 'mt-2 small text-success';
+        walletLookupResult.textContent = `${w.username} (${w.email}) · ${w.currency_code} · Available: ${Number(w.available_balance || 0).toFixed(8)}${frozen}`;
+    } catch (err) {
+        walletLookupResult.className = 'mt-2 small text-danger';
+        walletLookupResult.textContent = 'Lookup failed. Please try again.';
+    }
+}
+
+document.getElementById('lookupWalletBtn').addEventListener('click', function () {
+    lookupWallet(walletIdInput.value.trim());
+});
+
+walletIdInput.addEventListener('change', function () {
+    if (this.value.trim() !== '') lookupWallet(this.value.trim());
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (walletIdInput.value.trim() !== '') lookupWallet(walletIdInput.value.trim());
+});
 
 document.getElementById('adjustmentForm').addEventListener('submit', async function(e) {
     e.preventDefault();

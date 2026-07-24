@@ -83,6 +83,7 @@ $csrf        = \App\Libraries\Csrf::token();
                             </td>
                             <td class="text-end">
                                 <a href="/admin/wallet/ledger?id=<?= (int)$w['id'] ?>" class="btn btn-xs btn-outline-info me-1">Ledger</a>
+                                <a href="/admin/wallets/adjustment?wallet_id=<?= (int)$w['id'] ?>" class="btn btn-xs btn-outline-primary me-1">Adjust</a>
                                 <?php if ((int)($w['is_frozen'] ?? 0)): ?>
                                     <button class="btn btn-xs btn-outline-success" onclick="unfreezeWallet(<?= (int)$w['id'] ?>)">Unfreeze</button>
                                 <?php else: ?>

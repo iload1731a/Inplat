@@ -44,6 +44,25 @@ final class AdminWalletsService
         ];
     }
 
+    public function walletLookup(int $walletId): array
+    {
+        $wallet = $this->walletsRepo->findWalletById($walletId);
+        if ($wallet === null) {
+            throw new InvalidArgumentException('Wallet not found.');
+        }
+
+        return [
+            'id' => (int)($wallet['id'] ?? 0),
+            'username' => (string)($wallet['username'] ?? ''),
+            'email' => (string)($wallet['email'] ?? ''),
+            'currency_code' => (string)($wallet['currency_code'] ?? ''),
+            'wallet_type' => (string)($wallet['wallet_type'] ?? ''),
+            'available_balance' => (string)($wallet['available_balance'] ?? '0'),
+            'locked_balance' => (string)($wallet['locked_balance'] ?? '0'),
+            'is_frozen' => (int)($wallet['is_frozen'] ?? 0),
+        ];
+    }
+
     public function freezeWallet(int $adminId, int $walletId, string $reason): void
     {
         $wallet = $this->walletsRepo->findWalletById($walletId);

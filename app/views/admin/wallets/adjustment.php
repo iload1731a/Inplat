@@ -3,6 +3,7 @@
 $history = is_array($history ?? null) ? $history : [];
 $csrf    = \App\Libraries\Csrf::token();
 $prefillWalletId = max(0, (int)($_GET['wallet_id'] ?? 0));
+$prefillWalletValue = $prefillWalletId > 0 ? (string)$prefillWalletId : '';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -26,7 +27,7 @@ $prefillWalletId = max(0, (int)($_GET['wallet_id'] ?? 0));
                     <div class="input-group">
                         <input type="number" name="wallet_id" id="walletIdInput"
                                class="form-control bg-transparent text-light border-secondary"
-                               placeholder="Enter wallet ID" min="1" value="<?= $prefillWalletId ?: '' ?>" required>
+                               placeholder="Enter wallet ID" min="1" value="<?= e($prefillWalletValue) ?>" required>
                         <button type="button" class="btn btn-outline-secondary" id="lookupWalletBtn"
                                 title="Lookup wallet">
                             <i class="fas fa-search"></i>
@@ -166,8 +167,9 @@ document.getElementById('lookupWalletBtn').addEventListener('click', function ()
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    const walletId = currentWalletId();
-    if (walletId && Number(walletId) >= 1) lookupWallet(walletId);
+    if (<?= $prefillWalletId > 0 ? 'true' : 'false' ?>) {
+        lookupWallet(currentWalletId());
+    }
 });
 
 document.getElementById('adjustmentForm').addEventListener('submit', async function(e) {

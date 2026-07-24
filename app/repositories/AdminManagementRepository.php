@@ -168,6 +168,80 @@ final class AdminManagementRepository
         return $stmt->fetchAll() ?: [];
     }
 
+    public function getUserRecentOrders(int $userId, int $limit = 20): array
+    {
+        $safeLimit = max(1, min(100, $limit));
+        $stmt = Database::connection()->prepare(
+            "SELECT o.id, o.order_uuid, tp.symbol, ot.name AS order_type, o.side, o.status,
+                    o.price, o.quantity, o.filled_quantity, o.created_at
+             FROM orders o
+             INNER JOIN trading_pairs tp ON tp.id = o.trading_pair_id
+             INNER JOIN order_types ot ON ot.id = o.order_type_id
+             WHERE o.user_id = :user_id
+             ORDER BY o.id DESC
+             LIMIT {$safeLimit}"
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function getUserRecentTrades(int $userId, int $limit = 20): array
+    {
+        $safeLimit = max(1, min(100, $limit));
+        $stmt = Database::connection()->prepare(
+            "SELECT t.id, t.trade_uuid, tp.symbol,
+                    CASE WHEN t.buyer_id = :user_id THEN 'buy' ELSE 'sell' END AS side,
+                    t.price, t.quantity, t.quote_amount,
+                    CASE WHEN t.buyer_id = :user_id THEN t.buyer_fee ELSE t.seller_fee END AS fee,
+                    t.executed_at
+             FROM trades t
+             INNER JOIN trading_pairs tp ON tp.id = t.trading_pair_id
+             WHERE t.buyer_id = :user_id OR t.seller_id = :user_id
+             ORDER BY t.id DESC
+             LIMIT {$safeLimit}"
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function getUserRecentDeposits(int $userId, int $limit = 20): array
+    {
+        $safeLimit = max(1, min(100, $limit));
+        $stmt = Database::connection()->prepare(
+            "SELECT d.id, c.code AS currency_code, d.amount, d.status, d.tx_hash, d.created_at, d.credited_at
+             FROM deposits d
+             INNER JOIN currencies c ON c.id = d.currency_id
+             WHERE d.user_id = :user_id
+             ORDER BY d.id DESC
+             LIMIT {$safeLimit}"
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function getUserRecentWithdrawals(int $userId, int $limit = 20): array
+    {
+        $safeLimit = max(1, min(100, $limit));
+        $stmt = Database::connection()->prepare(
+            "SELECT w.id, c.code AS currency_code, w.amount, w.fee, w.status, w.tx_hash, w.requested_at, w.processed_at
+             FROM withdrawals w
+             INNER JOIN currencies c ON c.id = w.currency_id
+             WHERE w.user_id = :user_id
+             ORDER BY w.id DESC
+             LIMIT {$safeLimit}"
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function updateUserProfile(int $userId, array $payload): void
     {
         $pdo = Database::connection();

@@ -5,6 +5,8 @@ $authUsername = (string)(\App\Libraries\Session::get('auth.username') ?? 'Trader
 $userSection  = (string)($userSection ?? 'dashboard');
 $pageTitle    = (string)($title ?? config('app.name'));
 $csrfToken    = \App\Libraries\Csrf::token();
+$impersonatorAdminId = (int)(\App\Libraries\Session::get('auth.impersonator_admin_id') ?? 0);
+$impersonatorAdminName = (string)(\App\Libraries\Session::get('auth.impersonator_admin_display_name') ?? \App\Libraries\Session::get('auth.impersonator_admin_username') ?? '');
 ?>
 <!doctype html>
 <html lang="en" data-bs-theme="dark" id="htmlRoot">
@@ -271,6 +273,15 @@ $csrfToken    = \App\Libraries\Csrf::token();
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <?php if ($impersonatorAdminId > 0): ?>
+                <form action="/admin/users/stop-impersonation" method="post" data-ajax="true" class="m-0">
+                    <input type="hidden" name="_token" value="<?= e($csrfToken) ?>">
+                    <button class="btn btn-sm btn-outline-warning" type="submit" title="Return to admin session">
+                        <i class="fas fa-user-shield me-1"></i>
+                        <span class="d-none d-md-inline">Return to Admin<?= $impersonatorAdminName !== '' ? ': ' . e($impersonatorAdminName) : '' ?></span>
+                    </button>
+                </form>
+                <?php endif; ?>
                 <!-- Theme toggle -->
                 <button class="btn btn-sm btn-outline-secondary" id="themeToggle" title="Toggle theme">
                     <i class="fas fa-moon" id="themeIcon"></i>

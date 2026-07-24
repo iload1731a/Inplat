@@ -5,6 +5,10 @@ $wallets = is_array($wallets ?? null) ? $wallets : [];
 $kycDocuments = is_array($kycDocuments ?? null) ? $kycDocuments : [];
 $loginHistory = is_array($loginHistory ?? null) ? $loginHistory : [];
 $notifications = is_array($notifications ?? null) ? $notifications : [];
+$recentOrders = is_array($recentOrders ?? null) ? $recentOrders : [];
+$recentTrades = is_array($recentTrades ?? null) ? $recentTrades : [];
+$recentDeposits = is_array($recentDeposits ?? null) ? $recentDeposits : [];
+$recentWithdrawals = is_array($recentWithdrawals ?? null) ? $recentWithdrawals : [];
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -16,6 +20,20 @@ $notifications = is_array($notifications ?? null) ? $notifications : [];
 <?php require app_path('app/views/admin/_nav.php'); ?>
 <div class="row g-3 mb-4">
     <div class="col-xl-8">
+        <div class="glass rounded-4 p-3 mb-3">
+            <h2 class="h6 mb-3">Admin Actions</h2>
+            <div class="d-flex flex-wrap gap-2">
+                <form action="/admin/users/login-as" method="post" data-ajax="true">
+                    <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
+                    <input type="hidden" name="user_id" value="<?= (int)($user['id'] ?? 0) ?>">
+                    <button class="btn btn-sm btn-outline-primary" type="submit"><i class="fas fa-right-to-bracket me-1"></i>Login As User</button>
+                </form>
+                <a class="btn btn-sm btn-outline-warning" href="/admin/communications?user_id=<?= (int)($user['id'] ?? 0) ?>&channel=email"><i class="fas fa-envelope me-1"></i>Send Email</a>
+                <a class="btn btn-sm btn-outline-info" href="/admin/orders?search=<?= urlencode((string)($user['username'] ?? '')) ?>"><i class="fas fa-list-ol me-1"></i>Order Book</a>
+                <a class="btn btn-sm btn-outline-info" href="/admin/deposits?search=<?= urlencode((string)($user['username'] ?? '')) ?>"><i class="fas fa-arrow-down me-1"></i>Deposits</a>
+                <a class="btn btn-sm btn-outline-info" href="/admin/withdrawals?search=<?= urlencode((string)($user['username'] ?? '')) ?>"><i class="fas fa-arrow-up me-1"></i>Withdrawals</a>
+            </div>
+        </div>
         <div class="glass rounded-4 p-3 h-100">
             <h2 class="h6 mb-3">Account Profile</h2>
             <form action="/admin/users/update" method="post" data-ajax="true" class="row g-3">
@@ -52,6 +70,16 @@ $notifications = is_array($notifications ?? null) ? $notifications : [];
     </div>
     <div class="col-xl-4">
         <div class="glass rounded-4 p-3 mb-3">
+            <h2 class="h6 mb-3">Change Password</h2>
+            <form action="/admin/users/change-password" method="post" data-ajax="true" class="row g-2">
+                <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
+                <input type="hidden" name="user_id" value="<?= (int)($user['id'] ?? 0) ?>">
+                <div class="col-12"><input class="form-control form-control-sm" type="password" name="new_password" minlength="8" placeholder="New password" required></div>
+                <div class="col-12"><input class="form-control form-control-sm" type="password" name="confirm_password" minlength="8" placeholder="Confirm password" required></div>
+                <div class="col-12"><button class="btn btn-sm btn-outline-danger w-100" type="submit">Update Password</button></div>
+            </form>
+        </div>
+        <div class="glass rounded-4 p-3 mb-3">
             <h2 class="h6 mb-3">Account Snapshot</h2>
             <div class="small text-secondary">Username</div><div class="mb-2"><?= e((string)($user['username'] ?? '-')) ?></div>
             <div class="small text-secondary">Created</div><div class="mb-2"><?= e((string)($user['created_at'] ?? '-')) ?></div>
@@ -75,6 +103,103 @@ $notifications = is_array($notifications ?? null) ? $notifications : [];
                 </form>
             <?php endforeach; ?>
             <?php if ($wallets === []): ?><div class="text-secondary">This user has no wallets yet.</div><?php endif; ?>
+        </div>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-xl-6">
+        <div class="glass rounded-4 p-3 h-100">
+            <h2 class="h6 mb-3">Recent Orders</h2>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead><tr><th>ID</th><th>Pair</th><th>Side</th><th>Status</th><th>Qty</th><th>Price</th><th>Created</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($recentOrders as $row): ?>
+                        <tr>
+                            <td>#<?= (int)($row['id'] ?? 0) ?></td>
+                            <td><?= e((string)($row['symbol'] ?? '-')) ?></td>
+                            <td><span class="badge text-bg-<?= (($row['side'] ?? '') === 'buy') ? 'success' : 'danger' ?>"><?= e((string)($row['side'] ?? '-')) ?></span></td>
+                            <td><?= e((string)($row['status'] ?? '-')) ?></td>
+                            <td><?= number_format((float)($row['quantity'] ?? 0), 8) ?></td>
+                            <td><?= number_format((float)($row['price'] ?? 0), 8) ?></td>
+                            <td class="small text-secondary"><?= e((string)($row['created_at'] ?? '-')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if ($recentOrders === []): ?><tr><td colspan="7" class="text-center text-secondary">No orders found.</td></tr><?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="glass rounded-4 p-3 h-100">
+            <h2 class="h6 mb-3">Recent Trades</h2>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead><tr><th>ID</th><th>Pair</th><th>Side</th><th>Qty</th><th>Price</th><th>Fee</th><th>Executed</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($recentTrades as $row): ?>
+                        <tr>
+                            <td>#<?= (int)($row['id'] ?? 0) ?></td>
+                            <td><?= e((string)($row['symbol'] ?? '-')) ?></td>
+                            <td><span class="badge text-bg-<?= (($row['side'] ?? '') === 'buy') ? 'success' : 'danger' ?>"><?= e((string)($row['side'] ?? '-')) ?></span></td>
+                            <td><?= number_format((float)($row['quantity'] ?? 0), 8) ?></td>
+                            <td><?= number_format((float)($row['price'] ?? 0), 8) ?></td>
+                            <td><?= number_format((float)($row['fee'] ?? 0), 8) ?></td>
+                            <td class="small text-secondary"><?= e((string)($row['executed_at'] ?? '-')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if ($recentTrades === []): ?><tr><td colspan="7" class="text-center text-secondary">No trades found.</td></tr><?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-xl-6">
+        <div class="glass rounded-4 p-3 h-100">
+            <h2 class="h6 mb-3">Recent Deposits</h2>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead><tr><th>ID</th><th>Currency</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($recentDeposits as $row): ?>
+                        <tr>
+                            <td>#<?= (int)($row['id'] ?? 0) ?></td>
+                            <td><?= e((string)($row['currency_code'] ?? '-')) ?></td>
+                            <td><?= number_format((float)($row['amount'] ?? 0), 8) ?></td>
+                            <td><?= e((string)($row['status'] ?? '-')) ?></td>
+                            <td class="small text-secondary"><?= e((string)($row['created_at'] ?? '-')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if ($recentDeposits === []): ?><tr><td colspan="5" class="text-center text-secondary">No deposits found.</td></tr><?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="glass rounded-4 p-3 h-100">
+            <h2 class="h6 mb-3">Recent Withdrawals</h2>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead><tr><th>ID</th><th>Currency</th><th>Amount</th><th>Fee</th><th>Status</th><th>Requested</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($recentWithdrawals as $row): ?>
+                        <tr>
+                            <td>#<?= (int)($row['id'] ?? 0) ?></td>
+                            <td><?= e((string)($row['currency_code'] ?? '-')) ?></td>
+                            <td><?= number_format((float)($row['amount'] ?? 0), 8) ?></td>
+                            <td><?= number_format((float)($row['fee'] ?? 0), 8) ?></td>
+                            <td><?= e((string)($row['status'] ?? '-')) ?></td>
+                            <td class="small text-secondary"><?= e((string)($row['requested_at'] ?? '-')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if ($recentWithdrawals === []): ?><tr><td colspan="6" class="text-center text-secondary">No withdrawals found.</td></tr><?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

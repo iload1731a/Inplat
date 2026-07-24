@@ -96,6 +96,9 @@ $router->post('/admin/users/ban', [AdminManagementController::class, 'banUser'])
 $router->post('/admin/users/unban', [AdminManagementController::class, 'unbanUser']);
 $router->post('/admin/users/reset-2fa', [AdminManagementController::class, 'resetUserTwoFactor']);
 $router->post('/admin/users/revoke-sessions', [AdminManagementController::class, 'revokeUserSessions']);
+$router->post('/admin/users/change-password', [AdminManagementController::class, 'changeUserPassword']);
+$router->post('/admin/users/login-as', [AdminManagementController::class, 'loginAsUser']);
+$router->post('/admin/users/stop-impersonation', [AdminManagementController::class, 'stopImpersonation']);
 
 // =====================================================================
 // ADMIN – Roles & Permissions

@@ -61,6 +61,19 @@ require app_path('app/views/admin/_nav.php');
     <?php endforeach; ?>
 </div>
 
+<div class="glass rounded-4 p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h6 mb-0"><i class="fas fa-chart-line me-2 text-info"></i>Market Data Operations</h2>
+        <a href="/admin/markets/data-sync" class="btn btn-xs btn-outline-info">Open Data Sync</a>
+    </div>
+    <div class="row g-2">
+        <div class="col-md-3 col-6"><a class="btn btn-outline-light w-100" href="/admin/assets"><i class="fas fa-coins me-1"></i>Currencies</a></div>
+        <div class="col-md-3 col-6"><a class="btn btn-outline-light w-100" href="/admin/assets/pairs"><i class="fas fa-exchange-alt me-1"></i>Pairs</a></div>
+        <div class="col-md-3 col-6"><a class="btn btn-outline-light w-100" href="/admin/markets/mappings"><i class="fas fa-link me-1"></i>Mappings</a></div>
+        <div class="col-md-3 col-6"><a class="btn btn-outline-light w-100" href="/admin/charts"><i class="fas fa-chart-bar me-1"></i>Chart Data</a></div>
+    </div>
+</div>
+
 <!-- Status Summary -->
 <div class="row g-4">
     <div class="col-lg-4">

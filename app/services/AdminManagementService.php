@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Libraries\RequestContext;
+use App\Libraries\Session;
 use App\Repositories\AdminManagementRepository;
+use App\Repositories\UserRepository;
 use InvalidArgumentException;
 
 final class AdminManagementService
 {
-    public function __construct(private readonly AdminManagementRepository $repository = new AdminManagementRepository())
-    {
-    }
+    public function __construct(
+        private readonly AdminManagementRepository $repository = new AdminManagementRepository(),
+        private readonly UserRepository $users = new UserRepository(),
+    ) {}
 
     public function adminOverview(int $adminId): array
     {
@@ -35,6 +38,10 @@ final class AdminManagementService
             'kycDocuments' => $this->repository->getUserKycDocuments($userId),
             'loginHistory' => $this->repository->getUserLoginHistory($userId),
             'notifications' => $this->repository->getUserNotifications($userId),
+            'recentOrders' => $this->repository->getUserRecentOrders($userId),
+            'recentTrades' => $this->repository->getUserRecentTrades($userId),
+            'recentDeposits' => $this->repository->getUserRecentDeposits($userId),
+            'recentWithdrawals' => $this->repository->getUserRecentWithdrawals($userId),
         ];
     }
 
@@ -571,5 +578,93 @@ final class AdminManagementService
 
         $this->repository->revokeAllUserSessions($userId);
         $this->repository->logAdminAction($adminId, 'revoke_user_sessions', 'users', (string)$userId, null, [], RequestContext::ipAddress());
+    }
+
+    public function changeUserPassword(int $adminId, int $userId, string $newPassword, string $confirmPassword): void
+    {
+        $user = $this->repository->getUserBasic($userId);
+        if ($user === null) {
+            throw new \InvalidArgumentException('User not found.');
+        }
+
+        if (mb_strlen($newPassword) < 8) {
+            throw new \InvalidArgumentException('Password must be at least 8 characters.');
+        }
+        if (!hash_equals($newPassword, $confirmPassword)) {
+            throw new \InvalidArgumentException('Password confirmation does not match.');
+        }
+
+        $hash = password_hash($newPassword, password_algo());
+        if (!is_string($hash) || $hash === '') {
+            throw new \RuntimeException('Failed to hash password.');
+        }
+
+        $this->users->updatePassword($userId, $hash);
+        $this->repository->logAdminAction($adminId, 'change_user_password', 'users', (string)$userId, null, [], RequestContext::ipAddress());
+    }
+
+    public function loginAsUser(int $adminId, int $userId): void
+    {
+        $user = $this->repository->getUserBasic($userId);
+        if ($user === null) {
+            throw new \InvalidArgumentException('User not found.');
+        }
+
+        if ((int)(Session::get('auth.impersonator_admin_id') ?? 0) <= 0) {
+            Session::put('auth.impersonator_admin_id', $adminId);
+            Session::put('auth.impersonator_admin_username', (string)(Session::get('auth.username') ?? 'Admin'));
+            Session::put('auth.impersonator_admin_display_name', (string)(Session::get('auth.display_name') ?? Session::get('auth.username') ?? 'Admin'));
+            Session::put('auth.impersonator_admin_identity', (string)(Session::get('auth.identity') ?? ''));
+        }
+
+        Session::put('auth.user_id', (int)$user['id']);
+        Session::put('auth.actor_type', 'user');
+        Session::put('auth.username', (string)$user['username']);
+        Session::put('auth.display_name', (string)$user['username']);
+        Session::put('auth.identity', (string)$user['email']);
+
+        $this->repository->logAdminAction(
+            $adminId,
+            'login_as_user',
+            'users',
+            (string)$userId,
+            null,
+            ['username' => (string)$user['username']],
+            RequestContext::ipAddress()
+        );
+    }
+
+    public function stopImpersonation(int $adminId): int
+    {
+        $impersonatorId = (int)(Session::get('auth.impersonator_admin_id') ?? 0);
+        if ($impersonatorId <= 0) {
+            throw new \InvalidArgumentException('No active impersonation session.');
+        }
+
+        $lastUserId = (int)(Session::get('auth.user_id') ?? 0);
+        Session::forget('auth.user_id');
+        Session::put('auth.actor_type', 'admin');
+        Session::put('auth.admin_id', $impersonatorId);
+        Session::put('auth.username', (string)(Session::get('auth.impersonator_admin_username') ?? 'Admin'));
+        Session::put('auth.display_name', (string)(Session::get('auth.impersonator_admin_display_name') ?? Session::get('auth.impersonator_admin_username') ?? 'Admin'));
+        Session::put('auth.identity', (string)(Session::get('auth.impersonator_admin_identity') ?? ''));
+        Session::put('auth.is_admin', true);
+
+        Session::forget('auth.impersonator_admin_id');
+        Session::forget('auth.impersonator_admin_username');
+        Session::forget('auth.impersonator_admin_display_name');
+        Session::forget('auth.impersonator_admin_identity');
+
+        $this->repository->logAdminAction(
+            $adminId > 0 ? $adminId : $impersonatorId,
+            'stop_login_as_user',
+            'users',
+            (string)$lastUserId,
+            null,
+            null,
+            RequestContext::ipAddress()
+        );
+
+        return $lastUserId;
     }
 }

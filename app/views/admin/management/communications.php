@@ -4,6 +4,8 @@ $notifications = is_array($notifications ?? null) ? $notifications : [];
 $emailTemplates = is_array($emailTemplates ?? null) ? $emailTemplates : [];
 $admins = is_array($admins ?? null) ? $admins : [];
 $admin = is_array($admin ?? null) ? $admin : [];
+$prefillUserId = max(0, (int)($prefillUserId ?? 0));
+$prefillChannel = (string)($prefillChannel ?? '');
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -19,11 +21,11 @@ $admin = is_array($admin ?? null) ? $admin : [];
             <h2 class="h6 mb-3">Send Notification</h2>
             <form action="/admin/communications/notify" method="post" data-ajax="true" class="row g-3">
                 <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
-                <div class="col-md-6"><label class="form-label">Audience</label><select class="form-select" name="audience"><option value="single">Single User</option><option value="active">All Active Users</option><option value="kyc_pending">Pending KYC Users</option><option value="all">All Users</option></select></div>
-                <div class="col-md-6"><label class="form-label">User ID</label><input class="form-control" type="number" min="0" name="user_id" placeholder="Only for single-user sends"></div>
+                <div class="col-md-6"><label class="form-label">Audience</label><select class="form-select" name="audience"><option value="single" <?= $prefillUserId > 0 ? 'selected' : '' ?>>Single User</option><option value="active">All Active Users</option><option value="kyc_pending">Pending KYC Users</option><option value="all">All Users</option></select></div>
+                <div class="col-md-6"><label class="form-label">User ID</label><input class="form-control" type="number" min="0" name="user_id" placeholder="Only for single-user sends" value="<?= $prefillUserId > 0 ? (int)$prefillUserId : '' ?>"></div>
                 <div class="col-md-6"><label class="form-label">Status Filter</label><select class="form-select" name="status_filter"><option value="">Any</option><?php foreach (['active','pending','suspended','banned','closed'] as $status): ?><option value="<?= e($status) ?>"><?= e(ucfirst($status)) ?></option><?php endforeach; ?></select></div>
                 <div class="col-md-6"><label class="form-label">KYC Filter</label><select class="form-select" name="kyc_filter"><option value="">Any</option><?php foreach (['unverified','pending','approved','rejected'] as $status): ?><option value="<?= e($status) ?>"><?= e(ucfirst($status)) ?></option><?php endforeach; ?></select></div>
-                <div class="col-md-6"><label class="form-label">Channel</label><select class="form-select" name="channel"><option value="in_app">In App</option><option value="email">Email</option><option value="sms">SMS</option><option value="push">Push</option></select></div>
+                <div class="col-md-6"><label class="form-label">Channel</label><select class="form-select" name="channel"><option value="in_app" <?= $prefillChannel === 'in_app' ? 'selected' : '' ?>>In App</option><option value="email" <?= $prefillChannel === 'email' ? 'selected' : '' ?>>Email</option><option value="sms" <?= $prefillChannel === 'sms' ? 'selected' : '' ?>>SMS</option><option value="push" <?= $prefillChannel === 'push' ? 'selected' : '' ?>>Push</option></select></div>
                 <div class="col-md-6"><label class="form-label">Type</label><input class="form-control" type="text" name="type" value="admin_notice"></div>
                 <div class="col-12"><label class="form-label">Title</label><input class="form-control" type="text" name="title" required></div>
                 <div class="col-12"><label class="form-label">Message</label><textarea class="form-control" name="message" rows="5" required></textarea></div>

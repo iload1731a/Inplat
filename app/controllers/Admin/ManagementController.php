@@ -207,11 +207,16 @@ final class ManagementController extends AdminBaseController
     {
         $this->bootAdmin();
 
+        $prefillUserId = max(0, (int)$request->input('user_id', 0));
+        $prefillChannel = trim((string)$request->input('channel', ''));
+
         $data = (new AdminManagementService())->communicationsIndex($this->adminId());
         $this->view('admin/management/communications', [
             'title' => 'Admin · Communications',
             'username' => $this->adminUsername(),
             'adminSection' => 'communications',
+            'prefillUserId' => $prefillUserId,
+            'prefillChannel' => in_array($prefillChannel, ['in_app', 'email', 'sms', 'push'], true) ? $prefillChannel : '',
             ...$data,
         ]);
     }
@@ -585,5 +590,57 @@ final class ManagementController extends AdminBaseController
         }
 
         Response::json(['ok' => true, 'message' => 'All user sessions revoked.', 'redirect' => '/admin/user?id=' . $userId]);
+    }
+
+    public function changeUserPassword(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $userId = (int)$request->input('user_id', 0);
+
+        try {
+            (new AdminManagementService())->changeUserPassword(
+                $this->adminId(),
+                $userId,
+                (string)$request->input('new_password', ''),
+                (string)$request->input('confirm_password', '')
+            );
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'User password changed.', 'redirect' => '/admin/user?id=' . $userId]);
+    }
+
+    public function loginAsUser(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $userId = (int)$request->input('user_id', 0);
+
+        try {
+            (new AdminManagementService())->loginAsUser($this->adminId(), $userId);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        Response::json(['ok' => true, 'message' => 'Impersonation enabled.', 'redirect' => '/dashboard']);
+    }
+
+    public function stopImpersonation(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        try {
+            $lastUserId = (new AdminManagementService())->stopImpersonation($this->adminId());
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        $redirectUserId = $lastUserId > 0 ? $lastUserId : 0;
+        Response::json(['ok' => true, 'message' => 'Returned to admin session.', 'redirect' => '/admin/user?id=' . $redirectUserId]);
     }
 }

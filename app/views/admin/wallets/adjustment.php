@@ -26,7 +26,7 @@ $prefillWalletId = max(0, (int)($_GET['wallet_id'] ?? 0));
                     <div class="input-group">
                         <input type="number" name="wallet_id" id="walletIdInput"
                                class="form-control bg-transparent text-light border-secondary"
-                               placeholder="Enter wallet ID" min="1" value="<?= $prefillWalletId > 0 ? (int)$prefillWalletId : '' ?>" required>
+                               placeholder="Enter wallet ID" min="1" value="<?= $prefillWalletId ?: '' ?>" required>
                         <button type="button" class="btn btn-outline-secondary" id="lookupWalletBtn"
                                 title="Lookup wallet">
                             <i class="fas fa-search"></i>
@@ -167,7 +167,7 @@ document.getElementById('lookupWalletBtn').addEventListener('click', function ()
 
 document.addEventListener('DOMContentLoaded', function () {
     const walletId = currentWalletId();
-    if (walletId !== '') lookupWallet(walletId);
+    if (walletId && Number(walletId) >= 1) lookupWallet(walletId);
 });
 
 document.getElementById('adjustmentForm').addEventListener('submit', async function(e) {

@@ -1341,7 +1341,7 @@ CREATE TABLE competition_participants (
     competition_id          INT UNSIGNED NOT NULL,
     user_id                 BIGINT UNSIGNED NOT NULL,
     current_score           DECIMAL(36,18) NOT NULL DEFAULT 0,
-    rank                    INT UNSIGNED NULL,
+    participant_rank        INT UNSIGNED NULL,
     prize_awarded           DECIMAL(36,18) NULL,
     joined_at               DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_competition_user (competition_id, user_id),

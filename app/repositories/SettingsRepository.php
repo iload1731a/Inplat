@@ -16,7 +16,7 @@ use RuntimeException;
  */
 final class SettingsRepository
 {
-    private static array $tableExistsCache = [];
+    private array $tableExistsCache = [];
 
     // -----------------------------------------------------------------------
     // System Settings (key-value store)
@@ -801,8 +801,8 @@ final class SettingsRepository
 
     private function tableExists(string $table): bool
     {
-        if (array_key_exists($table, self::$tableExistsCache)) {
-            return self::$tableExistsCache[$table];
+        if (array_key_exists($table, $this->tableExistsCache)) {
+            return $this->tableExistsCache[$table];
         }
 
         $stmt = Database::connection()->prepare(
@@ -814,8 +814,8 @@ final class SettingsRepository
         $stmt->bindValue(':table', $table);
         $stmt->execute();
 
-        self::$tableExistsCache[$table] = $stmt->fetchColumn() !== false;
-        return self::$tableExistsCache[$table];
+        $this->tableExistsCache[$table] = $stmt->fetchColumn() !== false;
+        return $this->tableExistsCache[$table];
     }
 
     private function requireTable(string $table): void

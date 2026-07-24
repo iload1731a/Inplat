@@ -197,7 +197,17 @@ final class PlatformRepository
             return 0;
         }
 
-        self::$tableCountCache[$table] = (int)$pdo->query(sprintf('SELECT COUNT(*) FROM `%s`', $table))->fetchColumn();
+        if ($table === 'faqs') {
+            self::$tableCountCache[$table] = (int)$pdo->query('SELECT COUNT(*) FROM faqs')->fetchColumn();
+            return self::$tableCountCache[$table];
+        }
+
+        if ($table === 'sms_templates') {
+            self::$tableCountCache[$table] = (int)$pdo->query('SELECT COUNT(*) FROM sms_templates')->fetchColumn();
+            return self::$tableCountCache[$table];
+        }
+
+        self::$tableCountCache[$table] = 0;
         return self::$tableCountCache[$table];
     }
 

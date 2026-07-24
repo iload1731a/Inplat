@@ -22,6 +22,9 @@ use PDO;
  */
 final class MarketsRepository
 {
+    private const int MIN_PREAGG_CANDLES = 5;
+    private const int MAX_SYNC_LOG_MESSAGE_LENGTH = 500;
+
     // =========================================================================
     // MARKET OVERVIEW — TRADING PAIRS + TICKERS
     // =========================================================================
@@ -606,7 +609,7 @@ final class MarketsRepository
             ':pair_id'      => $pairId,
             ':event_type'   => $eventType,
             ':http_status'  => isset($data['http_status']) ? (int)$data['http_status'] : null,
-            ':message'      => isset($data['message']) ? substr((string)$data['message'], 0, 500) : null,
+            ':message'      => isset($data['message']) ? substr((string)$data['message'], 0, self::MAX_SYNC_LOG_MESSAGE_LENGTH) : null,
             ':response_ms'  => isset($data['response_time_ms']) ? (int)$data['response_time_ms'] : null,
         ]);
     }
@@ -734,7 +737,7 @@ final class MarketsRepository
         $preAggregatedStmt->bindValue(':lim', $limit, PDO::PARAM_INT);
         $preAggregatedStmt->execute();
         $rows = $preAggregatedStmt->fetchAll() ?: [];
-        if (count($rows) >= 5) {
+        if (count($rows) >= self::MIN_PREAGG_CANDLES) {
             return array_reverse($rows);
         }
 
@@ -912,7 +915,7 @@ final class MarketsRepository
             ':pairs_created' => (int)($stats['pairs_created'] ?? 0),
             ':pairs_updated' => (int)($stats['pairs_updated'] ?? 0),
             ':pairs_skipped' => (int)($stats['pairs_skipped'] ?? 0),
-            ':error_message' => isset($stats['error_message']) ? substr((string)$stats['error_message'], 0, 500) : null,
+            ':error_message' => isset($stats['error_message']) ? substr((string)$stats['error_message'], 0, self::MAX_SYNC_LOG_MESSAGE_LENGTH) : null,
             ':id' => $jobId,
         ]);
     }

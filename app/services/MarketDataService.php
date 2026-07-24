@@ -13,6 +13,9 @@ use RuntimeException;
 
 final class MarketDataService
 {
+    private const int MIN_POLL_INTERVAL_SECONDS = 15;
+    private const int DEFAULT_PRECISION = 8;
+
     public function __construct(
         private readonly MarketsRepository $repo = new MarketsRepository(),
         private readonly AdminManagementRepository $mgmt = new AdminManagementRepository(),
@@ -80,7 +83,7 @@ final class MarketDataService
                             'primary_provider_id' => $providerId,
                             'fallback_provider_id' => null,
                             'feed_mode' => 'polling',
-                            'poll_interval_seconds' => max(15, (int)($provider['default_sync_interval_seconds'] ?? 60)),
+                            'poll_interval_seconds' => max(self::MIN_POLL_INTERVAL_SECONDS, (int)($provider['default_sync_interval_seconds'] ?? 60)),
                             'max_allowed_staleness_seconds' => 60,
                             'is_active' => 1,
                         ]);
@@ -242,8 +245,8 @@ final class MarketDataService
         $minOrderSize = '0';
         $maxOrderSize = null;
         $minNotional = '0';
-        $pricePrecision = isset($symbol['quotePrecision']) ? max(0, (int)$symbol['quotePrecision']) : 8;
-        $quantityPrecision = isset($symbol['baseAssetPrecision']) ? max(0, (int)$symbol['baseAssetPrecision']) : 8;
+        $pricePrecision = isset($symbol['quotePrecision']) ? max(0, (int)$symbol['quotePrecision']) : self::DEFAULT_PRECISION;
+        $quantityPrecision = isset($symbol['baseAssetPrecision']) ? max(0, (int)$symbol['baseAssetPrecision']) : self::DEFAULT_PRECISION;
 
         foreach ((array)($symbol['filters'] ?? []) as $filter) {
             if (!is_array($filter)) {
@@ -273,7 +276,7 @@ final class MarketDataService
     {
         $step = trim($step);
         if ($step === '' || str_contains($step, 'E') || str_contains($step, 'e')) {
-            return 8;
+            return self::DEFAULT_PRECISION;
         }
         $parts = explode('.', $step, 2);
         if (count($parts) < 2) {

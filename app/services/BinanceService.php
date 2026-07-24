@@ -8,6 +8,8 @@ use RuntimeException;
 
 final class BinanceService
 {
+    private const string USER_AGENT = 'Inplat/MarketSync/1.0';
+
     private string $baseUrl;
 
     public function __construct(?string $baseUrl = null)
@@ -63,7 +65,7 @@ final class BinanceService
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
-            CURLOPT_USERAGENT => 'Inplat/MarketSync/1.0',
+            CURLOPT_USERAGENT => self::USER_AGENT,
         ]);
 
         $response = curl_exec($ch);

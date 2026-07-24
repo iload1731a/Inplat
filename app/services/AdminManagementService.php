@@ -9,6 +9,7 @@ use App\Libraries\Session;
 use App\Repositories\AdminManagementRepository;
 use App\Repositories\UserRepository;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class AdminManagementService
 {
@@ -536,7 +537,7 @@ final class AdminManagementService
     {
         $user = $this->repository->getUserBasic($userId);
         if ($user === null) {
-            throw new \InvalidArgumentException('User not found.');
+            throw new InvalidArgumentException('User not found.');
         }
 
         if ($reason === '') {
@@ -588,15 +589,15 @@ final class AdminManagementService
         }
 
         if (mb_strlen($newPassword) < 8) {
-            throw new \InvalidArgumentException('Password must be at least 8 characters.');
+            throw new InvalidArgumentException('Password must be at least 8 characters.');
         }
         if ($newPassword !== $confirmPassword) {
-            throw new \InvalidArgumentException('Password confirmation does not match.');
+            throw new InvalidArgumentException('Password confirmation does not match.');
         }
 
         $hash = password_hash($newPassword, PASSWORD_DEFAULT);
         if (!is_string($hash) || $hash === '') {
-            throw new \RuntimeException('Failed to hash password.');
+            throw new RuntimeException('Failed to hash password.');
         }
 
         $this->users->updatePassword($userId, $hash);
@@ -606,17 +607,17 @@ final class AdminManagementService
     public function loginAsUser(int $adminId, int $userId): void
     {
         if ((string)(Session::get('auth.actor_type') ?? '') !== 'admin') {
-            throw new \InvalidArgumentException('Impersonation can only be started from an admin session.');
+            throw new InvalidArgumentException('Impersonation can only be started from an admin session.');
         }
 
         $admin = $this->repository->findAdminById($adminId);
         if ($admin === null || (int)($admin['role_id'] ?? 0) !== 1) {
-            throw new \InvalidArgumentException('Only super administrators can use login-as.');
+            throw new InvalidArgumentException('Only super administrators can use login-as.');
         }
 
         $user = $this->repository->getUserBasic($userId);
         if ($user === null) {
-            throw new \InvalidArgumentException('User not found.');
+            throw new InvalidArgumentException('User not found.');
         }
 
         if ((int)(Session::get('auth.impersonator_admin_id') ?? 0) <= 0) {
@@ -647,10 +648,10 @@ final class AdminManagementService
     {
         $impersonatorId = (int)(Session::get('auth.impersonator_admin_id') ?? 0);
         if ($impersonatorId <= 0) {
-            throw new \InvalidArgumentException('No active impersonation session.');
+            throw new InvalidArgumentException('No active impersonation session.');
         }
         if ($impersonatorId !== $adminId) {
-            throw new \InvalidArgumentException('Impersonation session ownership mismatch.');
+            throw new InvalidArgumentException('Impersonation session ownership mismatch.');
         }
 
         $lastUserId = (int)(Session::get('auth.user_id') ?? 0);
@@ -668,7 +669,7 @@ final class AdminManagementService
         Session::forget('auth.impersonator_admin_identity');
 
         $this->repository->logAdminAction(
-            $adminId > 0 ? $adminId : $impersonatorId,
+            $adminId,
             'stop_login_as_user',
             'users',
             (string)$lastUserId,

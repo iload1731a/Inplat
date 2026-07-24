@@ -22,7 +22,7 @@ use PDO;
  */
 final class MarketsRepository
 {
-    private const int MIN_PREAGG_CANDLES = 5;
+    private const int MIN_PRECOMPUTED_CANDLES_THRESHOLD = 5;
     private const int MAX_SYNC_LOG_MESSAGE_LENGTH = 500;
 
     // =========================================================================
@@ -609,7 +609,7 @@ final class MarketsRepository
             ':pair_id'      => $pairId,
             ':event_type'   => $eventType,
             ':http_status'  => isset($data['http_status']) ? (int)$data['http_status'] : null,
-            ':message'      => isset($data['message']) ? substr((string)$data['message'], 0, self::MAX_SYNC_LOG_MESSAGE_LENGTH) : null,
+            ':message'      => $this->truncateMessage(isset($data['message']) ? (string)$data['message'] : null),
             ':response_ms'  => isset($data['response_time_ms']) ? (int)$data['response_time_ms'] : null,
         ]);
     }
@@ -737,7 +737,7 @@ final class MarketsRepository
         $preAggregatedStmt->bindValue(':lim', $limit, PDO::PARAM_INT);
         $preAggregatedStmt->execute();
         $rows = $preAggregatedStmt->fetchAll() ?: [];
-        if (count($rows) >= self::MIN_PREAGG_CANDLES) {
+        if (count($rows) >= self::MIN_PRECOMPUTED_CANDLES_THRESHOLD) {
             return array_reverse($rows);
         }
 
@@ -915,9 +915,17 @@ final class MarketsRepository
             ':pairs_created' => (int)($stats['pairs_created'] ?? 0),
             ':pairs_updated' => (int)($stats['pairs_updated'] ?? 0),
             ':pairs_skipped' => (int)($stats['pairs_skipped'] ?? 0),
-            ':error_message' => isset($stats['error_message']) ? substr((string)$stats['error_message'], 0, self::MAX_SYNC_LOG_MESSAGE_LENGTH) : null,
+            ':error_message' => $this->truncateMessage(isset($stats['error_message']) ? (string)$stats['error_message'] : null),
             ':id' => $jobId,
         ]);
+    }
+
+    private function truncateMessage(?string $message): ?string
+    {
+        if ($message === null || $message === '') {
+            return null;
+        }
+        return substr($message, 0, self::MAX_SYNC_LOG_MESSAGE_LENGTH);
     }
 
     public function findCurrencyByCode(string $code): ?array

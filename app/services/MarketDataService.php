@@ -14,6 +14,7 @@ use RuntimeException;
 final class MarketDataService
 {
     private const int MIN_POLL_INTERVAL_SECONDS = 15;
+    private const int DEFAULT_POLL_INTERVAL_SECONDS = 60;
     private const int DEFAULT_PRECISION = 8;
 
     public function __construct(
@@ -83,7 +84,7 @@ final class MarketDataService
                             'primary_provider_id' => $providerId,
                             'fallback_provider_id' => null,
                             'feed_mode' => 'polling',
-                            'poll_interval_seconds' => max(self::MIN_POLL_INTERVAL_SECONDS, (int)($provider['default_sync_interval_seconds'] ?? 60)),
+                            'poll_interval_seconds' => max(self::MIN_POLL_INTERVAL_SECONDS, (int)($provider['default_sync_interval_seconds'] ?? self::DEFAULT_POLL_INTERVAL_SECONDS)),
                             'max_allowed_staleness_seconds' => 60,
                             'is_active' => 1,
                         ]);
@@ -245,6 +246,8 @@ final class MarketDataService
         $minOrderSize = '0';
         $maxOrderSize = null;
         $minNotional = '0';
+        // Binance spot exchangeInfo does not always provide a dedicated "pricePrecision",
+        // so we map quotePrecision as the closest available source for UI/order precision.
         $pricePrecision = isset($symbol['quotePrecision']) ? max(0, (int)$symbol['quotePrecision']) : self::DEFAULT_PRECISION;
         $quantityPrecision = isset($symbol['baseAssetPrecision']) ? max(0, (int)$symbol['baseAssetPrecision']) : self::DEFAULT_PRECISION;
 
@@ -282,7 +285,6 @@ final class MarketDataService
         if (count($parts) < 2) {
             return 0;
         }
-        $fraction = rtrim($parts[1], '0');
-        return strlen($fraction);
+        return strlen($parts[1]);
     }
 }

@@ -44,8 +44,9 @@ final class CandleSyncService
                     );
                     $candlesCount++;
                 }
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
                 $errors++;
+                error_log('Candle sync failed for pair ' . (string)($pair['symbol'] ?? 'unknown') . ': ' . $e->getMessage());
                 continue;
             }
         }

@@ -9,6 +9,8 @@ use RuntimeException;
 final class BinanceService
 {
     private const string USER_AGENT = 'Inplat/MarketSync/1.0';
+    private const int DEFAULT_TIMEOUT_SECONDS = 20;
+    private const int DEFAULT_CONNECT_TIMEOUT_SECONDS = 10;
 
     private string $baseUrl;
 
@@ -60,8 +62,8 @@ final class BinanceService
 
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => self::DEFAULT_TIMEOUT_SECONDS,
+            CURLOPT_CONNECTTIMEOUT => self::DEFAULT_CONNECT_TIMEOUT_SECONDS,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTPHEADER => ['Accept: application/json'],

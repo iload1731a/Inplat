@@ -290,8 +290,7 @@ final class InstallerController extends BaseController
         $normalized = ltrim($statement);
         $prefix = strtoupper((string)strtok($normalized, " \n\t\r"));
         $allowed = ['SET', 'CREATE', 'USE', 'INSERT', 'ALTER'];
-        $disallowedTopLevel = ['DROP', 'DELETE', 'TRUNCATE', 'RENAME', 'GRANT', 'REVOKE'];
-        $disallowedPattern = '/^\s*(' . implode('|', $disallowedTopLevel) . ')\b/i';
+        $disallowedPattern = '/^\s*(DROP|DELETE|TRUNCATE|RENAME|GRANT|REVOKE)\b/i';
 
         if (!in_array($prefix, $allowed, true) || preg_match($disallowedPattern, $normalized) === 1) {
             throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
@@ -302,12 +301,10 @@ final class InstallerController extends BaseController
         }
 
         if ($prefix === 'ALTER') {
-            $isAlterTable = preg_match('/^\s*ALTER\s+TABLE\s+/i', $normalized) === 1;
-            $hasAddClause = preg_match('/\bADD\b/i', $normalized) === 1;
-            $disallowedAlterOperations = ['DROP', 'RENAME', 'TRUNCATE', 'DELETE', 'GRANT', 'REVOKE', 'MODIFY', 'CHANGE'];
-            $hasUnsafeAlterOperation = preg_match('/\b(' . implode('|', $disallowedAlterOperations) . ')\b/i', $normalized) === 1;
+            $isSafeAlterStart = preg_match('/^\s*ALTER\s+TABLE\s+\S+\s+ADD\b/i', $normalized) === 1;
+            $hasUnsafeAlterOperation = preg_match('/(?:^\s*ALTER\s+TABLE\s+\S+\s+|,\s*)(DROP|RENAME|TRUNCATE|DELETE|GRANT|REVOKE|MODIFY|CHANGE)\b/i', $normalized) === 1;
 
-            if (!$isAlterTable || !$hasAddClause || $hasUnsafeAlterOperation) {
+            if (!$isSafeAlterStart || $hasUnsafeAlterOperation) {
                 throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
             }
         }

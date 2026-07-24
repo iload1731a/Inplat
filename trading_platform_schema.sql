@@ -665,6 +665,8 @@ CREATE TABLE notifications (
     type                    VARCHAR(50) NOT NULL,             -- order_filled, deposit_credited, security_alert, etc.
     title                   VARCHAR(191) NOT NULL,
     message                 TEXT NOT NULL,
+    action_url              VARCHAR(500) NULL,
+    metadata                JSON NULL,
     channel                 ENUM('in_app','email','sms','push') NOT NULL DEFAULT 'in_app',
     is_read                 TINYINT(1) NOT NULL DEFAULT 0,
     read_at                 DATETIME NULL,
@@ -1870,11 +1872,6 @@ INSERT INTO ticket_categories (name, slug, description, icon, color, sla_hours, 
 -- ============================================================================
 -- SECTION 20: NOTIFICATION CENTER AND REAL-TIME ALERT SYSTEM
 -- ============================================================================
-
--- Add action_url to notifications if column is missing
-ALTER TABLE notifications
-    ADD COLUMN IF NOT EXISTS action_url VARCHAR(500) NULL AFTER message,
-    ADD COLUMN IF NOT EXISTS metadata   JSON         NULL AFTER action_url;
 
 -- Notification dispatch log: every send attempt (in_app insert, email, sms, push) is logged here
 CREATE TABLE notification_log (

@@ -107,11 +107,14 @@ $adminSidebarLayout = true;
             background: var(--accent) !important; color: #0f172a !important; border-color: var(--accent) !important;
         }
         /* Mobile sidebar overlay */
-        #sidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1039; }
+        #sidebarOverlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1039;
+            opacity: 0; pointer-events: none; transition: opacity .2s ease;
+        }
         @media (max-width: 991.98px) {
             #sidebar { transform: translateX(-100%); }
             #sidebar.show { transform: translateX(0); }
-            #sidebarOverlay { display: block; }
+            #sidebarOverlay.show { display: block; opacity: 1; pointer-events: auto; }
             #main-wrapper { margin-left: 0; }
         }
         /* Light mode */
@@ -291,7 +294,10 @@ document.getElementById('themeToggle')?.addEventListener('click', function () {
 });
 
 function toggleAdminSidebar() {
-    document.getElementById('sidebar').classList.toggle('show');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const isOpen = sidebar.classList.toggle('show');
+    overlay.classList.toggle('show', isOpen);
 }
 
 // CSRF token helper

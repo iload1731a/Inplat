@@ -16,4 +16,3 @@ final class TradingPair
         return strtoupper(trim($base)) . '/' . strtoupper(trim($quote));
     }
 }
-

@@ -58,4 +58,3 @@ final class TickerSyncService
         return ['processed' => $processed, 'updated' => $updated, 'missing' => $missing];
     }
 }
-

@@ -53,4 +53,3 @@ final class CandleSyncService
         return ['pairs' => $pairsCount, 'candles' => $candlesCount, 'errors' => $errors];
     }
 }
-

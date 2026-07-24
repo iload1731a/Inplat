@@ -283,4 +283,3 @@ final class MarketDataService
         return strlen($fraction);
     }
 }
-

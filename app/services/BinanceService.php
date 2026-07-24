@@ -88,4 +88,3 @@ final class BinanceService
         return $decoded;
     }
 }
-

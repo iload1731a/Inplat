@@ -94,4 +94,3 @@ $csrf = \App\Libraries\Csrf::token();
         </table>
     </div>
 </div>
-

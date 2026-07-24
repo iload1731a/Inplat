@@ -21,4 +21,3 @@ final class AdminMarketController extends AdminBaseController
         ]);
     }
 }
-

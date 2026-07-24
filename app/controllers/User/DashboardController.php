@@ -41,7 +41,7 @@ final class DashboardController extends BaseController
             $data['dashboardError'] = 'Dashboard data is temporarily unavailable. Please check the application log for details.';
         }
 
-        $this->render('user/dashboard', [
+        $this->userView('user/dashboard', [
             'title' => 'Dashboard',
             'userSection' => 'dashboard',
             'username' => (string)(Session::get('auth.username') ?? 'Trader'),

@@ -233,7 +233,12 @@ final class AdminDashboardRepository
 
     private function tradesHasTradingPairId(): bool
     {
-        $cacheKey = 'trades:trading_pair_id';
+        return $this->columnExists('trades', 'trading_pair_id');
+    }
+
+    private function columnExists(string $table, string $column): bool
+    {
+        $cacheKey = $table . ':' . $column;
         if (array_key_exists($cacheKey, self::$columnExistsCache)) {
             return self::$columnExistsCache[$cacheKey];
         }
@@ -244,8 +249,8 @@ final class AdminDashboardRepository
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column
              LIMIT 1'
         );
-        $stmt->bindValue(':table', 'trades');
-        $stmt->bindValue(':column', 'trading_pair_id');
+        $stmt->bindValue(':table', $table);
+        $stmt->bindValue(':column', $column);
         $stmt->execute();
         self::$columnExistsCache[$cacheKey] = $stmt->fetchColumn() !== false;
 

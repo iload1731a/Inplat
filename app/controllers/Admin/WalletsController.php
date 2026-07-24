@@ -67,13 +67,16 @@ final class WalletsController extends AdminBaseController
         $this->bootAdmin();
         $walletId = (int)$request->input('id', 0);
 
+        if ($walletId <= 0) {
+            Response::json(['ok' => false, 'message' => 'Wallet ID must be a positive integer.'], 422);
+            return;
+        }
+
         try {
             $wallet = $this->svc()->walletLookup($walletId);
             Response::json(['ok' => true, 'wallet' => $wallet]);
-            return;
         } catch (Throwable $e) {
             Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
-            return;
         }
     }
 

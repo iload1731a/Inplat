@@ -167,7 +167,7 @@ document.getElementById('lookupWalletBtn').addEventListener('click', function ()
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    if (<?= $prefillWalletId > 0 ? 'true' : 'false' ?>) {
+    if (<?= $prefillWalletId ?> > 0) {
         lookupWallet(currentWalletId());
     }
 });

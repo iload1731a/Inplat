@@ -864,7 +864,7 @@ final class MarketsRepository
         );
         $stmt->execute([
             ':provider_id' => $providerId,
-            ':triggered_by' => $adminId > 0 ? $adminId : null,
+            ':triggered_by' => ($adminId !== null && $adminId > 0) ? $adminId : null,
         ]);
         return (int)$pdo->lastInsertId();
     }

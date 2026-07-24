@@ -2,7 +2,7 @@
 <?php
 $history = is_array($history ?? null) ? $history : [];
 $csrf    = \App\Libraries\Csrf::token();
-$prefillWalletId = max(0, (int)($_GET['wallet_id'] ?? 0));
+$prefillWalletId = max(0, (int)($prefillWalletId ?? 0));
 $prefillWalletValue = $prefillWalletId > 0 ? (string)$prefillWalletId : '';
 ?>
 
@@ -145,11 +145,16 @@ async function lookupWallet(walletId) {
 
     try {
         const res = await fetch(`/admin/wallets/lookup?id=${encodeURIComponent(walletId)}`);
-        const json = await res.json();
+        let json = null;
+        try {
+            json = await res.json();
+        } catch (parseErr) {
+            json = null;
+        }
 
-        if (!json.ok || !json.wallet) {
+        if (!res.ok || !json || !json.ok || !json.wallet) {
             walletLookupResult.className = 'mt-2 small text-danger';
-            walletLookupResult.textContent = json.message || 'Wallet not found.';
+            walletLookupResult.textContent = (json && json.message) ? json.message : 'Wallet not found.';
             return;
         }
 

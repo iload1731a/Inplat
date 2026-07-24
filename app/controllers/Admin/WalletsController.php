@@ -202,12 +202,14 @@ final class WalletsController extends AdminBaseController
     {
         $this->bootAdmin();
         $data = $this->svc()->adjustmentHistory();
+        $prefillWalletId = max(0, (int)$request->input('wallet_id', 0));
 
         $this->view('admin/wallets/adjustment', [
             'title'        => 'Admin · Manual Adjustments',
             'username'     => $this->adminUsername(),
             'adminSection' => 'wallets',
             'history'      => $data,
+            'prefillWalletId' => $prefillWalletId,
         ]);
     }
 

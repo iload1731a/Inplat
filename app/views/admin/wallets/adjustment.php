@@ -127,7 +127,7 @@ $('#adjustmentTable').DataTable({ order:[[0,'desc']], pageLength:20 });
 
 const walletIdInput = document.getElementById('walletIdInput');
 const walletLookupResult = document.getElementById('walletLookupResult');
-const initialWalletId = <?= json_encode($prefillWalletId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const initialWalletId = <?= (int)$prefillWalletId ?>;
 
 function currentWalletId() {
     return walletIdInput.value.trim();
@@ -152,12 +152,7 @@ async function lookupWallet(walletId) {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
             body: params.toString(),
         });
-        let json = null;
-        try {
-            json = await res.json();
-        } catch (parseErr) {
-            json = null;
-        }
+        const json = await res.json();
 
         if (!res.ok || !json || !json.ok || !json.wallet) {
             walletLookupResult.className = 'mt-2 small text-danger';

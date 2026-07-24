@@ -36,7 +36,7 @@ final class AdminWalletsService
     {
         $wallet = $this->walletsRepo->findWalletById($walletId);
         if ($wallet === null) {
-            throw new InvalidArgumentException('Wallet not found.');
+            throw new InvalidArgumentException('No wallet exists with the provided ID.');
         }
         return [
             'wallet' => $wallet,
@@ -48,7 +48,7 @@ final class AdminWalletsService
     {
         $wallet = $this->walletsRepo->findWalletById($walletId);
         if ($wallet === null) {
-            throw new InvalidArgumentException('Wallet not found.');
+            throw new InvalidArgumentException('No wallet exists with the provided ID.');
         }
 
         return [
@@ -67,7 +67,7 @@ final class AdminWalletsService
     {
         $wallet = $this->walletsRepo->findWalletById($walletId);
         if ($wallet === null) {
-            throw new InvalidArgumentException('Wallet not found.');
+            throw new InvalidArgumentException('No wallet exists with the provided ID.');
         }
         if ($reason === '') {
             throw new InvalidArgumentException('Freeze reason is required.');
@@ -81,7 +81,7 @@ final class AdminWalletsService
     {
         $wallet = $this->walletsRepo->findWalletById($walletId);
         if ($wallet === null) {
-            throw new InvalidArgumentException('Wallet not found.');
+            throw new InvalidArgumentException('No wallet exists with the provided ID.');
         }
         $this->walletsRepo->unfreezeWallet($walletId);
         $this->mgmtRepo->logAdminAction($adminId, 'unfreeze_wallet', 'wallets', (string)$walletId,

@@ -54,7 +54,7 @@ final class AdminDashboardRepository
 
     public function recentTrades(int $limit = 8): array
     {
-        $pairColumn = $this->tradesHasTradingPairId() ? 'trading_pair_id' : 'pair_id';
+        $pairColumn = $this->columnExists('trades', 'trading_pair_id') ? 'trading_pair_id' : 'pair_id';
 
         $sql = 'SELECT t.id, t.quantity, t.price, t.executed_at, tp.symbol AS pair_symbol
                 FROM trades t
@@ -229,11 +229,6 @@ final class AdminDashboardRepository
 
         self::$tableExistsCache[$table] = $stmt->fetchColumn() !== false;
         return self::$tableExistsCache[$table];
-    }
-
-    private function tradesHasTradingPairId(): bool
-    {
-        return $this->columnExists('trades', 'trading_pair_id');
     }
 
     private function columnExists(string $table, string $column): bool

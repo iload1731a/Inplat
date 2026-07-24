@@ -15,6 +15,8 @@ use Throwable;
 
 final class InstallerController extends BaseController
 {
+    private const MAX_SCHEMA_ERROR_PREVIEW = 80;
+
     public function step1(Request $request): void
     {
         $requirements = [
@@ -309,12 +311,20 @@ final class InstallerController extends BaseController
             $clauses = $this->splitSqlAlterClauses($matches[2]);
             foreach ($clauses as $clause) {
                 if (preg_match('/^\s*ADD\b/i', $clause) !== 1) {
-                    throw new \RuntimeException('Unsupported ALTER TABLE clause in schema import: ' . substr(trim($clause), 0, 80));
+                    throw new \RuntimeException('Unsupported ALTER TABLE clause in schema import: ' . substr(trim($clause), 0, self::MAX_SCHEMA_ERROR_PREVIEW));
                 }
             }
         }
     }
 
+    /**
+     * Split ALTER TABLE operations by top-level commas while preserving commas inside
+     * quoted strings and parenthesized expressions.
+     *
+     * @return list<string>
+     *
+     * @throws \RuntimeException When an unmatched closing parenthesis is encountered.
+     */
     private function splitSqlAlterClauses(string $clauses): array
     {
         $parts = [];
@@ -357,7 +367,7 @@ final class InstallerController extends BaseController
                     $parenDepth++;
                 } elseif ($char === ')') {
                     if ($parenDepth === 0) {
-                        throw new \RuntimeException('Invalid ALTER TABLE syntax in schema import.');
+                        throw new \RuntimeException('Unmatched closing parenthesis in ALTER TABLE syntax.');
                     }
                     $parenDepth--;
                 }

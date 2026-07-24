@@ -127,6 +127,7 @@ $('#adjustmentTable').DataTable({ order:[[0,'desc']], pageLength:20 });
 
 const walletIdInput = document.getElementById('walletIdInput');
 const walletLookupResult = document.getElementById('walletLookupResult');
+const prefillWalletId = <?= json_encode($prefillWalletId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 
 function currentWalletId() {
     return walletIdInput.value.trim();
@@ -154,8 +155,9 @@ async function lookupWallet(walletId) {
 
         const w = json.wallet;
         const frozen = Number(w.is_frozen || 0) === 1 ? ' · Frozen' : '';
+        const available = String(w.available_balance ?? '0');
         walletLookupResult.className = 'mt-2 small text-success';
-        walletLookupResult.textContent = `${w.username} (${w.email}) · ${w.currency_code} · Available: ${Number(w.available_balance || 0).toFixed(8)}${frozen}`;
+        walletLookupResult.textContent = `${w.username} (${w.email}) · ${w.currency_code} · Available: ${available}${frozen}`;
     } catch (err) {
         walletLookupResult.className = 'mt-2 small text-danger';
         walletLookupResult.textContent = 'Lookup failed. Please try again.';
@@ -167,7 +169,7 @@ document.getElementById('lookupWalletBtn').addEventListener('click', function ()
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    if (<?= $prefillWalletId ?> > 0) {
+    if (Number(prefillWalletId) > 0) {
         lookupWallet(currentWalletId());
     }
 });

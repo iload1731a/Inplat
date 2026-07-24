@@ -248,7 +248,7 @@ final class MarketsRepository
             "SELECT DATE(t.executed_at) AS day, COALESCE(SUM(t.price * t.quantity), 0) AS volume
              FROM trades t
              WHERE t.executed_at >= DATE_SUB(CURDATE(), INTERVAL :days DAY)
-             GROUP BY DATE(t.created_at)
+             GROUP BY DATE(t.executed_at)
              ORDER BY day ASC"
         );
         $stmt->bindValue(':days', $days, PDO::PARAM_INT);

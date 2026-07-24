@@ -128,6 +128,7 @@ $('#adjustmentTable').DataTable({ order:[[0,'desc']], pageLength:20 });
 const walletIdInput = document.getElementById('walletIdInput');
 const walletLookupResult = document.getElementById('walletLookupResult');
 const initialWalletId = <?= (int)$prefillWalletId ?>;
+const lookupCsrfToken = <?= json_encode($csrf, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 
 function currentWalletId() {
     return walletIdInput.value.trim();
@@ -144,9 +145,7 @@ async function lookupWallet(walletId) {
     walletLookupResult.textContent = 'Checking wallet...';
 
     try {
-        const tokenInput = document.querySelector('#adjustmentForm input[name="_token"]');
-        const token = tokenInput ? tokenInput.value : '';
-        const params = new URLSearchParams({ _token: token, id: walletId });
+        const params = new URLSearchParams({ _token: lookupCsrfToken, id: walletId });
         const res = await fetch('/admin/wallets/lookup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
@@ -161,7 +160,7 @@ async function lookupWallet(walletId) {
         }
 
         const w = json.wallet;
-        const frozen = Number(w.is_frozen || 0) === 1 ? ' · Frozen' : '';
+        const frozen = Number(w.is_frozen || 0) === 1 ? ' | Frozen' : '';
         const available = String(w.available_balance ?? '0');
         walletLookupResult.className = 'mt-2 small text-success';
         walletLookupResult.textContent = `${w.username} (${w.email}) · ${w.currency_code} · Available: ${available}${frozen}`;
@@ -177,7 +176,7 @@ document.getElementById('lookupWalletBtn').addEventListener('click', function ()
 
 function runInitialLookup() {
     if (Number(initialWalletId) > 0) {
-        lookupWallet(currentWalletId());
+        lookupWallet(initialWalletId);
     }
 }
 

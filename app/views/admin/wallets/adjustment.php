@@ -127,6 +127,10 @@ $('#adjustmentTable').DataTable({ order:[[0,'desc']], pageLength:20 });
 const walletIdInput = document.getElementById('walletIdInput');
 const walletLookupResult = document.getElementById('walletLookupResult');
 
+function currentWalletId() {
+    return walletIdInput.value.trim();
+}
+
 async function lookupWallet(walletId) {
     if (!walletId || Number(walletId) < 1) {
         walletLookupResult.className = 'mt-2 small text-danger';
@@ -158,15 +162,12 @@ async function lookupWallet(walletId) {
 }
 
 document.getElementById('lookupWalletBtn').addEventListener('click', function () {
-    lookupWallet(walletIdInput.value.trim());
-});
-
-walletIdInput.addEventListener('change', function () {
-    if (this.value.trim() !== '') lookupWallet(this.value.trim());
+    lookupWallet(currentWalletId());
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    if (walletIdInput.value.trim() !== '') lookupWallet(walletIdInput.value.trim());
+    const walletId = currentWalletId();
+    if (walletId !== '') lookupWallet(walletId);
 });
 
 document.getElementById('adjustmentForm').addEventListener('submit', async function(e) {

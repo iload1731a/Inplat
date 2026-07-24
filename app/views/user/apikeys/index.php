@@ -18,7 +18,7 @@ require app_path('app/views/user/_nav.php');
     </div>
 
     <div class="alert alert-info small">
-        For trading bots: create a key, enable only required permissions (Read/Trade), and ask admin to enable live market feeds so chart/ticker data stays current.
+        For trading bots: create a key, enable only required permissions (Read/Trade), and request live market feed activation through a support ticket to the admin team.
     </div>
 
     <div class="table-responsive">

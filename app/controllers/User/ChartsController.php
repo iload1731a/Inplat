@@ -8,6 +8,7 @@ use App\Controllers\BaseController;
 use App\Libraries\Csrf;
 use App\Libraries\Request;
 use App\Libraries\Response;
+use App\Libraries\Session;
 use App\Middleware\AuthMiddleware;
 use App\Services\ChartService;
 use Throwable;
@@ -46,7 +47,7 @@ final class ChartsController extends BaseController
     public function index(Request $request): void
     {
         AuthMiddleware::ensureAuthenticated();
-        $userId   = (int)($_SESSION['user_id'] ?? 0);
+        $userId   = (int)(Session::get('auth.user_id') ?? 0);
         $symbol   = trim((string)$request->input('pair', 'BTCUSDT'));
         $interval = trim((string)$request->input('interval', '1h'));
 
@@ -207,7 +208,7 @@ final class ChartsController extends BaseController
     {
         AuthMiddleware::ensureAuthenticated();
         Csrf::verify($request);
-        $userId  = (int)($_SESSION['user_id'] ?? 0);
+        $userId  = (int)(Session::get('auth.user_id') ?? 0);
         $pairStr = trim((string)$request->input('pair', ''));
         $pairId  = null;
 
@@ -248,7 +249,7 @@ final class ChartsController extends BaseController
     public function listTemplates(Request $request): void
     {
         AuthMiddleware::ensureAuthenticated();
-        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $userId = (int)(Session::get('auth.user_id') ?? 0);
         try {
             $templates = $this->service->listTemplates($userId);
             Response::json(['ok' => true, 'templates' => $templates]);
@@ -265,7 +266,7 @@ final class ChartsController extends BaseController
     {
         AuthMiddleware::ensureAuthenticated();
         Csrf::verify($request);
-        $userId = (int)($_SESSION['user_id'] ?? 0);
+        $userId = (int)(Session::get('auth.user_id') ?? 0);
 
         $indicators = $request->input('indicators');
         if (is_string($indicators)) {
@@ -299,7 +300,7 @@ final class ChartsController extends BaseController
     {
         AuthMiddleware::ensureAuthenticated();
         Csrf::verify($request);
-        $userId     = (int)($_SESSION['user_id'] ?? 0);
+        $userId     = (int)(Session::get('auth.user_id') ?? 0);
         $templateId = (int)$request->input('id', 0);
 
         try {

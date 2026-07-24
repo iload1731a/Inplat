@@ -430,6 +430,7 @@ $router->get('/trading/tickers',              [UserTradingController::class, 'ti
 $router->get('/trading/recent-trades',        [UserTradingController::class, 'recentTrades']);
 $router->get('/trading/my-orders',            [UserTradingController::class, 'myOrders']);
 $router->get('/trading/my-positions',         [UserTradingController::class, 'myPositions']);
+$router->get('/dashboard', [UserDashboardController::class, 'index']);
 $router->get('/dashboard/metrics', [UserDashboardController::class, 'metrics']);
 $router->get('/trading', [UserPlatformController::class, 'index']);
 $router->get('/trading/snapshot', [UserPlatformController::class, 'snapshot']);

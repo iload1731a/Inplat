@@ -10,7 +10,7 @@ $csrf = \App\Libraries\Csrf::token();
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 mb-1">Market Data Sync</h1>
-        <p class="text-secondary mb-0">Binance exchange sync, ticker ingestion and candlestick updates.</p>
+        <p class="text-secondary mb-0">Binance exchange sync, ticker ingestion, and candlestick updates.</p>
     </div>
     <div class="d-flex gap-2">
         <a href="/admin/markets" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Overview</a>

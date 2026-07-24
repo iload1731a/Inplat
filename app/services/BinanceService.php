@@ -63,7 +63,7 @@ final class BinanceService
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
-            CURLOPT_USERAGENT => 'InplatMarketSync/1.0',
+            CURLOPT_USERAGENT => 'Inplat/MarketSync/1.0',
         ]);
 
         $response = curl_exec($ch);

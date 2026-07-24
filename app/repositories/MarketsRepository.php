@@ -721,7 +721,7 @@ final class MarketsRepository
             $interval = '1h';
         }
 
-        $preAgg = Database::connection()->prepare(
+        $preAggregatedStmt = Database::connection()->prepare(
             "SELECT open_time AS bucket,
                     open_price, high_price, low_price, close_price, volume
              FROM candlesticks
@@ -729,11 +729,11 @@ final class MarketsRepository
              ORDER BY open_time DESC
              LIMIT :lim"
         );
-        $preAgg->bindValue(':pid', $pairId, PDO::PARAM_INT);
-        $preAgg->bindValue(':iv', $interval);
-        $preAgg->bindValue(':lim', $limit, PDO::PARAM_INT);
-        $preAgg->execute();
-        $rows = $preAgg->fetchAll() ?: [];
+        $preAggregatedStmt->bindValue(':pid', $pairId, PDO::PARAM_INT);
+        $preAggregatedStmt->bindValue(':iv', $interval);
+        $preAggregatedStmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $preAggregatedStmt->execute();
+        $rows = $preAggregatedStmt->fetchAll() ?: [];
         if (count($rows) >= 5) {
             return array_reverse($rows);
         }

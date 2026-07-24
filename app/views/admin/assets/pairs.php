@@ -12,6 +12,9 @@ $csrf       = \App\Libraries\Csrf::token();
     </div>
     <div class="d-flex gap-2">
         <a href="/admin/assets" class="btn btn-outline-secondary btn-sm">← Assets</a>
+        <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#importPairsModal">
+            <i class="fas fa-file-import me-1"></i> Bulk Import
+        </button>
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPairModal">
             <i class="fas fa-plus me-1"></i> New Pair
         </button>
@@ -206,6 +209,89 @@ $csrf       = \App\Libraries\Csrf::token();
     <input type="hidden" name="pair_id" id="deletePairId">
 </form>
 
+<!-- Bulk Import Pairs Modal -->
+<div class="modal fade" id="importPairsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fas fa-file-import me-2"></i>Bulk Import Trading Pairs</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info small">
+                    <strong>Format (one pair per line):</strong>
+                    <code>SYMBOL BASE QUOTE [market_type]</code> &mdash;
+                    e.g. <code>BTCUSDT BTC USDT spot</code><br>
+                    Separate fields with spaces or commas.
+                    Pairs whose symbols already exist or whose currencies are not in the system are skipped.
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small">Default Market Type</label>
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary" id="importMarketType">
+                            <option value="spot">Spot</option>
+                            <option value="futures">Futures</option>
+                            <option value="margin">Margin</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Maker Fee %</label>
+                        <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" id="importMakerFee" value="0.1">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Taker Fee %</label>
+                        <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" id="importTakerFee" value="0.1">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Quick-fill popular pairs</label>
+                    <div class="d-flex flex-wrap gap-1">
+                        <?php
+                        $popularPairs = [
+                            'BTCUSDT BTC USDT spot',
+                            'ETHUSDT ETH USDT spot',
+                            'BNBUSDT BNB USDT spot',
+                            'SOLUSDT SOL USDT spot',
+                            'XRPUSDT XRP USDT spot',
+                            'ADAUSDT ADA USDT spot',
+                            'DOGEUSDT DOGE USDT spot',
+                            'TRXUSDT TRX USDT spot',
+                            'LTCUSDT LTC USDT spot',
+                            'DOTUSDT DOT USDT spot',
+                            'MATICUSDT MATIC USDT spot',
+                            'LINKUSDT LINK USDT spot',
+                            'AVAXUSDT AVAX USDT spot',
+                            'SHIBUSDT SHIB USDT spot',
+                            'ETHBTC ETH BTC spot',
+                            'BNBBTC BNB BTC spot',
+                        ];
+                        foreach ($popularPairs as $pp):
+                            $sym = explode(' ', $pp)[0];
+                        ?>
+                        <button type="button" class="btn btn-xs btn-outline-secondary quick-pair-btn"
+                                data-line="<?= e($pp) ?>"><?= e($sym) ?></button>
+                        <?php endforeach; ?>
+                        <button type="button" class="btn btn-xs btn-outline-info" id="fillAllPopular">+ All</button>
+                    </div>
+                </div>
+                <label class="form-label small">Pairs to Import</label>
+                <textarea class="form-control bg-dark text-light border-secondary font-monospace"
+                          id="importPairsText" rows="10"
+                          placeholder="BTCUSDT BTC USDT spot&#10;ETHUSDT ETH USDT spot&#10;SOLUSDT SOL USDT futures"></textarea>
+                <div class="form-text text-secondary">Each non-empty, non-comment (#) line is one pair.</div>
+                <div id="importResult" class="mt-3 d-none"></div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info fw-semibold" id="runImportBtn">
+                    <span class="spinner-border spinner-border-sm me-1 d-none" id="importSpinner"></span>
+                    <i class="fas fa-upload me-1"></i>Run Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function openEditPair(pair, currencies) {
     document.getElementById('editPairId').value = pair.id;
@@ -246,4 +332,74 @@ function deletePair(id, symbol) {
     document.getElementById('deletePairId').value = id;
     $('#deletePairForm').trigger('submit');
 }
+
+// Quick-fill individual popular pair
+document.querySelectorAll('.quick-pair-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const ta   = document.getElementById('importPairsText');
+        const line = this.dataset.line;
+        const existing = ta.value.trim();
+        if (existing === '') {
+            ta.value = line;
+        } else if (!existing.split('\n').includes(line)) {
+            ta.value = existing + '\n' + line;
+        }
+    });
+});
+
+// Fill ALL popular pairs at once
+document.getElementById('fillAllPopular').addEventListener('click', function() {
+    const lines = [];
+    document.querySelectorAll('.quick-pair-btn').forEach(function(btn) {
+        lines.push(btn.dataset.line);
+    });
+    document.getElementById('importPairsText').value = lines.join('\n');
+});
+
+// Run Bulk Import
+document.getElementById('runImportBtn').addEventListener('click', function() {
+    const text = document.getElementById('importPairsText').value.trim();
+    const csrf = <?= json_encode($csrf) ?>;
+    if (!text) {
+        Swal.fire({ icon: 'warning', title: 'Nothing to import', text: 'Please enter at least one pair.' });
+        return;
+    }
+    const btn     = this;
+    const spinner = document.getElementById('importSpinner');
+    btn.disabled  = true;
+    spinner.classList.remove('d-none');
+    const resultDiv = document.getElementById('importResult');
+    resultDiv.className = 'mt-3 d-none';
+    resultDiv.innerHTML = '';
+
+    const params = new URLSearchParams({
+        _token:            csrf,
+        pairs_text:        text,
+        market_type:       document.getElementById('importMarketType').value,
+        maker_fee_percent: document.getElementById('importMakerFee').value,
+        taker_fee_percent: document.getElementById('importTakerFee').value,
+    });
+
+    fetch('/admin/assets/pairs/import', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf },
+        body:    params.toString(),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        resultDiv.className = 'mt-3';
+        let html = '<div class="alert ' + (data.ok ? 'alert-success' : 'alert-danger') + ' small">' + data.message + '</div>';
+        if (data.errors && data.errors.length > 0) {
+            html += '<div class="alert alert-warning small"><strong>Skipped / Errors:</strong><ul class="mb-0">';
+            data.errors.forEach(function(e) { html += '<li>' + e + '</li>'; });
+            html += '</ul></div>';
+        }
+        resultDiv.innerHTML = html;
+        if (data.ok && data.created > 0) {
+            setTimeout(function() { location.reload(); }, 2200);
+        }
+    })
+    .catch(function() { Swal.fire({ icon: 'error', title: 'Request failed', text: 'Network error.' }); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('d-none'); });
+});
 </script>

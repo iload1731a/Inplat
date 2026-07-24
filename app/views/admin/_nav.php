@@ -1,5 +1,22 @@
 <?php declare(strict_types=1); ?>
 <?php $adminSection = (string)($adminSection ?? 'dashboard'); ?>
+<?php if (!empty($adminSidebarLayout)): ?>
+<!-- Compact context strip used when admin sidebar layout is active -->
+<div class="d-flex align-items-center gap-2 mb-4">
+    <nav aria-label="breadcrumb" class="flex-grow-1">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item">
+                <a href="/admin/dashboard" class="text-warning text-decoration-none">
+                    <i class="fas fa-shield-alt me-1"></i>Admin
+                </a>
+            </li>
+            <li class="breadcrumb-item active text-secondary">
+                <?= e((string)($title ?? ucfirst($adminSection))) ?>
+            </li>
+        </ol>
+    </nav>
+</div>
+<?php else: ?>
 <nav class="glass rounded-4 p-3 mb-4">
     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-2">
         <div>
@@ -61,3 +78,4 @@
         <?php endforeach; ?>
     </div>
 </nav>
+<?php endif; ?>

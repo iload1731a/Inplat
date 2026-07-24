@@ -122,6 +122,7 @@ $router->post('/admin/assets/currency/toggle', [AdminAssetsController::class, 't
 $router->post('/admin/assets/pair/create', [AdminAssetsController::class, 'createPair']);
 $router->post('/admin/assets/pair/update', [AdminAssetsController::class, 'updatePair']);
 $router->post('/admin/assets/pair/delete', [AdminAssetsController::class, 'deletePair']);
+$router->post('/admin/assets/pairs/import', [AdminAssetsController::class, 'importPairs']);
 
 // =====================================================================
 // ADMIN – Markets (Market Overview, Price Feed, Providers, Statistics)

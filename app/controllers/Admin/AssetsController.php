@@ -161,4 +161,84 @@ final class AssetsController extends AdminBaseController
         }
         Response::json(['ok' => true, 'message' => 'Trading pair deleted.', 'redirect' => '/admin/assets/pairs']);
     }
+
+    // -----------------------------------------------------------------------
+    // Bulk Pair Import
+    // -----------------------------------------------------------------------
+
+    /**
+     * Accept a JSON body (or form field `pairs_json`) containing an array of
+     * pair descriptors and bulk-import them.
+     *
+     * Alternatively accepts a plain-text textarea `pairs_text` with one
+     * "SYMBOL BASE QUOTE [market_type]" entry per line (space or comma separated).
+     */
+    public function importPairs(Request $request): void
+    {
+        $this->bootAdmin();
+        $this->requireCsrf($request);
+
+        $rows = [];
+
+        // Try textarea input: one pair per line  "BTCUSDT BTC USDT spot"
+        $rawText = trim((string)$request->input('pairs_text', ''));
+        if ($rawText !== '') {
+            foreach (preg_split('/\r?\n/', $rawText) ?: [] as $line) {
+                $line = trim($line);
+                if ($line === '' || str_starts_with($line, '#')) {
+                    continue;
+                }
+                // Accept comma or space separated
+                $parts = preg_split('/[\s,]+/', $line) ?: [];
+                if (count($parts) < 3) {
+                    continue;
+                }
+                $rows[] = [
+                    'symbol'      => strtoupper($parts[0]),
+                    'base_code'   => strtoupper($parts[1]),
+                    'quote_code'  => strtoupper($parts[2]),
+                    'market_type' => isset($parts[3]) ? strtolower($parts[3]) : 'spot',
+                ];
+            }
+        }
+
+        // Try JSON field
+        if ($rows === []) {
+            $jsonRaw = trim((string)$request->input('pairs_json', ''));
+            if ($jsonRaw !== '') {
+                $decoded = json_decode($jsonRaw, true);
+                if (is_array($decoded)) {
+                    $rows = $decoded;
+                }
+            }
+        }
+
+        if ($rows === []) {
+            Response::json(['ok' => false, 'message' => 'No pair data provided.'], 422);
+            return;
+        }
+
+        // Shared defaults from form
+        $defaults = [
+            'market_type'        => trim((string)$request->input('market_type', 'spot')),
+            'maker_fee_percent'  => $request->input('maker_fee_percent', '0.1'),
+            'taker_fee_percent'  => $request->input('taker_fee_percent', '0.1'),
+            'is_active'          => 1,
+            'trading_enabled'    => 1,
+            'is_visible'         => 1,
+        ];
+
+        try {
+            $result = $this->svc()->bulkImportPairs($this->adminId(), $rows, $defaults);
+            Response::json([
+                'ok'      => true,
+                'message' => "Import complete: {$result['created']} created, {$result['skipped']} skipped.",
+                'created' => $result['created'],
+                'skipped' => $result['skipped'],
+                'errors'  => $result['errors'],
+            ]);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
 }

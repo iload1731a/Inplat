@@ -25,6 +25,14 @@ abstract class AdminBaseController extends BaseController
         }
     }
 
+    /**
+     * Override to use admin sidebar layout for all admin views.
+     */
+    protected function view(string $view, array $data = []): void
+    {
+        \App\Libraries\View::render($view, $data, 'layouts/admin');
+    }
+
     protected function adminId(): int
     {
         return (int)(Session::get('auth.admin_id') ?? 0);

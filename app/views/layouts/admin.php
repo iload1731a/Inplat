@@ -1,10 +1,11 @@
 <?php declare(strict_types=1); ?>
 <?php
-$authUserId   = (int)(\App\Libraries\Session::get('auth.user_id') ?? 0);
-$authUsername = (string)(\App\Libraries\Session::get('auth.username') ?? 'Trader');
-$userSection  = (string)($userSection ?? 'dashboard');
-$pageTitle    = (string)($title ?? config('app.name'));
-$csrfToken    = \App\Libraries\Csrf::token();
+$authAdminId   = (int)(\App\Libraries\Session::get('auth.admin_id') ?? 0);
+$authAdminName = (string)(\App\Libraries\Session::get('auth.display_name') ?? \App\Libraries\Session::get('auth.username') ?? 'Admin');
+$adminSection  = (string)($adminSection ?? 'dashboard');
+$pageTitle     = (string)($title ?? config('app.name'));
+$csrfToken     = \App\Libraries\Csrf::token();
+$adminSidebarLayout = true;
 ?>
 <!doctype html>
 <html lang="en" data-bs-theme="dark" id="htmlRoot">
@@ -13,9 +14,7 @@ $csrfToken    = \App\Libraries\Csrf::token();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= e($csrfToken) ?>">
     <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title><?= e($pageTitle) ?> — <?= e((string)config('app.name')) ?></title>
+    <title><?= e($pageTitle) ?> — <?= e((string)config('app.name')) ?> Admin</title>
     <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome -->
@@ -27,116 +26,75 @@ $csrfToken    = \App\Libraries\Csrf::token();
         :root {
             --sidebar-w: 260px;
             --top-bar-h: 56px;
-            --bg-dark: #0f172a;
-            --bg-card: rgba(15,23,42,0.7);
+            --bg-dark: #0a0f1e;
+            --bg-card: rgba(10,15,30,0.75);
             --border-c: rgba(148,163,184,0.15);
-            --accent: #38bdf8;
+            --accent: #f59e0b;
         }
         * { box-sizing: border-box; }
-        body {
-            background: var(--bg-dark);
-            color: #e2e8f0;
-            font-family: 'Inter', system-ui, sans-serif;
-            min-height: 100vh;
-        }
+        body { background: var(--bg-dark); color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
         /* Layout */
         #wrapper { display: flex; min-height: 100vh; }
         /* Sidebar */
         #sidebar {
-            width: var(--sidebar-w);
-            min-height: 100vh;
-            background: rgba(2,8,23,0.95);
+            width: var(--sidebar-w); min-height: 100vh;
+            background: rgba(2,5,15,0.97);
             border-right: 1px solid var(--border-c);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            z-index: 1040;
-            transition: transform .25s ease;
+            display: flex; flex-direction: column;
+            position: fixed; top: 0; left: 0; bottom: 0;
+            z-index: 1040; transition: transform .25s ease;
         }
-        #sidebar .sidebar-brand {
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid var(--border-c);
-        }
+        #sidebar .sidebar-brand { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-c); }
         #sidebar .sidebar-user {
-            padding: .75rem 1.25rem;
-            border-bottom: 1px solid var(--border-c);
+            padding: .75rem 1.25rem; border-bottom: 1px solid var(--border-c);
             display: flex; align-items: center; gap: .75rem;
         }
         #sidebar .user-avatar {
-            width: 38px; height: 38px; border-radius: 50%;
-            background: linear-gradient(135deg,#38bdf8,#6366f1);
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg,#f59e0b,#ef4444);
             display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: .9rem; flex-shrink: 0;
+            font-weight: 700; font-size: .85rem; flex-shrink: 0;
         }
         #sidebar .sidebar-nav { flex: 1; overflow-y: auto; padding: .5rem 0; }
         #sidebar .nav-section-title {
-            padding: .5rem 1.25rem .25rem;
-            font-size: .65rem; font-weight: 700;
+            padding: .5rem 1.25rem .2rem;
+            font-size: .62rem; font-weight: 700;
             text-transform: uppercase; letter-spacing: .08em;
             color: #64748b;
         }
         #sidebar .nav-link {
-            padding: .45rem 1.25rem;
-            color: #94a3b8;
-            border-radius: 0;
-            display: flex; align-items: center; gap: .65rem;
-            font-size: .85rem; transition: all .15s;
+            padding: .4rem 1.25rem; color: #94a3b8; border-radius: 0;
+            display: flex; align-items: center; gap: .6rem;
+            font-size: .82rem; transition: all .15s;
         }
-        #sidebar .nav-link:hover { color: #e2e8f0; background: rgba(255,255,255,.05); }
-        #sidebar .nav-link.active { color: var(--accent); background: rgba(56,189,248,.08); border-left: 3px solid var(--accent); }
-        #sidebar .nav-link i { width: 16px; text-align: center; }
-        #sidebar .sidebar-balance {
-            padding: .75rem 1.25rem;
-            border-top: 1px solid var(--border-c);
-            font-size: .78rem;
-        }
+        #sidebar .nav-link:hover { color: #e2e8f0; background: rgba(255,255,255,.04); }
+        #sidebar .nav-link.active { color: var(--accent); background: rgba(245,158,11,.08); border-left: 3px solid var(--accent); }
+        #sidebar .nav-link i { width: 15px; text-align: center; }
+        #sidebar .sidebar-footer { padding: .75rem 1.25rem; border-top: 1px solid var(--border-c); font-size: .78rem; }
         /* Main area */
-        #main-wrapper {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            display: flex; flex-direction: column;
-            min-width: 0;
-        }
+        #main-wrapper { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-width: 0; }
         /* Top bar */
         #topbar {
-            height: var(--top-bar-h);
-            background: rgba(2,8,23,0.9);
+            height: var(--top-bar-h); background: rgba(2,5,15,.92);
             border-bottom: 1px solid var(--border-c);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 1.5rem;
-            position: sticky; top: 0; z-index: 1030;
+            padding: 0 1.5rem; position: sticky; top: 0; z-index: 1030;
             backdrop-filter: blur(12px);
         }
         /* Content */
         #page-content { padding: 1.5rem; flex: 1; }
         /* Glass card */
-        .glass {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-c);
-        }
-        /* Status badges */
+        .glass { background: var(--bg-card); backdrop-filter: blur(12px); border: 1px solid var(--border-c); }
+        /* Badges / status */
         .badge-pending   { background: #854d0e; color: #fde68a; }
         .badge-completed { background: #14532d; color: #86efac; }
         .badge-failed    { background: #7f1d1d; color: #fca5a5; }
         .badge-processing{ background: #1e3a5f; color: #93c5fd; }
-        .badge-open      { background: #14532d; color: #86efac; }
-        .badge-cancelled { background: #374151; color: #9ca3af; }
-        .badge-approved  { background: #14532d; color: #86efac; }
-        .badge-rejected  { background: #7f1d1d; color: #fca5a5; }
         /* Table dark */
-        .table-user { --bs-table-bg: transparent; --bs-table-color: #e2e8f0; }
-        .table-user thead th { color: #94a3b8; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; border-color: var(--border-c); }
-        .table-user td { border-color: var(--border-c); vertical-align: middle; }
-        /* PnL */
-        .text-profit { color: #34d399; }
-        .text-loss   { color: #f87171; }
-        /* Mobile sidebar overlay */
-        #sidebarOverlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,.5); z-index: 1039;
-        }
+        .table-admin { --bs-table-bg: transparent; --bs-table-color: #e2e8f0; }
+        .table-admin thead th { color: #94a3b8; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; border-color: var(--border-c); }
+        .table-admin td { border-color: var(--border-c); vertical-align: middle; }
+        /* Misc */
         .btn-xs { padding: .1rem .4rem; font-size: .75rem; }
         /* DataTables dark */
         .dataTables_wrapper .dataTables_length select,
@@ -144,111 +102,105 @@ $csrfToken    = \App\Libraries\Csrf::token();
             background: rgba(30,41,59,.8); color: #e2e8f0; border: 1px solid var(--border-c); border-radius: .375rem;
         }
         .dataTables_wrapper .dataTables_info,
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            color: #94a3b8 !important;
-        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button { color: #94a3b8 !important; }
         .dataTables_wrapper .dataTables_paginate .paginate_button.current {
             background: var(--accent) !important; color: #0f172a !important; border-color: var(--accent) !important;
         }
+        /* Mobile sidebar overlay */
+        #sidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1039; }
         @media (max-width: 991.98px) {
             #sidebar { transform: translateX(-100%); }
             #sidebar.show { transform: translateX(0); }
             #sidebarOverlay { display: block; }
             #main-wrapper { margin-left: 0; }
         }
-        /* Animated counter */
-        .counter-animate { transition: all .3s ease; }
-        /* Light mode overrides */
+        /* Light mode */
         html[data-bs-theme="light"] body { background: #f1f5f9; color: #1e293b; }
         html[data-bs-theme="light"] #sidebar { background: #fff; border-right-color: #e2e8f0; }
         html[data-bs-theme="light"] #topbar { background: rgba(255,255,255,.95); border-bottom-color: #e2e8f0; }
         html[data-bs-theme="light"] .glass { background: rgba(255,255,255,.8); border-color: #e2e8f0; }
         html[data-bs-theme="light"] #sidebar .nav-link { color: #475569; }
         html[data-bs-theme="light"] #sidebar .nav-link:hover { color: #1e293b; background: rgba(0,0,0,.04); }
-        html[data-bs-theme="light"] #sidebar .nav-link.active { color: #0284c7; background: rgba(3,105,161,.08); }
+        html[data-bs-theme="light"] #sidebar .nav-link.active { color: #b45309; background: rgba(180,83,9,.08); }
     </style>
 </head>
 <body>
 <?php require app_path('app/views/partials/demo_banner.php'); ?>
-<div id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div id="sidebarOverlay" onclick="toggleAdminSidebar()"></div>
 <div id="wrapper">
     <!-- ===== Sidebar ===== -->
     <nav id="sidebar">
         <div class="sidebar-brand">
-            <a href="/dashboard" class="text-decoration-none d-flex align-items-center gap-2">
-                <i class="fas fa-chart-line text-info fs-5"></i>
+            <a href="/admin/dashboard" class="text-decoration-none d-flex align-items-center gap-2">
+                <i class="fas fa-shield-alt text-warning fs-5"></i>
                 <span class="fw-bold fs-6"><?= e((string)config('app.name')) ?></span>
+                <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">Admin</span>
             </a>
         </div>
         <div class="sidebar-user">
-            <div class="user-avatar"><?= e(mb_strtoupper(mb_substr($authUsername, 0, 2))) ?></div>
+            <div class="user-avatar"><?= e(mb_strtoupper(mb_substr($authAdminName, 0, 2))) ?></div>
             <div class="overflow-hidden">
-                <div class="fw-semibold text-truncate small"><?= e($authUsername) ?></div>
-                <div class="text-secondary" style="font-size:.7rem">Trader Account</div>
+                <div class="fw-semibold text-truncate small"><?= e($authAdminName) ?></div>
+                <div class="text-secondary" style="font-size:.7rem">Administrator</div>
             </div>
         </div>
         <div class="sidebar-nav">
             <?php
-            $nav = [
-                'Main' => [
-                    'dashboard'  => ['/dashboard',         'fa-tachometer-alt', 'Dashboard'],
-                    'markets'    => ['/markets',            'fa-chart-area',     'Markets'],
-                    'charts'     => ['/charts',             'fa-chart-line',     'Charts'],
+            $adminNav = [
+                'Core' => [
+                    'dashboard'     => ['/admin/dashboard',   'fa-tachometer-alt',  'Dashboard'],
+                    'platform'      => ['/admin/platform',    'fa-th-large',         'Module Overview'],
                 ],
-                'Trading' => [
-                    'trading-terminal' => ['/trade',              'fa-exchange-alt',  'Trading Terminal'],
-                    'trading'    => ['/trading',           'fa-chart-candlestick', 'Spot Trading'],
-                    'markets-watchlist' => ['/markets/watchlist', 'fa-star',          'Watchlist'],
-                    'orders'     => ['/user/orders',       'fa-list-ol',       'Open Orders'],
-                    'orders-history' => ['/user/orders/history', 'fa-history', 'Order History'],
-                    'staking'    => ['/staking',           'fa-lock',          'Staking'],
-                    'convert'    => ['/convert',           'fa-exchange-alt',  'Convert'],
+                'Users' => [
+                    'users'         => ['/admin/users',        'fa-users',           'Users'],
+                    'kyc'           => ['/admin/kyc',          'fa-id-card',         'KYC'],
+                    'roles'         => ['/admin/roles',        'fa-user-shield',     'Roles & Permissions'],
                 ],
-                'Signals & Alerts' => [
-                    'signals'       => ['/user/signals',           'fa-broadcast-tower','Signals'],
-                    'signals-feed'  => ['/user/signals/feed',      'fa-chart-bar',     'Signal Feed'],
-                    'signals-alerts'=> ['/user/signals/alerts',    'fa-bell',          'Price Alerts'],
-                    'signals-auto'  => ['/user/signals/automation','fa-robot',         'Automation'],
-                    'signals-perf'  => ['/user/signals/performance','fa-trophy',       'Performance'],
+                'Markets' => [
+                    'markets'       => ['/admin/markets',       'fa-chart-area',      'Markets Overview'],
+                    'assets'        => ['/admin/assets',        'fa-coins',           'Assets & Currencies'],
+                    'assets-pairs'  => ['/admin/assets/pairs',  'fa-exchange-alt',    'Trading Pairs'],
+                    'charts'        => ['/admin/charts',        'fa-chart-line',      'Market Analytics'],
+                    'trading-engine'=> ['/admin/trading-engine','fa-cogs',            'Trading Engine'],
+                    'orders'        => ['/admin/orders',        'fa-list-ol',         'Orders'],
+                    'trades'        => ['/admin/trades',        'fa-receipt',         'Trades'],
+                    'positions'     => ['/admin/positions',     'fa-layer-group',     'Positions'],
+                    'signals'       => ['/admin/signals',       'fa-broadcast-tower', 'Signals'],
                 ],
-                'Portfolio' => [
-                    'positions'  => ['/user/positions',    'fa-layer-group',   'Positions'],
-                    'trades'     => ['/user/trades',       'fa-receipt',       'Trade History'],
+                'Finance' => [
+                    'wallets'       => ['/admin/wallets',       'fa-wallet',          'Wallets'],
+                    'deposits'      => ['/admin/deposits',      'fa-arrow-down',      'Deposits'],
+                    'withdrawals'   => ['/admin/withdrawals',   'fa-arrow-up',        'Withdrawals'],
+                    'affiliate'     => ['/admin/affiliate',     'fa-network-wired',   'Affiliate'],
                 ],
-                'Wallet' => [
-                    'wallet'          => ['/user/wallet',           'fa-wallet',                  'Overview'],
-                    'deposit'         => ['/user/deposit',          'fa-arrow-down-to-bracket',   'Deposit'],
-                    'withdraw'        => ['/user/withdrawal',       'fa-arrow-up-from-bracket',   'Withdraw'],
-                    'transfer'        => ['/user/wallet/transfer',  'fa-exchange-alt',            'Transfer'],
-                    'wallet-history'  => ['/user/wallet/history',   'fa-clock-rotate-left',       'History'],
-                    'wallet-addresses'=> ['/user/wallet/addresses', 'fa-shield-alt',              'Addresses'],
+                'Operations' => [
+                    'tickets'       => ['/admin/tickets',       'fa-headset',         'Support Tickets'],
+                    'notifications' => ['/admin/notifications', 'fa-bell',            'Notifications'],
+                    'cms'           => ['/admin/cms',           'fa-globe',           'CMS'],
+                    'content'       => ['/admin/content',       'fa-file-alt',        'Content'],
+                    'logs'          => ['/admin/logs',          'fa-history',         'Logs'],
                 ],
-                'Account' => [
-                    'profile'    => ['/user/profile',      'fa-user-circle',   'Profile'],
-                    'kyc'        => ['/user/kyc',          'fa-id-card',       'KYC Verification'],
-                    'security'   => ['/user/security',     'fa-shield-halved', 'Security'],
-                    'apikeys'    => ['/user/api-keys',     'fa-key',           'API Keys'],
-                    'notifications' => ['/user/notifications','fa-bell',       'Notifications'],
-                ],
-                'Support' => [
-                    'tickets'    => ['/user/tickets',      'fa-headset',       'Support Tickets'],
-                    'referral'   => ['/user/referral',     'fa-users',         'Referral Program'],
+                'System' => [
+                    'system'        => ['/admin/system',        'fa-cog',             'System'],
+                    'settings'      => ['/admin/settings',      'fa-sliders-h',       'Settings'],
                 ],
             ];
-            foreach ($nav as $sectionName => $items):
+            foreach ($adminNav as $sectionName => $items):
             ?>
             <div class="nav-section-title"><?= e($sectionName) ?></div>
             <?php foreach ($items as $key => [$href, $icon, $label]): ?>
-            <a class="nav-link <?= $userSection === $key ? 'active' : '' ?>" href="<?= e($href) ?>">
+            <a class="nav-link <?= $adminSection === $key ? 'active' : '' ?>" href="<?= e($href) ?>">
                 <i class="fas <?= e($icon) ?> fa-fw"></i>
                 <?= e($label) ?>
             </a>
             <?php endforeach; ?>
             <?php endforeach; ?>
         </div>
-        <div class="sidebar-balance text-secondary">
+        <div class="sidebar-footer text-secondary">
             <div class="d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-circle-dot text-success me-1" style="font-size:.5rem"></i>Connected</span>
+                <a href="/dashboard" class="text-secondary text-decoration-none small">
+                    <i class="fas fa-user me-1"></i>User Panel
+                </a>
                 <form action="/logout" method="post" class="m-0">
                     <input type="hidden" name="_token" value="<?= e($csrfToken) ?>">
                     <button class="btn btn-xs btn-outline-danger" type="submit"><i class="fas fa-sign-out-alt"></i></button>
@@ -261,12 +213,12 @@ $csrfToken    = \App\Libraries\Csrf::token();
         <!-- Top Bar -->
         <header id="topbar">
             <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary d-lg-none" onclick="toggleSidebar()">
+                <button class="btn btn-sm btn-outline-secondary d-lg-none" onclick="toggleAdminSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
                 <span class="text-secondary small d-none d-md-inline">
-                    <i class="fas fa-home me-1"></i>
-                    <?= e((string)($title ?? 'Dashboard')) ?>
+                    <i class="fas fa-shield-alt me-1 text-warning"></i>
+                    <?= e($pageTitle) ?>
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -274,28 +226,15 @@ $csrfToken    = \App\Libraries\Csrf::token();
                 <button class="btn btn-sm btn-outline-secondary" id="themeToggle" title="Toggle theme">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
-                <!-- Notifications -->
-                <a href="/user/notifications" class="btn btn-sm btn-outline-secondary position-relative" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <?php
-                    $notifCount = (int)(\App\Libraries\Session::get('auth.unread_notifications') ?? 0);
-                    if ($notifCount > 0):
-                    ?>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem">
-                        <?= $notifCount > 99 ? '99+' : $notifCount ?>
-                    </span>
-                    <?php endif; ?>
-                </a>
                 <!-- User dropdown -->
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-1"></i>
-                        <span class="d-none d-sm-inline"><?= e($authUsername) ?></span>
+                    <button class="btn btn-sm btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        <span class="d-none d-sm-inline"><?= e($authAdminName) ?></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end glass border-0">
-                        <li><a class="dropdown-item" href="/user/profile"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li><a class="dropdown-item" href="/user/security"><i class="fas fa-shield-halved me-2"></i>Security</a></li>
-                        <li><a class="dropdown-item" href="/user/api-keys"><i class="fas fa-key me-2"></i>API Keys</a></li>
+                        <li><a class="dropdown-item" href="/admin/dashboard"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                        <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-user me-2"></i>User Panel</a></li>
                         <li><hr class="dropdown-divider border-secondary"></li>
                         <li>
                             <form action="/logout" method="post">
@@ -330,14 +269,13 @@ $csrfToken    = \App\Libraries\Csrf::token();
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- ApexCharts -->
+<!-- ApexCharts + Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.48.0/dist/apexcharts.min.js"></script>
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
 // Theme persistence
 (function () {
-    const saved = localStorage.getItem('uiTheme') || 'dark';
+    const saved = localStorage.getItem('adminUiTheme') || 'dark';
     document.getElementById('htmlRoot').setAttribute('data-bs-theme', saved);
     const icon = document.getElementById('themeIcon');
     if (icon) icon.className = saved === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
@@ -348,11 +286,11 @@ document.getElementById('themeToggle')?.addEventListener('click', function () {
     const current = html.getAttribute('data-bs-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-bs-theme', next);
-    localStorage.setItem('uiTheme', next);
+    localStorage.setItem('adminUiTheme', next);
     document.getElementById('themeIcon').className = next === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
 });
 
-function toggleSidebar() {
+function toggleAdminSidebar() {
     document.getElementById('sidebar').classList.toggle('show');
 }
 

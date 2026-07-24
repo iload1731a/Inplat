@@ -18,12 +18,24 @@ abstract class BaseController
         View::render($view, $data, 'layouts/user');
     }
 
+    protected function adminView(string $view, array $data = []): void
+    {
+        View::render($view, $data, 'layouts/admin');
+    }
+
     /**
-     * Smart render: picks user layout for user/* views, main layout otherwise.
+     * Smart render: picks user layout for user/* views, admin layout for admin/* views,
+     * main layout otherwise.
      */
     protected function render(string $view, array $data = []): void
     {
-        $layout = str_starts_with($view, 'user/') ? 'layouts/user' : 'layouts/main';
+        if (str_starts_with($view, 'user/')) {
+            $layout = 'layouts/user';
+        } elseif (str_starts_with($view, 'admin/')) {
+            $layout = 'layouts/admin';
+        } else {
+            $layout = 'layouts/main';
+        }
         View::render($view, $data, $layout);
     }
 }

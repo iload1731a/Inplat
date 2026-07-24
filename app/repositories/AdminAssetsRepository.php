@@ -228,6 +228,33 @@ final class AdminAssetsRepository
         $stmt->execute();
     }
 
+    /**
+     * Find a currency record by its uppercase code.
+     */
+    public function findCurrencyByCode(string $code): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, code, name FROM currencies WHERE code = :code LIMIT 1'
+        );
+        $stmt->bindValue(':code', strtoupper(trim($code)));
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row === false ? null : $row;
+    }
+
+    /**
+     * Check whether a trading pair with the given symbol already exists.
+     */
+    public function tradingPairExistsBySymbol(string $symbol): bool
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT COUNT(*) FROM trading_pairs WHERE symbol = :s LIMIT 1'
+        );
+        $stmt->bindValue(':s', strtoupper(trim($symbol)));
+        $stmt->execute();
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
     private function bindPairData(array $data): array
     {
         return [

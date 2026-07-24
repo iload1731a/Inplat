@@ -458,7 +458,7 @@ final class AdminManagementService
     public function updateTradingPair(int $adminId, int $pairId, array $payload): void
     {
         if ($pairId <= 0) {
-            throw new \InvalidArgumentException('Invalid trading pair ID.');
+            throw new InvalidArgumentException('Invalid trading pair ID.');
         }
 
         $this->repository->updateTradingPair($pairId, $adminId, $payload);
@@ -467,10 +467,10 @@ final class AdminManagementService
     public function haltTrading(int $adminId, int $pairId, string $reason): int
     {
         if ($pairId <= 0) {
-            throw new \InvalidArgumentException('Invalid trading pair ID.');
+            throw new InvalidArgumentException('Invalid trading pair ID.');
         }
         if (trim($reason) === '') {
-            throw new \InvalidArgumentException('Halt reason is required.');
+            throw new InvalidArgumentException('Halt reason is required.');
         }
 
         return $this->repository->createTradingHalt($pairId, $adminId, trim($reason));
@@ -479,7 +479,7 @@ final class AdminManagementService
     public function resolveHalt(int $adminId, int $haltId): void
     {
         if ($haltId <= 0) {
-            throw new \InvalidArgumentException('Invalid halt ID.');
+            throw new InvalidArgumentException('Invalid halt ID.');
         }
 
         $this->repository->resolveTradingHalt($haltId, $adminId);
@@ -504,7 +504,7 @@ final class AdminManagementService
     {
         $allowed = ['open', 'investigating', 'resolved', 'false_positive'];
         if (!in_array($status, $allowed, true)) {
-            throw new \InvalidArgumentException('Invalid risk flag status.');
+            throw new InvalidArgumentException('Invalid risk flag status.');
         }
 
         $this->repository->updateRiskFlag($flagId, $adminId, $status, $assignedTo);
@@ -514,7 +514,7 @@ final class AdminManagementService
     {
         $ip = trim($ip);
         if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            throw new \InvalidArgumentException('Invalid IP address format.');
+            throw new InvalidArgumentException('Invalid IP address format.');
         }
 
         $this->repository->blockIP($ip, $adminId, trim($reason));
@@ -523,7 +523,7 @@ final class AdminManagementService
     public function unblockIP(int $adminId, int $entryId): void
     {
         if ($entryId <= 0) {
-            throw new \InvalidArgumentException('Invalid entry ID.');
+            throw new InvalidArgumentException('Invalid entry ID.');
         }
 
         $this->repository->unblockIP($entryId, $adminId);
@@ -541,7 +541,7 @@ final class AdminManagementService
         }
 
         if ($reason === '') {
-            throw new \InvalidArgumentException('Ban reason is required.');
+            throw new InvalidArgumentException('Ban reason is required.');
         }
 
         $this->repository->banUser($userId, $reason);
@@ -552,7 +552,7 @@ final class AdminManagementService
     {
         $user = $this->repository->getUserBasic($userId);
         if ($user === null) {
-            throw new \InvalidArgumentException('User not found.');
+            throw new InvalidArgumentException('User not found.');
         }
 
         $this->repository->unbanUser($userId);
@@ -563,7 +563,7 @@ final class AdminManagementService
     {
         $user = $this->repository->getUserBasic($userId);
         if ($user === null) {
-            throw new \InvalidArgumentException('User not found.');
+            throw new InvalidArgumentException('User not found.');
         }
 
         $this->repository->resetUserTwoFactor($userId);
@@ -574,7 +574,7 @@ final class AdminManagementService
     {
         $user = $this->repository->getUserBasic($userId);
         if ($user === null) {
-            throw new \InvalidArgumentException('User not found.');
+            throw new InvalidArgumentException('User not found.');
         }
 
         $this->repository->revokeAllUserSessions($userId);
@@ -585,7 +585,7 @@ final class AdminManagementService
     {
         $user = $this->repository->getUserBasic($userId);
         if ($user === null) {
-            throw new \InvalidArgumentException('User not found.');
+            throw new InvalidArgumentException('User not found.');
         }
 
         if (mb_strlen($newPassword) < 8) {

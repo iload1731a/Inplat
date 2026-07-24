@@ -301,7 +301,7 @@ final class InstallerController extends BaseController
 
         if ($prefix === 'ALTER') {
             $matches = [];
-            $matched = preg_match('/^\s*ALTER\s+TABLE\s+(`[^`]+`|[A-Za-z0-9_.]+)\s+(.+)$/is', $normalized, $matches) === 1;
+            $matched = preg_match('/^\s*ALTER\s+TABLE\s+((?:`[^`]+`|[A-Za-z_][A-Za-z0-9_]*)(?:\.(?:`[^`]+`|[A-Za-z_][A-Za-z0-9_]*))?)\s+(.+)$/is', $normalized, $matches) === 1;
             if (!$matched) {
                 throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
             }
@@ -309,7 +309,7 @@ final class InstallerController extends BaseController
             $clauses = $this->splitSqlAlterClauses($matches[2]);
             foreach ($clauses as $clause) {
                 if (preg_match('/^\s*ADD\b/i', $clause) !== 1) {
-                    throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
+                    throw new \RuntimeException('Unsupported ALTER TABLE clause in schema import: ' . substr(trim($clause), 0, 80));
                 }
             }
         }
@@ -355,7 +355,10 @@ final class InstallerController extends BaseController
             if (!$inSingle && !$inDouble) {
                 if ($char === '(') {
                     $parenDepth++;
-                } elseif ($char === ')' && $parenDepth > 0) {
+                } elseif ($char === ')') {
+                    if ($parenDepth === 0) {
+                        throw new \RuntimeException('Invalid ALTER TABLE syntax in schema import.');
+                    }
                     $parenDepth--;
                 }
 

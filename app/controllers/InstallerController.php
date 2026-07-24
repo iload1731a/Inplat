@@ -289,8 +289,8 @@ final class InstallerController extends BaseController
     {
         $normalized = ltrim($statement);
         $prefix = strtoupper((string)strtok($normalized, " \n\t\r"));
-        $allowed = ['SET', 'CREATE', 'USE', 'INSERT'];
-        $disallowedPattern = '/\\b(DROP|DELETE|TRUNCATE|RENAME|GRANT|REVOKE)\\b/i';
+        $allowed = ['SET', 'CREATE', 'USE', 'INSERT', 'ALTER'];
+        $disallowedPattern = '/^\s*(DROP|DELETE|TRUNCATE|RENAME|GRANT|REVOKE)\b/i';
 
         if (!in_array($prefix, $allowed, true) || preg_match($disallowedPattern, $normalized) === 1) {
             throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);

@@ -18,7 +18,7 @@ final class AffiliateController extends AdminBaseController
         return new AdminAffiliateService();
     }
 
-    private function adminId(): int
+    protected function adminId(): int
     {
         return (int)(Session::get('auth.user_id') ?? 0);
     }

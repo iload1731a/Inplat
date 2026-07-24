@@ -11,8 +11,8 @@ final class AdminLogsRepository
 {
     public function listAdminActivityLogs(array $filters = []): array
     {
-        $sql = "SELECT aal.id, aal.admin_id, aal.action, aal.resource_type, aal.resource_id,
-                       aal.ip_address, aal.created_at, aal.changes_json,
+        $sql = "SELECT aal.id, aal.admin_id, aal.action, aal.entity_type, aal.entity_id,
+                       aal.ip_address, aal.created_at, aal.new_values,
                        COALESCE(au.full_name, au.username) AS admin_name
                 FROM admin_activity_logs aal
                 LEFT JOIN admin_users au ON au.id = aal.admin_id
@@ -22,7 +22,7 @@ final class AdminLogsRepository
 
         $search = trim((string)($filters['search'] ?? ''));
         if ($search !== '') {
-            $sql .= ' AND (aal.action LIKE :search OR aal.resource_type LIKE :search OR au.username LIKE :search)';
+            $sql .= ' AND (aal.action LIKE :search OR aal.entity_type LIKE :search OR au.username LIKE :search)';
             $params['search'] = '%' . $search . '%';
         }
 
@@ -59,8 +59,8 @@ final class AdminLogsRepository
 
     public function listAuditLogs(array $filters = []): array
     {
-        $sql = "SELECT al.id, al.actor_type, al.actor_id, al.action, al.resource_type,
-                       al.resource_id, al.ip_address, al.user_agent, al.created_at
+        $sql = "SELECT al.id, al.actor_type, al.actor_id, al.event,
+                       al.description, al.ip_address, al.created_at
                 FROM audit_logs al
                 WHERE 1=1";
 
@@ -68,7 +68,7 @@ final class AdminLogsRepository
 
         $search = trim((string)($filters['search'] ?? ''));
         if ($search !== '') {
-            $sql .= ' AND (al.action LIKE :search OR al.resource_type LIKE :search)';
+            $sql .= ' AND (al.event LIKE :search OR al.description LIKE :search)';
             $params['search'] = '%' . $search . '%';
         }
 

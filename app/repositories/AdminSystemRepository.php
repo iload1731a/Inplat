@@ -16,12 +16,12 @@ final class AdminSystemRepository
     public function listFeatureFlags(): array
     {
         $stmt = Database::connection()->query(
-            "SELECT ff.id, ff.flag_key, ff.description, ff.is_enabled, ff.rollout_percentage,
+            "SELECT ff.id, ff.flag_key, ff.description, ff.is_enabled_globally, ff.rollout_percent,
                     ff.created_at, ff.updated_at,
                     COUNT(DISTINCT ffo.id) AS override_count
              FROM feature_flags ff
-             LEFT JOIN feature_flag_overrides ffo ON ffo.flag_id = ff.id
-             GROUP BY ff.id, ff.flag_key, ff.description, ff.is_enabled, ff.rollout_percentage, ff.created_at, ff.updated_at
+             LEFT JOIN feature_flag_overrides ffo ON ffo.feature_flag_id = ff.id
+             GROUP BY ff.id, ff.flag_key, ff.description, ff.is_enabled_globally, ff.rollout_percent, ff.created_at, ff.updated_at
              ORDER BY ff.flag_key ASC"
         );
         return $stmt->fetchAll() ?: [];
@@ -42,7 +42,7 @@ final class AdminSystemRepository
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            'INSERT INTO feature_flags (flag_key, description, is_enabled, rollout_percentage, created_at, updated_at)
+            'INSERT INTO feature_flags (flag_key, description, is_enabled_globally, rollout_percent, created_at, updated_at)
              VALUES (:key, :desc, :enabled, :rollout, NOW(), NOW())'
         );
         $stmt->execute([':key' => $key, ':desc' => $description, ':enabled' => (int)$enabled, ':rollout' => $rollout]);
@@ -52,7 +52,7 @@ final class AdminSystemRepository
     public function updateFeatureFlag(int $id, string $key, string $description, bool $enabled, int $rollout): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE feature_flags SET flag_key = :key, description = :desc, is_enabled = :enabled, rollout_percentage = :rollout, updated_at = NOW()
+            'UPDATE feature_flags SET flag_key = :key, description = :desc, is_enabled_globally = :enabled, rollout_percent = :rollout, updated_at = NOW()
              WHERE id = :id'
         );
         $stmt->execute([':key' => $key, ':desc' => $description, ':enabled' => (int)$enabled, ':rollout' => $rollout, ':id' => $id]);
@@ -72,12 +72,12 @@ final class AdminSystemRepository
     public function listMaintenanceWindows(): array
     {
         $stmt = Database::connection()->query(
-            "SELECT mw.id, mw.title, mw.description, mw.status, mw.scheduled_start, mw.scheduled_end,
-                    mw.actual_start, mw.actual_end, mw.created_at,
+            "SELECT mw.id, mw.title, mw.affected_services, mw.starts_at, mw.ends_at,
+                    mw.is_active, mw.created_at,
                     COALESCE(au.full_name, au.username) AS created_by_name
              FROM maintenance_windows mw
              LEFT JOIN admin_users au ON au.id = mw.created_by
-             ORDER BY mw.scheduled_start DESC
+             ORDER BY mw.starts_at DESC
              LIMIT 50"
         );
         return $stmt->fetchAll() ?: [];
@@ -87,36 +87,26 @@ final class AdminSystemRepository
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            "INSERT INTO maintenance_windows (title, description, status, scheduled_start, scheduled_end, created_by, created_at, updated_at)
-             VALUES (:title, :desc, 'scheduled', :starts, :ends, :created_by, NOW(), NOW())"
+            "INSERT INTO maintenance_windows (title, affected_services, starts_at, ends_at, is_active, created_by, created_at)
+             VALUES (:title, :affected_services, :starts_at, :ends_at, :is_active, :created_by, NOW())"
         );
         $stmt->execute([
-            ':title'      => trim((string)($data['title'] ?? '')),
-            ':desc'       => trim((string)($data['description'] ?? '')),
-            ':starts'     => (string)($data['scheduled_start'] ?? ''),
-            ':ends'       => ($data['scheduled_end'] ?? '') !== '' ? $data['scheduled_end'] : null,
-            ':created_by' => $adminId,
+            ':title'             => trim((string)($data['title'] ?? '')),
+            ':affected_services' => trim((string)($data['affected_services'] ?? $data['description'] ?? '')),
+            ':starts_at'         => (string)($data['starts_at'] ?? $data['scheduled_start'] ?? ''),
+            ':ends_at'           => ($data['ends_at'] ?? $data['scheduled_end'] ?? '') !== '' ? ($data['ends_at'] ?? $data['scheduled_end']) : null,
+            ':is_active'         => (int)(bool)($data['is_active'] ?? 1),
+            ':created_by'        => $adminId,
         ]);
         return (int)$pdo->lastInsertId();
     }
 
-    public function updateMaintenanceStatus(int $id, string $status): void
+    public function updateMaintenanceStatus(int $id, bool $isActive): void
     {
-        $pdo = Database::connection();
-        if ($status === 'in_progress') {
-            $stmt = $pdo->prepare(
-                'UPDATE maintenance_windows SET status = :status, actual_start = NOW(), updated_at = NOW() WHERE id = :id'
-            );
-        } elseif (in_array($status, ['completed', 'cancelled'], true)) {
-            $stmt = $pdo->prepare(
-                'UPDATE maintenance_windows SET status = :status, actual_end = NOW(), updated_at = NOW() WHERE id = :id'
-            );
-        } else {
-            $stmt = $pdo->prepare(
-                'UPDATE maintenance_windows SET status = :status, updated_at = NOW() WHERE id = :id'
-            );
-        }
-        $stmt->bindValue(':status', $status);
+        $stmt = Database::connection()->prepare(
+            'UPDATE maintenance_windows SET is_active = :is_active WHERE id = :id'
+        );
+        $stmt->bindValue(':is_active', (int)$isActive, PDO::PARAM_INT);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
     }
@@ -172,8 +162,8 @@ final class AdminSystemRepository
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            "INSERT INTO system_settings (setting_key, setting_value, value_type, category, description, is_public, created_at, updated_at)
-             VALUES (:key, :value, :type, :category, :desc, :is_public, NOW(), NOW())"
+            "INSERT INTO system_settings (setting_key, setting_value, value_type, category, description, is_public)
+             VALUES (:key, :value, :type, :category, :desc, :is_public)"
         );
         $stmt->execute([
             ':key'       => trim((string)($data['setting_key'] ?? '')),
@@ -213,25 +203,25 @@ final class AdminSystemRepository
     public function listWebhooks(): array
     {
         $stmt = Database::connection()->query(
-            'SELECT id, url, event_types, is_active, secret_hash, created_at FROM webhooks WHERE deleted_at IS NULL ORDER BY id DESC'
+            'SELECT id, event, target_url, is_active, created_at FROM webhooks ORDER BY id DESC'
         );
         return $stmt->fetchAll() ?: [];
     }
 
-    public function createWebhook(string $url, string $events, string $secretHash): int
+    public function createWebhook(string $url, string $event, string $secret): int
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            "INSERT INTO webhooks (url, event_types, secret_hash, is_active, created_at, updated_at)
-             VALUES (:url, :events, :secret, 1, NOW(), NOW())"
+            "INSERT INTO webhooks (event, target_url, secret, is_active, created_at)
+             VALUES (:event, :url, :secret, 1, NOW())"
         );
-        $stmt->execute([':url' => $url, ':events' => $events, ':secret' => $secretHash]);
+        $stmt->execute([':event' => $event, ':url' => $url, ':secret' => $secret]);
         return (int)$pdo->lastInsertId();
     }
 
     public function deleteWebhook(int $id): void
     {
-        $stmt = Database::connection()->prepare('UPDATE webhooks SET deleted_at = NOW() WHERE id = :id');
+        $stmt = Database::connection()->prepare('DELETE FROM webhooks WHERE id = :id');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
     }

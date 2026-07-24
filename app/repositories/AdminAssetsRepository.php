@@ -15,14 +15,14 @@ final class AdminAssetsRepository
 
     public function listCurrencies(array $filters = []): array
     {
-        $sql = "SELECT c.id, c.code, c.name, c.symbol, c.type, c.precision, c.is_active,
-                       c.min_deposit, c.max_deposit, c.min_withdrawal, c.max_withdrawal,
-                       c.withdrawal_fee_flat, c.withdrawal_fee_percent, c.deposit_fee_flat,
-                       c.network, c.contract_address, c.explorer_url, c.icon_url, c.created_at,
+        $sql = "SELECT c.id, c.code, c.name, c.type, c.decimals, c.is_active,
+                       c.min_withdrawal, c.max_withdrawal_daily,
+                       c.withdrawal_fee_fixed, c.withdrawal_fee_percent,
+                       c.network, c.contract_address, c.icon_url, c.created_at,
                        COUNT(DISTINCT w.id) AS wallet_count
                 FROM currencies c
                 LEFT JOIN wallets w ON w.currency_id = c.id
-                WHERE c.deleted_at IS NULL";
+                WHERE 1=1";
         $params = [];
 
         $search = trim((string)($filters['search'] ?? ''));
@@ -53,7 +53,7 @@ final class AdminAssetsRepository
     public function findCurrencyById(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT * FROM currencies WHERE id = :id AND deleted_at IS NULL LIMIT 1'
+            'SELECT * FROM currencies WHERE id = :id LIMIT 1'
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -65,14 +65,14 @@ final class AdminAssetsRepository
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            "INSERT INTO currencies (code, name, symbol, type, `precision`, is_active,
-                min_deposit, max_deposit, min_withdrawal, max_withdrawal,
-                withdrawal_fee_flat, withdrawal_fee_percent, deposit_fee_flat,
-                network, contract_address, explorer_url, icon_url, created_at, updated_at)
-             VALUES (:code, :name, :symbol, :type, :precision, :is_active,
-                :min_deposit, :max_deposit, :min_withdrawal, :max_withdrawal,
-                :withdrawal_fee_flat, :withdrawal_fee_percent, :deposit_fee_flat,
-                :network, :contract_address, :explorer_url, :icon_url, NOW(), NOW())"
+            "INSERT INTO currencies (code, name, type, decimals, is_active,
+                min_withdrawal, max_withdrawal_daily,
+                withdrawal_fee_fixed, withdrawal_fee_percent,
+                network, contract_address, icon_url, created_at, updated_at)
+             VALUES (:code, :name, :type, :decimals, :is_active,
+                :min_withdrawal, :max_withdrawal_daily,
+                :withdrawal_fee_fixed, :withdrawal_fee_percent,
+                :network, :contract_address, :icon_url, NOW(), NOW())"
         );
         $stmt->execute($this->bindCurrencyData($data));
         return (int)$pdo->lastInsertId();
@@ -82,13 +82,13 @@ final class AdminAssetsRepository
     {
         $stmt = Database::connection()->prepare(
             "UPDATE currencies SET
-                code = :code, name = :name, symbol = :symbol, type = :type, `precision` = :precision,
-                is_active = :is_active, min_deposit = :min_deposit, max_deposit = :max_deposit,
-                min_withdrawal = :min_withdrawal, max_withdrawal = :max_withdrawal,
-                withdrawal_fee_flat = :withdrawal_fee_flat, withdrawal_fee_percent = :withdrawal_fee_percent,
-                deposit_fee_flat = :deposit_fee_flat, network = :network, contract_address = :contract_address,
-                explorer_url = :explorer_url, icon_url = :icon_url, updated_at = NOW()
-             WHERE id = :id AND deleted_at IS NULL"
+                code = :code, name = :name, type = :type, decimals = :decimals,
+                is_active = :is_active,
+                min_withdrawal = :min_withdrawal, max_withdrawal_daily = :max_withdrawal_daily,
+                withdrawal_fee_fixed = :withdrawal_fee_fixed, withdrawal_fee_percent = :withdrawal_fee_percent,
+                network = :network, contract_address = :contract_address,
+                icon_url = :icon_url, updated_at = NOW()
+             WHERE id = :id"
         );
         $params = $this->bindCurrencyData($data);
         $params[':id'] = $id;
@@ -97,7 +97,7 @@ final class AdminAssetsRepository
 
     public function deleteCurrency(int $id): void
     {
-        $stmt = Database::connection()->prepare('UPDATE currencies SET deleted_at = NOW() WHERE id = :id');
+        $stmt = Database::connection()->prepare('DELETE FROM currencies WHERE id = :id');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
     }
@@ -115,20 +115,15 @@ final class AdminAssetsRepository
         return [
             ':code'                   => strtoupper(trim((string)($data['code'] ?? ''))),
             ':name'                   => trim((string)($data['name'] ?? '')),
-            ':symbol'                 => trim((string)($data['symbol'] ?? '')),
             ':type'                   => trim((string)($data['type'] ?? 'crypto')),
-            ':precision'              => max(0, (int)($data['precision'] ?? 8)),
+            ':decimals'               => max(0, (int)($data['decimals'] ?? $data['precision'] ?? 8)),
             ':is_active'              => (int)(bool)($data['is_active'] ?? 1),
-            ':min_deposit'            => (string)($data['min_deposit'] ?? '0'),
-            ':max_deposit'            => isset($data['max_deposit']) && $data['max_deposit'] !== '' ? (string)$data['max_deposit'] : null,
             ':min_withdrawal'         => (string)($data['min_withdrawal'] ?? '0'),
-            ':max_withdrawal'         => isset($data['max_withdrawal']) && $data['max_withdrawal'] !== '' ? (string)$data['max_withdrawal'] : null,
-            ':withdrawal_fee_flat'    => (string)($data['withdrawal_fee_flat'] ?? '0'),
+            ':max_withdrawal_daily'   => isset($data['max_withdrawal_daily']) && $data['max_withdrawal_daily'] !== '' ? (string)$data['max_withdrawal_daily'] : null,
+            ':withdrawal_fee_fixed'   => (string)($data['withdrawal_fee_fixed'] ?? $data['withdrawal_fee_flat'] ?? '0'),
             ':withdrawal_fee_percent' => (string)($data['withdrawal_fee_percent'] ?? '0'),
-            ':deposit_fee_flat'       => (string)($data['deposit_fee_flat'] ?? '0'),
             ':network'                => trim((string)($data['network'] ?? '')),
             ':contract_address'       => trim((string)($data['contract_address'] ?? '')),
-            ':explorer_url'           => trim((string)($data['explorer_url'] ?? '')),
             ':icon_url'               => trim((string)($data['icon_url'] ?? '')),
         ];
     }
@@ -149,7 +144,7 @@ final class AdminAssetsRepository
                 FROM trading_pairs tp
                 LEFT JOIN currencies bc ON bc.id = tp.base_currency_id
                 LEFT JOIN currencies qc ON qc.id = tp.quote_currency_id
-                WHERE tp.deleted_at IS NULL";
+                WHERE 1=1";
         $params = [];
 
         $search = trim((string)($filters['search'] ?? ''));
@@ -184,7 +179,7 @@ final class AdminAssetsRepository
              FROM trading_pairs tp
              LEFT JOIN currencies bc ON bc.id = tp.base_currency_id
              LEFT JOIN currencies qc ON qc.id = tp.quote_currency_id
-             WHERE tp.id = :id AND tp.deleted_at IS NULL LIMIT 1"
+             WHERE tp.id = :id LIMIT 1"
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -228,7 +223,7 @@ final class AdminAssetsRepository
 
     public function deleteTradingPair(int $id): void
     {
-        $stmt = Database::connection()->prepare('UPDATE trading_pairs SET deleted_at = NOW() WHERE id = :id');
+        $stmt = Database::connection()->prepare('DELETE FROM trading_pairs WHERE id = :id');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
     }

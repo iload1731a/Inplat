@@ -17,14 +17,13 @@ final class AdminRolesRepository
     public function listRoles(): array
     {
         $stmt = Database::connection()->query(
-            "SELECT r.id, r.name, r.description, r.is_default, r.created_at,
+            "SELECT r.id, r.name, r.description, r.is_system_role, r.created_at,
                     COUNT(DISTINCT rp.permission_id) AS permission_count,
                     COUNT(DISTINCT au.id)             AS admin_count
              FROM roles r
              LEFT JOIN role_permissions rp ON rp.role_id = r.id
              LEFT JOIN admin_users au ON au.role_id = r.id AND au.deleted_at IS NULL
-             WHERE r.deleted_at IS NULL
-             GROUP BY r.id, r.name, r.description, r.is_default, r.created_at
+             GROUP BY r.id, r.name, r.description, r.is_system_role, r.created_at
              ORDER BY r.id ASC"
         );
         return $stmt->fetchAll() ?: [];
@@ -33,9 +32,9 @@ final class AdminRolesRepository
     public function findRoleById(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT r.id, r.name, r.description, r.is_default, r.created_at
+            'SELECT r.id, r.name, r.description, r.is_system_role, r.created_at
              FROM roles r
-             WHERE r.id = :id AND r.deleted_at IS NULL
+             WHERE r.id = :id
              LIMIT 1'
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
@@ -44,29 +43,29 @@ final class AdminRolesRepository
         return $row === false ? null : $row;
     }
 
-    public function createRole(string $name, string $description, bool $isDefault): int
+    public function createRole(string $name, string $description, bool $isSystemRole): int
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            'INSERT INTO roles (name, description, is_default, created_at, updated_at)
-             VALUES (:name, :description, :is_default, NOW(), NOW())'
+            'INSERT INTO roles (name, description, is_system_role, created_at, updated_at)
+             VALUES (:name, :description, :is_system_role, NOW(), NOW())'
         );
         $stmt->bindValue(':name', $name);
         $stmt->bindValue(':description', $description);
-        $stmt->bindValue(':is_default', (int)$isDefault, PDO::PARAM_INT);
+        $stmt->bindValue(':is_system_role', (int)$isSystemRole, PDO::PARAM_INT);
         $stmt->execute();
         return (int)$pdo->lastInsertId();
     }
 
-    public function updateRole(int $id, string $name, string $description, bool $isDefault): void
+    public function updateRole(int $id, string $name, string $description, bool $isSystemRole): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE roles SET name = :name, description = :description, is_default = :is_default, updated_at = NOW()
-             WHERE id = :id AND deleted_at IS NULL'
+            'UPDATE roles SET name = :name, description = :description, is_system_role = :is_system_role, updated_at = NOW()
+             WHERE id = :id'
         );
         $stmt->bindValue(':name', $name);
         $stmt->bindValue(':description', $description);
-        $stmt->bindValue(':is_default', (int)$isDefault, PDO::PARAM_INT);
+        $stmt->bindValue(':is_system_role', (int)$isSystemRole, PDO::PARAM_INT);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
     }
@@ -74,7 +73,7 @@ final class AdminRolesRepository
     public function deleteRole(int $id): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE roles SET deleted_at = NOW() WHERE id = :id'
+            'DELETE FROM roles WHERE id = :id'
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -87,10 +86,9 @@ final class AdminRolesRepository
     public function listPermissions(): array
     {
         $stmt = Database::connection()->query(
-            "SELECT id, name, description, module, action, created_at
+            "SELECT id, `key`, module, description
              FROM permissions
-             WHERE deleted_at IS NULL
-             ORDER BY module ASC, action ASC"
+             ORDER BY module ASC, `key` ASC"
         );
         return $stmt->fetchAll() ?: [];
     }
@@ -98,7 +96,7 @@ final class AdminRolesRepository
     public function findPermissionById(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, name, description, module, action FROM permissions WHERE id = :id AND deleted_at IS NULL LIMIT 1'
+            'SELECT id, `key`, module, description FROM permissions WHERE id = :id LIMIT 1'
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -106,31 +104,27 @@ final class AdminRolesRepository
         return $row === false ? null : $row;
     }
 
-    public function createPermission(string $name, string $description, string $module, string $action): int
+    public function createPermission(string $key, string $description, string $module): int
     {
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
-            'INSERT INTO permissions (name, description, module, action, created_at, updated_at)
-             VALUES (:name, :description, :module, :action, NOW(), NOW())'
+            'INSERT INTO permissions (`key`, module, description) VALUES (:key, :module, :description)'
         );
-        $stmt->bindValue(':name', $name);
-        $stmt->bindValue(':description', $description);
+        $stmt->bindValue(':key', $key);
         $stmt->bindValue(':module', $module);
-        $stmt->bindValue(':action', $action);
+        $stmt->bindValue(':description', $description);
         $stmt->execute();
         return (int)$pdo->lastInsertId();
     }
 
-    public function updatePermission(int $id, string $name, string $description, string $module, string $action): void
+    public function updatePermission(int $id, string $key, string $description, string $module): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE permissions SET name = :name, description = :description, module = :module, action = :action, updated_at = NOW()
-             WHERE id = :id AND deleted_at IS NULL'
+            'UPDATE permissions SET `key` = :key, module = :module, description = :description WHERE id = :id'
         );
-        $stmt->bindValue(':name', $name);
-        $stmt->bindValue(':description', $description);
+        $stmt->bindValue(':key', $key);
         $stmt->bindValue(':module', $module);
-        $stmt->bindValue(':action', $action);
+        $stmt->bindValue(':description', $description);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
     }
@@ -138,7 +132,7 @@ final class AdminRolesRepository
     public function deletePermission(int $id): void
     {
         $stmt = Database::connection()->prepare(
-            'UPDATE permissions SET deleted_at = NOW() WHERE id = :id'
+            'DELETE FROM permissions WHERE id = :id'
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -169,8 +163,8 @@ final class AdminRolesRepository
 
             if (!empty($permissionIds)) {
                 $ins = $pdo->prepare(
-                    'INSERT IGNORE INTO role_permissions (role_id, permission_id, created_at)
-                     VALUES (:role_id, :perm_id, NOW())'
+                    'INSERT IGNORE INTO role_permissions (role_id, permission_id)
+                     VALUES (:role_id, :perm_id)'
                 );
                 foreach ($permissionIds as $permId) {
                     $ins->bindValue(':role_id', $roleId, PDO::PARAM_INT);

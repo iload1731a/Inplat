@@ -245,9 +245,9 @@ final class MarketsRepository
     public function getDailyVolumeChart(int $days = 30): array
     {
         $stmt = Database::connection()->prepare(
-            "SELECT DATE(t.created_at) AS day, COALESCE(SUM(t.price * t.quantity), 0) AS volume
+            "SELECT DATE(t.executed_at) AS day, COALESCE(SUM(t.price * t.quantity), 0) AS volume
              FROM trades t
-             WHERE t.created_at >= DATE_SUB(CURDATE(), INTERVAL :days DAY)
+             WHERE t.executed_at >= DATE_SUB(CURDATE(), INTERVAL :days DAY)
              GROUP BY DATE(t.created_at)
              ORDER BY day ASC"
         );

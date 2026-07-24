@@ -10,6 +10,7 @@ use PDO;
 final class PlatformRepository
 {
     private static array $tableCountCache = [];
+    private static array $tableExistsCache = [];
 
     public function adminOperationsSnapshot(): array
     {
@@ -191,25 +192,31 @@ final class PlatformRepository
             return 0;
         }
 
-        $existsStmt = $pdo->prepare('SHOW TABLES LIKE :table');
-        $existsStmt->bindValue(':table', $table);
-        $existsStmt->execute();
-        if ($existsStmt->fetchColumn() === false) {
+        if (!$this->tableExists($pdo, $table)) {
             self::$tableCountCache[$table] = 0;
             return 0;
         }
 
-        if ($table === 'faqs') {
-            self::$tableCountCache[$table] = (int)$pdo->query('SELECT COUNT(*) FROM faqs')->fetchColumn();
-            return self::$tableCountCache[$table];
-        }
-
-        if ($table === 'sms_templates') {
-            self::$tableCountCache[$table] = (int)$pdo->query('SELECT COUNT(*) FROM sms_templates')->fetchColumn();
-            return self::$tableCountCache[$table];
-        }
-
-        self::$tableCountCache[$table] = 0;
+        self::$tableCountCache[$table] = (int)$pdo->query(sprintf('SELECT COUNT(*) FROM `%s`', $table))->fetchColumn();
         return self::$tableCountCache[$table];
+    }
+
+    private function tableExists(PDO $pdo, string $table): bool
+    {
+        if (array_key_exists($table, self::$tableExistsCache)) {
+            return self::$tableExistsCache[$table];
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT 1
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table
+             LIMIT 1'
+        );
+        $stmt->bindValue(':table', $table);
+        $stmt->execute();
+
+        self::$tableExistsCache[$table] = $stmt->fetchColumn() !== false;
+        return self::$tableExistsCache[$table];
     }
 }

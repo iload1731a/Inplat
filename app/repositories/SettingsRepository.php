@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Libraries\Database;
 use PDO;
+use RuntimeException;
 
 /**
  * Central repository for all platform settings:
@@ -15,6 +16,8 @@ use PDO;
  */
 final class SettingsRepository
 {
+    private static array $tableExistsCache = [];
+
     // -----------------------------------------------------------------------
     // System Settings (key-value store)
     // -----------------------------------------------------------------------
@@ -97,6 +100,10 @@ final class SettingsRepository
 
     public function listLanguages(): array
     {
+        if (!$this->tableExists('languages')) {
+            return [];
+        }
+
         $stmt = Database::connection()->query(
             'SELECT id, code, name, native_name, flag_code, is_rtl, is_active, is_default, sort_order, updated_at
              FROM languages ORDER BY sort_order ASC, name ASC'
@@ -106,6 +113,10 @@ final class SettingsRepository
 
     public function findLanguageById(int $id): ?array
     {
+        if (!$this->tableExists('languages')) {
+            return null;
+        }
+
         $stmt = Database::connection()->prepare('SELECT * FROM languages WHERE id = :id LIMIT 1');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -115,6 +126,7 @@ final class SettingsRepository
 
     public function createLanguage(array $data): int
     {
+        $this->requireTable('languages');
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
             'INSERT INTO languages (code, name, native_name, flag_code, is_rtl, is_active, is_default, sort_order)
@@ -134,6 +146,7 @@ final class SettingsRepository
 
     public function updateLanguage(int $id, array $data): void
     {
+        $this->requireTable('languages');
         $stmt = Database::connection()->prepare(
             'UPDATE languages SET code = :code, name = :name, native_name = :native, flag_code = :flag,
              is_rtl = :rtl, is_active = :active, sort_order = :sort, updated_at = NOW()
@@ -153,6 +166,7 @@ final class SettingsRepository
 
     public function deleteLanguage(int $id): void
     {
+        $this->requireTable('languages');
         $stmt = Database::connection()->prepare('DELETE FROM languages WHERE id = :id AND is_default = 0');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -160,6 +174,7 @@ final class SettingsRepository
 
     public function setDefaultLanguage(int $id): void
     {
+        $this->requireTable('languages');
         $pdo = Database::connection();
         $pdo->exec('UPDATE languages SET is_default = 0');
         $stmt = $pdo->prepare('UPDATE languages SET is_default = 1, is_active = 1 WHERE id = :id');
@@ -173,6 +188,10 @@ final class SettingsRepository
 
     public function listThemes(): array
     {
+        if (!$this->tableExists('app_themes')) {
+            return [];
+        }
+
         $stmt = Database::connection()->query(
             'SELECT id, name, slug, color_scheme, primary_color, secondary_color, accent_color,
                     success_color, danger_color, bg_color, surface_color, font_family, font_size_base,
@@ -184,6 +203,10 @@ final class SettingsRepository
 
     public function findThemeById(int $id): ?array
     {
+        if (!$this->tableExists('app_themes')) {
+            return null;
+        }
+
         $stmt = Database::connection()->prepare('SELECT * FROM app_themes WHERE id = :id LIMIT 1');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -193,6 +216,10 @@ final class SettingsRepository
 
     public function activeTheme(): ?array
     {
+        if (!$this->tableExists('app_themes')) {
+            return null;
+        }
+
         $stmt = Database::connection()->query(
             'SELECT * FROM app_themes WHERE is_default = 1 LIMIT 1'
         );
@@ -202,6 +229,7 @@ final class SettingsRepository
 
     public function saveTheme(int $id, array $data): void
     {
+        $this->requireTable('app_themes');
         $stmt = Database::connection()->prepare(
             'UPDATE app_themes SET name = :name, color_scheme = :cs, primary_color = :pc,
              secondary_color = :sc, accent_color = :ac, success_color = :suc, danger_color = :dc,
@@ -233,6 +261,7 @@ final class SettingsRepository
 
     public function createTheme(array $data, int $adminId): int
     {
+        $this->requireTable('app_themes');
         $pdo = Database::connection();
         $slug = preg_replace('/[^a-z0-9\-]/', '-', strtolower(trim((string)($data['name'] ?? 'theme'))))
               . '-' . substr(bin2hex(random_bytes(3)), 0, 6);
@@ -266,6 +295,7 @@ final class SettingsRepository
 
     public function activateTheme(int $id): void
     {
+        $this->requireTable('app_themes');
         $pdo = Database::connection();
         $pdo->exec('UPDATE app_themes SET is_default = 0');
         $stmt = $pdo->prepare('UPDATE app_themes SET is_default = 1, is_active = 1, updated_at = NOW() WHERE id = :id');
@@ -275,6 +305,7 @@ final class SettingsRepository
 
     public function deleteTheme(int $id): void
     {
+        $this->requireTable('app_themes');
         $stmt = Database::connection()->prepare('DELETE FROM app_themes WHERE id = :id AND is_default = 0');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -286,6 +317,10 @@ final class SettingsRepository
 
     public function listSmtpConfigs(): array
     {
+        if (!$this->tableExists('smtp_configs')) {
+            return [];
+        }
+
         $stmt = Database::connection()->query(
             'SELECT id, name, host, port, encryption, username, from_email, from_name, reply_to,
                     max_per_minute, is_active, is_default, last_tested_at, last_test_ok, last_test_error, updated_at
@@ -296,6 +331,10 @@ final class SettingsRepository
 
     public function findSmtpById(int $id): ?array
     {
+        if (!$this->tableExists('smtp_configs')) {
+            return null;
+        }
+
         $stmt = Database::connection()->prepare('SELECT * FROM smtp_configs WHERE id = :id LIMIT 1');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -305,6 +344,7 @@ final class SettingsRepository
 
     public function saveSmtpConfig(array $data, int $adminId): int
     {
+        $this->requireTable('smtp_configs');
         $pdo   = Database::connection();
         $id    = (int)($data['id'] ?? 0);
         $pwd   = trim((string)($data['password'] ?? ''));
@@ -358,6 +398,7 @@ final class SettingsRepository
 
     public function setDefaultSmtp(int $id): void
     {
+        $this->requireTable('smtp_configs');
         $pdo = Database::connection();
         $pdo->exec('UPDATE smtp_configs SET is_default = 0');
         $stmt = $pdo->prepare('UPDATE smtp_configs SET is_default = 1, is_active = 1 WHERE id = :id');
@@ -367,6 +408,7 @@ final class SettingsRepository
 
     public function deleteSmtp(int $id): void
     {
+        $this->requireTable('smtp_configs');
         $stmt = Database::connection()->prepare('DELETE FROM smtp_configs WHERE id = :id AND is_default = 0');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -374,6 +416,7 @@ final class SettingsRepository
 
     public function recordSmtpTestResult(int $id, bool $ok, string $error = ''): void
     {
+        $this->requireTable('smtp_configs');
         $stmt = Database::connection()->prepare(
             'UPDATE smtp_configs SET last_tested_at = NOW(), last_test_ok = :ok, last_test_error = :err WHERE id = :id'
         );
@@ -389,6 +432,10 @@ final class SettingsRepository
 
     public function listSmsConfigs(): array
     {
+        if (!$this->tableExists('sms_configs')) {
+            return [];
+        }
+
         $stmt = Database::connection()->query(
             'SELECT id, name, provider, account_sid, from_number, sender_id, is_active, is_default, max_per_minute, updated_at
              FROM sms_configs ORDER BY is_default DESC, id ASC'
@@ -398,6 +445,10 @@ final class SettingsRepository
 
     public function findSmsById(int $id): ?array
     {
+        if (!$this->tableExists('sms_configs')) {
+            return null;
+        }
+
         $stmt = Database::connection()->prepare('SELECT * FROM sms_configs WHERE id = :id LIMIT 1');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -407,6 +458,7 @@ final class SettingsRepository
 
     public function saveSmsConfig(array $data, int $adminId): int
     {
+        $this->requireTable('sms_configs');
         $pdo      = Database::connection();
         $id       = (int)($data['id'] ?? 0);
         $providers = ['twilio', 'nexmo', 'aws_sns', 'msg91', 'custom'];
@@ -457,6 +509,7 @@ final class SettingsRepository
 
     public function setDefaultSms(int $id): void
     {
+        $this->requireTable('sms_configs');
         $pdo = Database::connection();
         $pdo->exec('UPDATE sms_configs SET is_default = 0');
         $stmt = $pdo->prepare('UPDATE sms_configs SET is_default = 1, is_active = 1 WHERE id = :id');
@@ -466,6 +519,7 @@ final class SettingsRepository
 
     public function deleteSms(int $id): void
     {
+        $this->requireTable('sms_configs');
         $stmt = Database::connection()->prepare('DELETE FROM sms_configs WHERE id = :id AND is_default = 0');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -477,6 +531,10 @@ final class SettingsRepository
 
     public function listApiIntegrations(): array
     {
+        if (!$this->tableExists('api_integrations')) {
+            return [];
+        }
+
         $stmt = Database::connection()->query(
             'SELECT id, name, provider, category, sandbox_mode, is_active, notes, updated_at
              FROM api_integrations ORDER BY category ASC, name ASC'
@@ -486,6 +544,10 @@ final class SettingsRepository
 
     public function findApiIntegrationById(int $id): ?array
     {
+        if (!$this->tableExists('api_integrations')) {
+            return null;
+        }
+
         $stmt = Database::connection()->prepare('SELECT * FROM api_integrations WHERE id = :id LIMIT 1');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -495,6 +557,7 @@ final class SettingsRepository
 
     public function saveApiIntegration(array $data, int $adminId): int
     {
+        $this->requireTable('api_integrations');
         $pdo = Database::connection();
         $id  = (int)($data['id'] ?? 0);
         $cats = ['payment','kyc','analytics','trading','social','other'];
@@ -556,6 +619,7 @@ final class SettingsRepository
 
     public function deleteApiIntegration(int $id): void
     {
+        $this->requireTable('api_integrations');
         $stmt = Database::connection()->prepare('DELETE FROM api_integrations WHERE id = :id');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -567,6 +631,10 @@ final class SettingsRepository
 
     public function listBackupLogs(int $limit = 50): array
     {
+        if (!$this->tableExists('backup_logs')) {
+            return [];
+        }
+
         $stmt = Database::connection()->prepare(
             'SELECT bl.id, bl.backup_type, bl.trigger_type, bl.status, bl.file_path,
                     bl.file_size_bytes, bl.duration_seconds, bl.error_message, bl.notes,
@@ -584,6 +652,7 @@ final class SettingsRepository
 
     public function createBackupLog(string $type, string $trigger, int $adminId): int
     {
+        $this->requireTable('backup_logs');
         $pdo = Database::connection();
         $stmt = $pdo->prepare(
             "INSERT INTO backup_logs (backup_type, trigger_type, status, created_by, started_at)
@@ -595,6 +664,7 @@ final class SettingsRepository
 
     public function completeBackupLog(int $id, bool $ok, string $filePath, int $bytes, int $duration, string $error = ''): void
     {
+        $this->requireTable('backup_logs');
         $stmt = Database::connection()->prepare(
             'UPDATE backup_logs SET status = :status, file_path = :fp, file_size_bytes = :fsz,
              duration_seconds = :dur, error_message = :err, completed_at = NOW()
@@ -612,6 +682,7 @@ final class SettingsRepository
 
     public function deleteBackupLog(int $id): void
     {
+        $this->requireTable('backup_logs');
         $stmt = Database::connection()->prepare("UPDATE backup_logs SET status = 'deleted' WHERE id = :id");
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -623,6 +694,10 @@ final class SettingsRepository
 
     public function listCacheLogs(int $limit = 30): array
     {
+        if (!$this->tableExists('cache_logs')) {
+            return [];
+        }
+
         $stmt = Database::connection()->prepare(
             'SELECT cl.id, cl.cache_type, cl.items_cleared, cl.notes, cl.flushed_at,
                     COALESCE(au.full_name, au.username) AS flushed_by_name
@@ -638,6 +713,7 @@ final class SettingsRepository
 
     public function logCacheFlush(string $cacheType, int $adminId, int $itemsCleared, string $notes = ''): void
     {
+        $this->requireTable('cache_logs');
         $stmt = Database::connection()->prepare(
             'INSERT INTO cache_logs (cache_type, flushed_by, items_cleared, notes) VALUES (:type, :admin, :items, :notes)'
         );
@@ -721,5 +797,33 @@ final class SettingsRepository
     {
         $stmt = Database::connection()->query('SHOW TABLE STATUS');
         return $stmt->fetchAll() ?: [];
+    }
+
+    private function tableExists(string $table): bool
+    {
+        if (array_key_exists($table, self::$tableExistsCache)) {
+            return self::$tableExistsCache[$table];
+        }
+
+        $stmt = Database::connection()->prepare(
+            'SELECT 1
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table
+             LIMIT 1'
+        );
+        $stmt->bindValue(':table', $table);
+        $stmt->execute();
+
+        self::$tableExistsCache[$table] = $stmt->fetchColumn() !== false;
+        return self::$tableExistsCache[$table];
+    }
+
+    private function requireTable(string $table): void
+    {
+        if ($this->tableExists($table)) {
+            return;
+        }
+
+        throw new RuntimeException(sprintf('Required settings table "%s" is missing. Please run the latest database schema update.', $table));
     }
 }

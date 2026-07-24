@@ -218,7 +218,12 @@ final class AdminDashboardRepository
             return self::$tableExistsCache[$table];
         }
 
-        $stmt = Database::connection()->prepare('SHOW TABLES LIKE :table');
+        $stmt = Database::connection()->prepare(
+            'SELECT 1
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table
+             LIMIT 1'
+        );
         $stmt->bindValue(':table', $table);
         $stmt->execute();
 
@@ -233,7 +238,13 @@ final class AdminDashboardRepository
             return self::$columnExistsCache[$cacheKey];
         }
 
-        $stmt = Database::connection()->prepare('SHOW COLUMNS FROM `trades` LIKE :column');
+        $stmt = Database::connection()->prepare(
+            'SELECT 1
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column
+             LIMIT 1'
+        );
+        $stmt->bindValue(':table', 'trades');
         $stmt->bindValue(':column', 'trading_pair_id');
         $stmt->execute();
         self::$columnExistsCache[$cacheKey] = $stmt->fetchColumn() !== false;

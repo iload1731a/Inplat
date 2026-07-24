@@ -179,9 +179,10 @@ final class AdminManagementRepository
              INNER JOIN order_types ot ON ot.id = o.order_type_id
              WHERE o.user_id = :user_id
              ORDER BY o.id DESC
-             LIMIT {$safeLimit}"
+             LIMIT :limit"
         );
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
@@ -200,9 +201,10 @@ final class AdminManagementRepository
              INNER JOIN trading_pairs tp ON tp.id = t.trading_pair_id
              WHERE t.buyer_id = :user_id OR t.seller_id = :user_id
              ORDER BY t.id DESC
-             LIMIT {$safeLimit}"
+             LIMIT :limit"
         );
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
@@ -217,9 +219,10 @@ final class AdminManagementRepository
              INNER JOIN currencies c ON c.id = d.currency_id
              WHERE d.user_id = :user_id
              ORDER BY d.id DESC
-             LIMIT {$safeLimit}"
+             LIMIT :limit"
         );
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];
@@ -234,9 +237,10 @@ final class AdminManagementRepository
              INNER JOIN currencies c ON c.id = w.currency_id
              WHERE w.user_id = :user_id
              ORDER BY w.id DESC
-             LIMIT {$safeLimit}"
+             LIMIT :limit"
         );
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $safeLimit, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];

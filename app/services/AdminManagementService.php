@@ -590,7 +590,7 @@ final class AdminManagementService
         if (mb_strlen($newPassword) < 8) {
             throw new \InvalidArgumentException('Password must be at least 8 characters.');
         }
-        if (!hash_equals($newPassword, $confirmPassword)) {
+        if ($newPassword !== $confirmPassword) {
             throw new \InvalidArgumentException('Password confirmation does not match.');
         }
 

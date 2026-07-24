@@ -20,6 +20,9 @@ use App\Controllers\Admin\DepositsController as AdminDepositsController;
 use App\Controllers\Admin\WithdrawalsController as AdminWithdrawalsController;
 use App\Controllers\Admin\TradingEngineController as AdminTradingEngineController;
 use App\Controllers\Admin\MarketsController as AdminMarketsController;
+use App\Controllers\Admin\AdminMarketController;
+use App\Controllers\Admin\AdminExchangeController;
+use App\Controllers\Admin\MarketSyncController;
 use App\Controllers\Admin\ChartsController as AdminChartsController;
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
@@ -128,6 +131,7 @@ $router->post('/admin/assets/pairs/import', [AdminAssetsController::class, 'impo
 // ADMIN – Markets (Market Overview, Price Feed, Providers, Statistics)
 // =====================================================================
 $router->get('/admin/markets',                      [AdminMarketsController::class, 'index']);
+$router->get('/admin/markets/data-sync',            [AdminMarketController::class, 'index']);
 $router->get('/admin/markets/pairs',                [AdminMarketsController::class, 'pairs']);
 $router->get('/admin/markets/pair/detail',          [AdminMarketsController::class, 'pairDetail']);
 $router->get('/admin/markets/statistics',           [AdminMarketsController::class, 'statistics']);
@@ -142,6 +146,10 @@ $router->get('/admin/markets/sync-logs',            [AdminMarketsController::cla
 $router->get('/admin/markets/mappings',             [AdminMarketsController::class, 'mappings']);
 $router->post('/admin/markets/mappings/save',       [AdminMarketsController::class, 'saveMapping']);
 $router->post('/admin/markets/mappings/delete',     [AdminMarketsController::class, 'deleteMapping']);
+$router->get('/admin/markets/exchange/binance',     [AdminExchangeController::class, 'binanceInfo']);
+$router->post('/admin/markets/sync/exchange-info',  [MarketSyncController::class, 'syncExchangeInfo']);
+$router->post('/admin/markets/sync/tickers',        [MarketSyncController::class, 'syncTickers']);
+$router->post('/admin/markets/sync/candles',        [MarketSyncController::class, 'syncCandles']);
 
 // =====================================================================
 // ADMIN – Charts & Market Analytics

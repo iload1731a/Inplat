@@ -10,7 +10,10 @@ $csrf          = \App\Libraries\Csrf::token();
         <h1 class="h3 mb-1">Price Feed Subscriptions</h1>
         <p class="text-secondary mb-0">Configure which price provider feeds each trading pair in real-time.</p>
     </div>
-    <a href="/admin/markets" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Overview</a>
+    <div class="d-flex gap-2">
+        <a href="/admin/markets" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Overview</a>
+        <a href="/admin/markets/data-sync" class="btn btn-outline-primary btn-sm"><i class="fas fa-plug me-1"></i>Data Sync</a>
+    </div>
 </div>
 <?php require app_path('app/views/admin/_nav.php'); ?>
 

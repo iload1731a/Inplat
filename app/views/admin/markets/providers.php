@@ -10,6 +10,7 @@ $csrf      = \App\Libraries\Csrf::token();
     </div>
     <div class="d-flex gap-2">
         <a href="/admin/markets" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Overview</a>
+        <a href="/admin/markets/data-sync" class="btn btn-outline-primary btn-sm"><i class="fas fa-plug me-1"></i>Data Sync</a>
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createProviderModal">
             <i class="fas fa-plus me-1"></i>New Provider
         </button>

@@ -17,6 +17,7 @@
       "App\\Controllers\\": "app/controllers/",
       "App\\Repositories\\": "app/repositories/",
       "App\\Services\\": "app/services/",
+      "App\\Models\\": "app/models/",
       "App\\Libraries\\": "app/libraries/",
       "App\\Middleware\\": "app/middleware/",
       "App\\Validators\\": "app/validators/",

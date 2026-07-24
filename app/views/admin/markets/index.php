@@ -18,6 +18,7 @@ $csrf       = \App\Libraries\Csrf::token();
     <div class="d-flex gap-2">
         <a href="/admin/markets/pairs" class="btn btn-outline-info btn-sm"><i class="fas fa-list me-1"></i>Pairs</a>
         <a href="/admin/markets/providers" class="btn btn-outline-warning btn-sm"><i class="fas fa-server me-1"></i>Providers</a>
+        <a href="/admin/markets/data-sync" class="btn btn-outline-primary btn-sm"><i class="fas fa-plug me-1"></i>Data Sync</a>
         <a href="/admin/markets/statistics" class="btn btn-outline-success btn-sm"><i class="fas fa-chart-bar me-1"></i>Statistics</a>
     </div>
 </div>

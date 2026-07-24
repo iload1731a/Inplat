@@ -296,6 +296,17 @@ final class MarketsRepository
         return $row === false ? null : $row;
     }
 
+    public function findProviderByCode(string $code): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT * FROM price_data_providers WHERE provider_code = :code LIMIT 1'
+        );
+        $stmt->bindValue(':code', strtolower(trim($code)));
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row === false ? null : $row;
+    }
+
     public function createProvider(array $data): int
     {
         $pdo  = Database::connection();
@@ -600,6 +611,20 @@ final class MarketsRepository
         ]);
     }
 
+    public function updateProviderHealth(int $providerId, string $status): void
+    {
+        $allowed = ['healthy', 'degraded', 'down', 'unknown'];
+        $health = in_array($status, $allowed, true) ? $status : 'unknown';
+        $stmt = Database::connection()->prepare(
+            'UPDATE price_data_providers
+             SET last_health_status = :status, last_health_check_at = NOW(), updated_at = NOW()
+             WHERE id = :id'
+        );
+        $stmt->bindValue(':status', $health);
+        $stmt->bindValue(':id', $providerId, PDO::PARAM_INT);
+        $stmt->execute();
+    }
+
     // =========================================================================
     // USER WATCHLIST
     // =========================================================================
@@ -695,6 +720,24 @@ final class MarketsRepository
         if (!in_array($interval, $allowedIntervals, true)) {
             $interval = '1h';
         }
+
+        $preAgg = Database::connection()->prepare(
+            "SELECT open_time AS bucket,
+                    open_price, high_price, low_price, close_price, volume
+             FROM candlesticks
+             WHERE trading_pair_id = :pid AND interval_code = :iv
+             ORDER BY open_time DESC
+             LIMIT :lim"
+        );
+        $preAgg->bindValue(':pid', $pairId, PDO::PARAM_INT);
+        $preAgg->bindValue(':iv', $interval);
+        $preAgg->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $preAgg->execute();
+        $rows = $preAgg->fetchAll() ?: [];
+        if (count($rows) >= 5) {
+            return array_reverse($rows);
+        }
+
         // $intervalMap values are static SQL expressions defined entirely in code.
         // $interval is validated against $allowedIntervals before being used as a key,
         // so $bucketExpr is always one of the fixed expressions below — no user input reaches the query.
@@ -757,6 +800,240 @@ final class MarketsRepository
             ':low'        => isset($data['low_24h']) ? (string)$data['low_24h'] : null,
             ':vol'        => (string)($data['volume_24h'] ?? '0'),
         ]);
+    }
+
+    public function upsertCandlestick(
+        int $pairId,
+        string $interval,
+        string $openTime,
+        array $data
+    ): void {
+        $stmt = Database::connection()->prepare(
+            "INSERT INTO candlesticks
+                (trading_pair_id, interval_code, open_time, open_price, high_price, low_price, close_price, volume, quote_volume, trade_count)
+             VALUES
+                (:pair_id, :iv, :open_time, :open_price, :high_price, :low_price, :close_price, :volume, :quote_volume, :trade_count)
+             ON DUPLICATE KEY UPDATE
+                open_price = VALUES(open_price),
+                high_price = VALUES(high_price),
+                low_price = VALUES(low_price),
+                close_price = VALUES(close_price),
+                volume = VALUES(volume),
+                quote_volume = VALUES(quote_volume),
+                trade_count = VALUES(trade_count)"
+        );
+        $stmt->execute([
+            ':pair_id' => $pairId,
+            ':iv' => $interval,
+            ':open_time' => $openTime,
+            ':open_price' => (string)($data['open_price'] ?? '0'),
+            ':high_price' => (string)($data['high_price'] ?? '0'),
+            ':low_price' => (string)($data['low_price'] ?? '0'),
+            ':close_price' => (string)($data['close_price'] ?? '0'),
+            ':volume' => (string)($data['volume'] ?? '0'),
+            ':quote_volume' => (string)($data['quote_volume'] ?? '0'),
+            ':trade_count' => (int)($data['trade_count'] ?? 0),
+        ]);
+    }
+
+    public function insertExternalTick(int $pairId, int $providerId, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            "INSERT INTO external_price_ticks
+                (trading_pair_id, provider_id, price, volume_24h, bid_price, ask_price, latency_ms, received_at)
+             VALUES
+                (:pair_id, :provider_id, :price, :volume_24h, :bid_price, :ask_price, :latency_ms, NOW(3))"
+        );
+        $stmt->execute([
+            ':pair_id' => $pairId,
+            ':provider_id' => $providerId,
+            ':price' => (string)($data['price'] ?? '0'),
+            ':volume_24h' => isset($data['volume_24h']) ? (string)$data['volume_24h'] : null,
+            ':bid_price' => isset($data['bid_price']) ? (string)$data['bid_price'] : null,
+            ':ask_price' => isset($data['ask_price']) ? (string)$data['ask_price'] : null,
+            ':latency_ms' => isset($data['latency_ms']) ? (int)$data['latency_ms'] : null,
+        ]);
+    }
+
+    public function createPairImportJob(int $providerId, ?int $adminId): int
+    {
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare(
+            "INSERT INTO pair_import_jobs (provider_id, triggered_by, trigger_type, status)
+             VALUES (:provider_id, :triggered_by, 'manual', 'running')"
+        );
+        $stmt->execute([
+            ':provider_id' => $providerId,
+            ':triggered_by' => $adminId > 0 ? $adminId : null,
+        ]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    public function insertImportedPairStaging(int $jobId, int $providerId, array $row): void
+    {
+        $stmt = Database::connection()->prepare(
+            "INSERT INTO imported_pairs_staging
+                (import_job_id, provider_id, external_base_symbol, external_quote_symbol, external_pair_id,
+                 suggested_symbol, volume_24h_usd, last_price_usd, raw_payload, status)
+             VALUES
+                (:job_id, :provider_id, :base_symbol, :quote_symbol, :external_pair_id,
+                 :suggested_symbol, :volume_24h_usd, :last_price_usd, :raw_payload, :status)"
+        );
+        $stmt->execute([
+            ':job_id' => $jobId,
+            ':provider_id' => $providerId,
+            ':base_symbol' => strtoupper((string)($row['external_base_symbol'] ?? '')),
+            ':quote_symbol' => strtoupper((string)($row['external_quote_symbol'] ?? '')),
+            ':external_pair_id' => (string)($row['external_pair_id'] ?? ''),
+            ':suggested_symbol' => strtoupper((string)($row['suggested_symbol'] ?? '')),
+            ':volume_24h_usd' => isset($row['volume_24h_usd']) ? (string)$row['volume_24h_usd'] : null,
+            ':last_price_usd' => isset($row['last_price_usd']) ? (string)$row['last_price_usd'] : null,
+            ':raw_payload' => isset($row['raw_payload']) ? (string)$row['raw_payload'] : null,
+            ':status' => (string)($row['status'] ?? 'pending'),
+        ]);
+    }
+
+    public function completePairImportJob(int $jobId, array $stats): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE pair_import_jobs
+             SET status = :status,
+                 pairs_found = :pairs_found,
+                 pairs_created = :pairs_created,
+                 pairs_updated = :pairs_updated,
+                 pairs_skipped = :pairs_skipped,
+                 error_message = :error_message,
+                 completed_at = NOW()
+             WHERE id = :id"
+        );
+        $stmt->execute([
+            ':status' => (string)($stats['status'] ?? 'completed'),
+            ':pairs_found' => (int)($stats['pairs_found'] ?? 0),
+            ':pairs_created' => (int)($stats['pairs_created'] ?? 0),
+            ':pairs_updated' => (int)($stats['pairs_updated'] ?? 0),
+            ':pairs_skipped' => (int)($stats['pairs_skipped'] ?? 0),
+            ':error_message' => isset($stats['error_message']) ? substr((string)$stats['error_message'], 0, 500) : null,
+            ':id' => $jobId,
+        ]);
+    }
+
+    public function findCurrencyByCode(string $code): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            'SELECT id, code, name FROM currencies WHERE UPPER(code) = :code LIMIT 1'
+        );
+        $stmt->bindValue(':code', strtoupper(trim($code)));
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row === false ? null : $row;
+    }
+
+    public function findPairByBaseQuote(int $baseCurrencyId, int $quoteCurrencyId, string $marketType = 'spot'): ?array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT *
+             FROM trading_pairs
+             WHERE base_currency_id = :base_id
+               AND quote_currency_id = :quote_id
+               AND market_type = :market_type
+             LIMIT 1"
+        );
+        $stmt->execute([
+            ':base_id' => $baseCurrencyId,
+            ':quote_id' => $quoteCurrencyId,
+            ':market_type' => $marketType,
+        ]);
+        $row = $stmt->fetch();
+        return $row === false ? null : $row;
+    }
+
+    public function createTradingPairFromImport(array $data): int
+    {
+        $pdo = Database::connection();
+        $stmt = $pdo->prepare(
+            "INSERT INTO trading_pairs
+                (symbol, base_currency_id, quote_currency_id, market_type,
+                 price_precision, quantity_precision, min_order_size, max_order_size, min_notional,
+                 maker_fee_percent, taker_fee_percent, max_leverage, is_active, trading_enabled, is_visible, display_order)
+             VALUES
+                (:symbol, :base_currency_id, :quote_currency_id, :market_type,
+                 :price_precision, :quantity_precision, :min_order_size, :max_order_size, :min_notional,
+                 :maker_fee_percent, :taker_fee_percent, :max_leverage, :is_active, :trading_enabled, :is_visible, :display_order)"
+        );
+        $stmt->execute([
+            ':symbol' => strtoupper((string)($data['symbol'] ?? '')),
+            ':base_currency_id' => (int)($data['base_currency_id'] ?? 0),
+            ':quote_currency_id' => (int)($data['quote_currency_id'] ?? 0),
+            ':market_type' => (string)($data['market_type'] ?? 'spot'),
+            ':price_precision' => (int)($data['price_precision'] ?? 6),
+            ':quantity_precision' => (int)($data['quantity_precision'] ?? 6),
+            ':min_order_size' => (string)($data['min_order_size'] ?? '0'),
+            ':max_order_size' => isset($data['max_order_size']) ? (string)$data['max_order_size'] : null,
+            ':min_notional' => (string)($data['min_notional'] ?? '0'),
+            ':maker_fee_percent' => (string)($data['maker_fee_percent'] ?? '0.10'),
+            ':taker_fee_percent' => (string)($data['taker_fee_percent'] ?? '0.15'),
+            ':max_leverage' => (string)($data['max_leverage'] ?? '1.00'),
+            ':is_active' => (int)($data['is_active'] ?? 1),
+            ':trading_enabled' => (int)($data['trading_enabled'] ?? 1),
+            ':is_visible' => (int)($data['is_visible'] ?? 1),
+            ':display_order' => (int)($data['display_order'] ?? 0),
+        ]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    public function updateTradingPairTradingRules(int $pairId, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            "UPDATE trading_pairs
+             SET min_order_size = :min_order_size,
+                 max_order_size = :max_order_size,
+                 min_notional = :min_notional,
+                 price_precision = :price_precision,
+                 quantity_precision = :quantity_precision,
+                 updated_at = NOW()
+             WHERE id = :id"
+        );
+        $stmt->execute([
+            ':min_order_size' => (string)($data['min_order_size'] ?? '0'),
+            ':max_order_size' => isset($data['max_order_size']) ? (string)$data['max_order_size'] : null,
+            ':min_notional' => (string)($data['min_notional'] ?? '0'),
+            ':price_precision' => (int)($data['price_precision'] ?? 6),
+            ':quantity_precision' => (int)($data['quantity_precision'] ?? 6),
+            ':id' => $pairId,
+        ]);
+    }
+
+    public function listActiveFeedPairsForProvider(int $providerId, int $limit = 500): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT tp.id, tp.symbol, tp.base_currency_id, tp.quote_currency_id, tp.market_type
+             FROM price_feed_subscriptions pfs
+             INNER JOIN trading_pairs tp ON tp.id = pfs.trading_pair_id
+             WHERE pfs.primary_provider_id = :provider_id
+               AND pfs.is_active = 1
+               AND tp.is_active = 1
+             ORDER BY tp.symbol ASC
+             LIMIT :lim"
+        );
+        $stmt->bindValue(':provider_id', $providerId, PDO::PARAM_INT);
+        $stmt->bindValue(':lim', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function getLatestImportJobs(int $providerId, int $limit = 20): array
+    {
+        $stmt = Database::connection()->prepare(
+            "SELECT *
+             FROM pair_import_jobs
+             WHERE provider_id = :provider_id
+             ORDER BY id DESC
+             LIMIT :lim"
+        );
+        $stmt->bindValue(':provider_id', $providerId, PDO::PARAM_INT);
+        $stmt->bindValue(':lim', max(1, $limit), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
     }
 
     // =========================================================================

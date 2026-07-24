@@ -69,7 +69,7 @@ final class WalletsController extends AdminBaseController
         $walletId = (int)$request->input('id', 0);
 
         if ($walletId <= 0) {
-            Response::json(['ok' => false, 'message' => 'Wallet ID must be a positive integer.'], 400);
+            Response::json(['ok' => false, 'message' => 'Invalid wallet ID provided.'], 400);
             return;
         }
 

@@ -175,11 +175,17 @@ document.getElementById('lookupWalletBtn').addEventListener('click', function ()
     lookupWallet(currentWalletId());
 });
 
-document.addEventListener('DOMContentLoaded', function () {
+function runInitialLookup() {
     if (Number(initialWalletId) > 0) {
         lookupWallet(currentWalletId());
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runInitialLookup);
+} else {
+    runInitialLookup();
+}
 
 document.getElementById('adjustmentForm').addEventListener('submit', async function(e) {
     e.preventDefault();

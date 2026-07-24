@@ -741,36 +741,7 @@ final class MarketsRepository
             return array_reverse($rows);
         }
 
-        // $intervalMap values are static SQL expressions defined entirely in code.
-        // $interval is validated against $allowedIntervals before being used as a key,
-        // so $bucketExpr is always one of the fixed expressions below — no user input reaches the query.
-        $intervalMap = [
-            '1m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/60)*60',
-            '5m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/300)*300',
-            '15m' => 'FLOOR(UNIX_TIMESTAMP(created_at)/900)*900',
-            '1h'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/3600)*3600',
-            '4h'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/14400)*14400',
-            '1d'  => 'DATE(created_at)',
-        ];
-        $bucketExpr = $intervalMap[$interval];
-
-        $stmt = Database::connection()->prepare(
-            "SELECT {$bucketExpr} AS bucket,
-                    SUBSTRING_INDEX(GROUP_CONCAT(price ORDER BY created_at ASC), ',', 1) AS open_price,
-                    MAX(price) AS high_price,
-                    MIN(price) AS low_price,
-                    SUBSTRING_INDEX(GROUP_CONCAT(price ORDER BY created_at DESC), ',', 1) AS close_price,
-                    SUM(quantity) AS volume
-             FROM trades
-             WHERE trading_pair_id = :pid
-             GROUP BY bucket
-             ORDER BY bucket DESC
-             LIMIT :lim"
-        );
-        $stmt->bindValue(':pid', $pairId, PDO::PARAM_INT);
-        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return array_reverse($stmt->fetchAll() ?: []);
+        return $this->getTradeDerivedCandlesticks($pairId, $interval, $limit);
     }
 
     // =========================================================================
@@ -926,6 +897,39 @@ final class MarketsRepository
             return null;
         }
         return substr($message, 0, self::MAX_SYNC_LOG_MESSAGE_LENGTH);
+    }
+
+    private function getTradeDerivedCandlesticks(int $pairId, string $interval, int $limit): array
+    {
+        // $intervalMap values are static SQL expressions defined entirely in code.
+        // $interval is validated against a fixed list before this method is called.
+        $intervalMap = [
+            '1m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/60)*60',
+            '5m'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/300)*300',
+            '15m' => 'FLOOR(UNIX_TIMESTAMP(created_at)/900)*900',
+            '1h'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/3600)*3600',
+            '4h'  => 'FLOOR(UNIX_TIMESTAMP(created_at)/14400)*14400',
+            '1d'  => 'DATE(created_at)',
+        ];
+        $bucketExpr = $intervalMap[$interval];
+
+        $stmt = Database::connection()->prepare(
+            "SELECT {$bucketExpr} AS bucket,
+                    SUBSTRING_INDEX(GROUP_CONCAT(price ORDER BY created_at ASC), ',', 1) AS open_price,
+                    MAX(price) AS high_price,
+                    MIN(price) AS low_price,
+                    SUBSTRING_INDEX(GROUP_CONCAT(price ORDER BY created_at DESC), ',', 1) AS close_price,
+                    SUM(quantity) AS volume
+             FROM trades
+             WHERE trading_pair_id = :pid
+             GROUP BY bucket
+             ORDER BY bucket DESC
+             LIMIT :lim"
+        );
+        $stmt->bindValue(':pid', $pairId, PDO::PARAM_INT);
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return array_reverse($stmt->fetchAll() ?: []);
     }
 
     public function findCurrencyByCode(string $code): ?array

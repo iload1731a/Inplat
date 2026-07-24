@@ -246,8 +246,8 @@ final class MarketDataService
         $minOrderSize = '0';
         $maxOrderSize = null;
         $minNotional = '0';
-        // Binance spot exchangeInfo does not always provide a dedicated "pricePrecision",
-        // so we map quotePrecision as the closest available source for UI/order precision.
+        // Binance spot exchangeInfo does not consistently provide a dedicated pricePrecision
+        // field in this payload, so quotePrecision is used as a practical substitute.
         $pricePrecision = isset($symbol['quotePrecision']) ? max(0, (int)$symbol['quotePrecision']) : self::DEFAULT_PRECISION;
         $quantityPrecision = isset($symbol['baseAssetPrecision']) ? max(0, (int)$symbol['baseAssetPrecision']) : self::DEFAULT_PRECISION;
 

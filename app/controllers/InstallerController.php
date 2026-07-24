@@ -295,6 +295,20 @@ final class InstallerController extends BaseController
         if (!in_array($prefix, $allowed, true) || preg_match($disallowedPattern, $normalized) === 1) {
             throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
         }
+
+        if ($prefix === 'ALTER') {
+            $isAlterTable = preg_match('/^\s*ALTER\s+TABLE\s+/i', $normalized) === 1;
+            $hasAddClause = preg_match('/\bADD\b/i', $normalized) === 1;
+            $hasUnsafeAlterOperation = preg_match('/\b(DROP|RENAME|TRUNCATE|DELETE|GRANT|REVOKE|MODIFY|CHANGE)\b/i', $normalized) === 1;
+
+            if (!$isAlterTable || !$hasAddClause || $hasUnsafeAlterOperation) {
+                throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
+            }
+        }
+
+        if ($prefix === 'CREATE' && preg_match('/\b(DROP|RENAME|TRUNCATE|GRANT|REVOKE)\b/i', $normalized) === 1) {
+            throw new \RuntimeException('Unsupported SQL statement in schema import: ' . $prefix);
+        }
     }
 
     private function persistLicenseSettings(PDO $pdo): void

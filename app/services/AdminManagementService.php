@@ -594,7 +594,7 @@ final class AdminManagementService
             throw new \InvalidArgumentException('Password confirmation does not match.');
         }
 
-        $hash = password_hash($newPassword, password_algo());
+        $hash = password_hash($newPassword, PASSWORD_DEFAULT);
         if (!is_string($hash) || $hash === '') {
             throw new \RuntimeException('Failed to hash password.');
         }
@@ -605,6 +605,10 @@ final class AdminManagementService
 
     public function loginAsUser(int $adminId, int $userId): void
     {
+        if ((int)(Session::get('auth.role_id') ?? 0) !== 1) {
+            throw new \InvalidArgumentException('Only super administrators can use login-as.');
+        }
+
         $user = $this->repository->getUserBasic($userId);
         if ($user === null) {
             throw new \InvalidArgumentException('User not found.');
@@ -639,6 +643,9 @@ final class AdminManagementService
         $impersonatorId = (int)(Session::get('auth.impersonator_admin_id') ?? 0);
         if ($impersonatorId <= 0) {
             throw new \InvalidArgumentException('No active impersonation session.');
+        }
+        if ($adminId > 0 && $impersonatorId !== $adminId) {
+            throw new \InvalidArgumentException('Impersonation session ownership mismatch.');
         }
 
         $lastUserId = (int)(Session::get('auth.user_id') ?? 0);

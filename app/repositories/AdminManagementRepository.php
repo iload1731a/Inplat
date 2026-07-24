@@ -12,6 +12,7 @@ use Throwable;
 final class AdminManagementRepository
 {
     private const BALANCE_EPSILON = 0.000000001;
+    private const MAX_RECENT_RECORDS_LIMIT = 100;
 
     public function findAdminById(int $adminId): ?array
     {
@@ -170,7 +171,7 @@ final class AdminManagementRepository
 
     public function getUserRecentOrders(int $userId, int $limit = 20): array
     {
-        $safeLimit = max(1, min(100, $limit));
+        $safeLimit = max(1, min(self::MAX_RECENT_RECORDS_LIMIT, $limit));
         $stmt = Database::connection()->prepare(
             "SELECT o.id, o.order_uuid, tp.symbol, ot.name AS order_type, o.side, o.status,
                     o.price, o.quantity, o.filled_quantity, o.created_at
@@ -190,7 +191,7 @@ final class AdminManagementRepository
 
     public function getUserRecentTrades(int $userId, int $limit = 20): array
     {
-        $safeLimit = max(1, min(100, $limit));
+        $safeLimit = max(1, min(self::MAX_RECENT_RECORDS_LIMIT, $limit));
         $stmt = Database::connection()->prepare(
             "SELECT t.id, t.trade_uuid, tp.symbol,
                     CASE WHEN t.buyer_id = :user_id THEN 'buy' ELSE 'sell' END AS side,
@@ -212,7 +213,7 @@ final class AdminManagementRepository
 
     public function getUserRecentDeposits(int $userId, int $limit = 20): array
     {
-        $safeLimit = max(1, min(100, $limit));
+        $safeLimit = max(1, min(self::MAX_RECENT_RECORDS_LIMIT, $limit));
         $stmt = Database::connection()->prepare(
             "SELECT d.id, c.code AS currency_code, d.amount, d.status, d.tx_hash, d.created_at, d.credited_at
              FROM deposits d
@@ -230,7 +231,7 @@ final class AdminManagementRepository
 
     public function getUserRecentWithdrawals(int $userId, int $limit = 20): array
     {
-        $safeLimit = max(1, min(100, $limit));
+        $safeLimit = max(1, min(self::MAX_RECENT_RECORDS_LIMIT, $limit));
         $stmt = Database::connection()->prepare(
             "SELECT w.id, c.code AS currency_code, w.amount, w.fee, w.status, w.tx_hash, w.requested_at, w.processed_at
              FROM withdrawals w

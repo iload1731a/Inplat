@@ -276,7 +276,7 @@ $impersonatorAdminName = (string)(\App\Libraries\Session::get('auth.impersonator
                 <?php if ($impersonatorAdminId > 0): ?>
                 <form action="/admin/users/stop-impersonation" method="post" data-ajax="true" class="m-0">
                     <input type="hidden" name="_token" value="<?= e($csrfToken) ?>">
-                    <button class="btn btn-sm btn-outline-warning" type="submit" title="Return to admin session">
+                    <button class="btn btn-sm btn-outline-warning" type="submit" title="Return to admin session" aria-label="Return to admin session">
                         <i class="fas fa-user-shield me-1"></i>
                         <span class="d-none d-md-inline">Return to Admin<?= $impersonatorAdminName !== '' ? ': ' . e($impersonatorAdminName) : '' ?></span>
                     </button>

@@ -29,7 +29,7 @@ $recentWithdrawals = is_array($recentWithdrawals ?? null) ? $recentWithdrawals :
                     <button class="btn btn-sm btn-outline-primary" type="submit"><i class="fas fa-right-to-bracket me-1"></i>Login As User</button>
                 </form>
                 <a class="btn btn-sm btn-outline-warning" href="/admin/communications?user_id=<?= (int)($user['id'] ?? 0) ?>&channel=email"><i class="fas fa-envelope me-1"></i>Send Email</a>
-                <a class="btn btn-sm btn-outline-info" href="/admin/orders?search=<?= urlencode((string)($user['username'] ?? '')) ?>"><i class="fas fa-list-ol me-1"></i>Order Book</a>
+                <a class="btn btn-sm btn-outline-info" href="/admin/orders?search=<?= urlencode((string)($user['username'] ?? '')) ?>"><i class="fas fa-list-ol me-1"></i>User Orders</a>
                 <a class="btn btn-sm btn-outline-info" href="/admin/deposits?search=<?= urlencode((string)($user['username'] ?? '')) ?>"><i class="fas fa-arrow-down me-1"></i>Deposits</a>
                 <a class="btn btn-sm btn-outline-info" href="/admin/withdrawals?search=<?= urlencode((string)($user['username'] ?? '')) ?>"><i class="fas fa-arrow-up me-1"></i>Withdrawals</a>
             </div>
@@ -74,8 +74,14 @@ $recentWithdrawals = is_array($recentWithdrawals ?? null) ? $recentWithdrawals :
             <form action="/admin/users/change-password" method="post" data-ajax="true" class="row g-2">
                 <input type="hidden" name="_token" value="<?= e(\App\Libraries\Csrf::token()) ?>">
                 <input type="hidden" name="user_id" value="<?= (int)($user['id'] ?? 0) ?>">
-                <div class="col-12"><input class="form-control form-control-sm" type="password" name="new_password" minlength="8" placeholder="New password" required></div>
-                <div class="col-12"><input class="form-control form-control-sm" type="password" name="confirm_password" minlength="8" placeholder="Confirm password" required></div>
+                <div class="col-12">
+                    <label class="form-label form-label-sm" for="admin-user-new-password">New Password</label>
+                    <input id="admin-user-new-password" class="form-control form-control-sm" type="password" name="new_password" minlength="8" placeholder="New password" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label form-label-sm" for="admin-user-confirm-password">Confirm Password</label>
+                    <input id="admin-user-confirm-password" class="form-control form-control-sm" type="password" name="confirm_password" minlength="8" placeholder="Confirm password" required>
+                </div>
                 <div class="col-12"><button class="btn btn-sm btn-outline-danger w-100" type="submit">Update Password</button></div>
             </form>
         </div>

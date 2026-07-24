@@ -1,0 +1,98 @@
+<?php declare(strict_types=1); ?>
+<?php
+$wallet = is_array($wallet ?? null) ? $wallet : [];
+$ledger = is_array($ledger ?? null) ? $ledger : [];
+$csrf   = \App\Libraries\Csrf::token();
+?>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Wallet Ledger</h1>
+        <p class="text-secondary mb-0">
+            <?= e((string)($wallet['username'] ?? '-')) ?> ·
+            <?= e((string)($wallet['currency_code'] ?? '-')) ?> ·
+            <?= e(ucfirst((string)($wallet['wallet_type'] ?? 'spot'))) ?>
+            <?php if ((int)($wallet['is_frozen'] ?? 0)): ?><span class="badge text-bg-danger ms-2">FROZEN</span><?php endif; ?>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/admin/wallets/adjustment" class="btn btn-outline-warning btn-sm"><i class="fas fa-sliders-h me-1"></i>Adjust Balance</a>
+        <a href="/admin/wallets" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Back to Wallets</a>
+    </div>
+</div>
+<?php require app_path('app/views/admin/_nav.php'); ?>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="glass rounded-4 p-3 text-center">
+            <div class="small text-secondary">Available</div>
+            <div class="h5 mb-0 text-success font-monospace"><?= number_format((float)($wallet['available_balance'] ?? 0), 8) ?></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass rounded-4 p-3 text-center">
+            <div class="small text-secondary">Locked</div>
+            <div class="h5 mb-0 text-warning font-monospace"><?= number_format((float)($wallet['locked_balance'] ?? 0), 8) ?></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass rounded-4 p-3 text-center">
+            <div class="small text-secondary">Total Deposited</div>
+            <div class="h5 mb-0 font-monospace"><?= number_format((float)($wallet['total_deposited'] ?? 0), 8) ?></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass rounded-4 p-3 text-center">
+            <div class="small text-secondary">Total Withdrawn</div>
+            <div class="h5 mb-0 font-monospace"><?= number_format((float)($wallet['total_withdrawn'] ?? 0), 8) ?></div>
+        </div>
+    </div>
+</div>
+
+<div class="glass rounded-4 p-3">
+    <div class="table-responsive">
+        <table id="ledgerTable" class="table table-dark table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Direction</th><th>Ref Type</th><th>Ref ID</th>
+                    <th>Amount</th><th>Balance After</th><th>Notes</th><th>Admin</th><th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($ledger as $entry): ?>
+                <tr>
+                    <td class="text-secondary small"><?= (int)($entry['id'] ?? 0) ?></td>
+                    <td>
+                        <span class="badge text-bg-<?= ($entry['direction'] ?? '') === 'credit' ? 'success' : 'danger' ?>">
+                            <i class="fas fa-arrow-<?= ($entry['direction'] ?? '') === 'credit' ? 'down' : 'up' ?> me-1"></i>
+                            <?= ucfirst((string)($entry['direction'] ?? '-')) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary text-capitalize">
+                            <?= e(str_replace('_', ' ', (string)($entry['reference_type'] ?? '-'))) ?>
+                        </span>
+                    </td>
+                    <td class="small text-secondary">
+                        <?= ($entry['reference_id'] ?? 0) > 0 ? '#' . (int)$entry['reference_id'] : '—' ?>
+                    </td>
+                    <td class="<?= ($entry['direction'] ?? '') === 'credit' ? 'text-success' : 'text-danger' ?> font-monospace small">
+                        <?= ($entry['direction'] ?? '') === 'credit' ? '+' : '-' ?>
+                        <?= number_format((float)($entry['amount'] ?? 0), 8) ?>
+                    </td>
+                    <td class="font-monospace small"><?= number_format((float)($entry['balance_after'] ?? 0), 8) ?></td>
+                    <td class="small text-secondary"><?= e((string)($entry['notes'] ?? '—')) ?></td>
+                    <td class="small text-info"><?= e((string)($entry['admin_username'] ?? '—')) ?></td>
+                    <td class="text-secondary small"><?= e(substr((string)($entry['created_at'] ?? ''), 0, 16)) ?></td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if ($ledger === []): ?>
+                <tr><td colspan="9" class="text-center text-secondary py-4">No ledger entries.</td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+$('#ledgerTable').DataTable({ order:[[0,'desc']], pageLength:25, dom:'Bfrtip', buttons:['excel','csv','print'] });
+</script>

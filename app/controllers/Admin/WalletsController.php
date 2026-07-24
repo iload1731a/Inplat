@@ -65,10 +65,11 @@ final class WalletsController extends AdminBaseController
     public function lookup(Request $request): void
     {
         $this->bootAdmin();
+        $this->requireCsrf($request);
         $walletId = (int)$request->input('id', 0);
 
         if ($walletId <= 0) {
-            Response::json(['ok' => false, 'message' => 'Wallet ID must be a positive integer.'], 422);
+            Response::json(['ok' => false, 'message' => 'Wallet ID must be a positive integer.'], 400);
             return;
         }
 

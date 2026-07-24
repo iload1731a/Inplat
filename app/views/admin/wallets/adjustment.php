@@ -127,7 +127,7 @@ $('#adjustmentTable').DataTable({ order:[[0,'desc']], pageLength:20 });
 
 const walletIdInput = document.getElementById('walletIdInput');
 const walletLookupResult = document.getElementById('walletLookupResult');
-const prefillWalletId = <?= json_encode($prefillWalletId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const initialWalletId = <?= json_encode($prefillWalletId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 
 function currentWalletId() {
     return walletIdInput.value.trim();
@@ -144,7 +144,14 @@ async function lookupWallet(walletId) {
     walletLookupResult.textContent = 'Checking wallet...';
 
     try {
-        const res = await fetch(`/admin/wallets/lookup?id=${encodeURIComponent(walletId)}`);
+        const tokenInput = document.querySelector('#adjustmentForm input[name="_token"]');
+        const token = tokenInput ? tokenInput.value : '';
+        const params = new URLSearchParams({ _token: token, id: walletId });
+        const res = await fetch('/admin/wallets/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: params.toString(),
+        });
         let json = null;
         try {
             json = await res.json();
@@ -174,7 +181,7 @@ document.getElementById('lookupWalletBtn').addEventListener('click', function ()
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    if (Number(prefillWalletId) > 0) {
+    if (Number(initialWalletId) > 0) {
         lookupWallet(currentWalletId());
     }
 });

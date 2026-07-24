@@ -168,7 +168,7 @@ $router->get('/admin/orders/export',  [AdminOrdersController::class, 'export']);
 // =====================================================================
 $router->get('/admin/wallets', [AdminWalletsController::class, 'index']);
 $router->get('/admin/wallet/ledger', [AdminWalletsController::class, 'ledger']);
-$router->get('/admin/wallets/lookup', [AdminWalletsController::class, 'lookup']);
+$router->post('/admin/wallets/lookup', [AdminWalletsController::class, 'lookup']);
 $router->post('/admin/wallets/freeze', [AdminWalletsController::class, 'freeze']);
 $router->post('/admin/wallets/unfreeze', [AdminWalletsController::class, 'unfreeze']);
 // Deposits

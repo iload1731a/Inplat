@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Libraries\Request;
 use App\Libraries\Response;
+use App\Libraries\Session;
 use App\Services\AdminManagementService;
 use Throwable;
 
@@ -631,11 +632,17 @@ final class ManagementController extends AdminBaseController
 
     public function stopImpersonation(Request $request): void
     {
-        $this->bootAdmin();
+        if ((int)(Session::get('auth.impersonator_admin_id') ?? 0) <= 0) {
+            Response::json(['ok' => false, 'message' => 'No active impersonation session.'], 422);
+        }
         $this->requireCsrf($request);
+        $actingAdminId = $this->adminId();
+        if ($actingAdminId <= 0) {
+            $actingAdminId = (int)(Session::get('auth.impersonator_admin_id') ?? 0);
+        }
 
         try {
-            $lastUserId = (new AdminManagementService())->stopImpersonation($this->adminId());
+            $lastUserId = (new AdminManagementService())->stopImpersonation($actingAdminId);
         } catch (Throwable $e) {
             Response::json(['ok' => false, 'message' => $e->getMessage()], 422);
         }

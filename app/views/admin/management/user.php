@@ -76,11 +76,11 @@ $recentWithdrawals = is_array($recentWithdrawals ?? null) ? $recentWithdrawals :
                 <input type="hidden" name="user_id" value="<?= (int)($user['id'] ?? 0) ?>">
                 <div class="col-12">
                     <label class="form-label form-label-sm" for="admin-user-new-password">New Password</label>
-                    <input id="admin-user-new-password" class="form-control form-control-sm" type="password" name="new_password" minlength="8" placeholder="New password" required>
+                    <input id="admin-user-new-password" class="form-control form-control-sm" type="password" name="new_password" minlength="8" maxlength="128" placeholder="New password" required>
                 </div>
                 <div class="col-12">
                     <label class="form-label form-label-sm" for="admin-user-confirm-password">Confirm Password</label>
-                    <input id="admin-user-confirm-password" class="form-control form-control-sm" type="password" name="confirm_password" minlength="8" placeholder="Confirm password" required>
+                    <input id="admin-user-confirm-password" class="form-control form-control-sm" type="password" name="confirm_password" minlength="8" maxlength="128" placeholder="Confirm password" required>
                 </div>
                 <div class="col-12"><button class="btn btn-sm btn-outline-danger w-100" type="submit">Update Password</button></div>
             </form>

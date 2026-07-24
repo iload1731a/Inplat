@@ -605,7 +605,12 @@ final class AdminManagementService
 
     public function loginAsUser(int $adminId, int $userId): void
     {
-        if ((int)(Session::get('auth.role_id') ?? 0) !== 1) {
+        if ((string)(Session::get('auth.actor_type') ?? '') !== 'admin') {
+            throw new \InvalidArgumentException('Impersonation can only be started from an admin session.');
+        }
+
+        $admin = $this->repository->findAdminById($adminId);
+        if ($admin === null || (int)($admin['role_id'] ?? 0) !== 1) {
             throw new \InvalidArgumentException('Only super administrators can use login-as.');
         }
 
@@ -644,7 +649,7 @@ final class AdminManagementService
         if ($impersonatorId <= 0) {
             throw new \InvalidArgumentException('No active impersonation session.');
         }
-        if ($adminId > 0 && $impersonatorId !== $adminId) {
+        if ($impersonatorId !== $adminId) {
             throw new \InvalidArgumentException('Impersonation session ownership mismatch.');
         }
 

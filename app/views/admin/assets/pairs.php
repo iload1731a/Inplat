@@ -359,7 +359,7 @@ document.getElementById('fillAllPopular').addEventListener('click', function() {
 // Run Bulk Import
 document.getElementById('runImportBtn').addEventListener('click', function() {
     const text = document.getElementById('importPairsText').value.trim();
-    const csrf = <?= json_encode($csrf) ?>;
+    const csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : (document.querySelector('[name="_token"]') ? document.querySelector('[name="_token"]').value : '');
     if (!text) {
         Swal.fire({ icon: 'warning', title: 'Nothing to import', text: 'Please enter at least one pair.' });
         return;
